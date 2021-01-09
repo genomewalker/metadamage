@@ -1,4 +1,4 @@
-## MADpy
+## Metagenomics Ancient Damage python: MADpy
 
 
 If first time using:
