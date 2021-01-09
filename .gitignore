@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+
+#
+._.DS_Store
+._environment.yaml
+._main.py
+/old/
+*.code-workspace
+.cenv
+
+# exclude data from source control by default
+/data/
+#!/data/raw/ESWsmall.bam
+
+# VS Code
+.vscode/
+
+# Dask worker space
+/dask-worker-space/
+
+# Mac OS-specific storage files
+.DS_Store
+
+# setuptools
+MADpy.egg-info/
+
+# vim
+*.swp
+*.swo

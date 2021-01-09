@@ -1,0 +1,25 @@
+name: MADpy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.8
+  - pip
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - tqdm
+  - dotmap
+  - dask
+  - pyarrow
+  - dill
+  - jax
+  - joblib
+  - pip:
+    - git+https://github.com/pyro-ppl/numpyro.git
+    - sigfig
+  # - git+https://github.com/scikit-hep/probfit.git
+   # - pipe-subprocess
+    # - mpl-scatter-density
