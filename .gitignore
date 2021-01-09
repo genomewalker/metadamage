@@ -13,7 +13,8 @@ __pycache__/
 
 # exclude data from source control by default
 /data/
-#!/data/raw/ESWsmall.bam
+!/data/input/data_ancient.txt
+!/data/input/data_control.txt
 
 # VS Code
 .vscode/
