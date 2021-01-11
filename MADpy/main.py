@@ -111,6 +111,6 @@ for name, filename in filenames.items():
 
     # reload(fit)
     if cfg.make_plots:
-        plot.plot_individual_error_rates(cfg, df, d_fits=d_fits)
+        plot.plot_error_rates(cfg, df, d_fits=d_fits)
         plt.close("all")
 

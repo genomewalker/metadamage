@@ -75,7 +75,7 @@ def main(
 
         if cfg.make_plots:
             plot.set_style()
-            plot.plot_individual_error_rates(cfg, df, d_fits=d_fits)
+            plot.plot_error_rates(cfg, df, d_fits=d_fits)
 
     if len(all_fit_results) >= 2:
         plot.plot_fit_results(all_fit_results, cfg)
