@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pandas.core.groupby import groupby
 from tqdm import tqdm
-from p_tqdm import p_umap
+
+# from p_tqdm import p_umap
 from functools import partial
 from dotmap import DotMap as DotDict
 
@@ -22,10 +23,10 @@ import seaborn as sns
 
 # import tracemalloc
 
-import MADpy
-import MADpy
-import MADpy
-import MADpy
+from MADpy import fileloader
+from MADpy import fit
+from MADpy import plot
+from MADpy import utils
 
 import numpyro
 
@@ -35,19 +36,14 @@ numpyro.enable_x64()
 plot.set_rc_params(fig_dpi=50)
 # paths = fileloader.load_paths()
 
-plot_latex = True
-
-if utils.is_ipython() and not plot_latex:
-    matplotlib.style.use("default")
-    sns.set_style("white")
-    sns.set_context("talk", font_scale=1, rc={"lines.linewidth": 2})
-
+if utils.is_ipython():
+    plot.set_style(style_path="style.mplstyle")
 
 cfg = DotDict(
     {
         "name": "KapK",
         # "N_taxids": 1000,
-        "N_taxids": None,
+        "N_taxids": 10,
         # "N_aligmnets_minimum": 0,
         # "N_reads_minimum": 0,
         "max_pos": None,
@@ -64,25 +60,31 @@ cfg = DotDict(
         # "parallel_plots": True,
         "parallel_plots": False,
         #
-        "num_cores": 6,
+        "num_cores": 5,
     }
 )
 
 #%%
 
 
-# names = ["KapK"]
-# names = ["control"]
-names = ["KapK", "control"]
+filenames = {
+    "KapK": "../data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    "control": "../data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+}
+
+names = ["control"]
+names = ["KapK"]
+
+filenames = {k: v for k, v in filenames.items() if k in names}
 
 all_fit_results = {}
 
 # if __name__ == "__main__":
-for name in names:
+for name, filename in filenames.items():
 
     print(f"\n\n{name}:", flush=True)
     cfg.name = name
-    cfg.filename = utils.get_filename(cfg)
+    cfg.filename = filename
 
     df = fileloader.load_dataframe(cfg)
     df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
@@ -90,10 +92,9 @@ for name in names:
     taxid = group["taxid"].iloc[0]
 
     if False:
-        taxid = 1773
         taxid = 9606
-        taxid = 203104
-        taxid = 168807
+        taxid = 9615
+        taxid = 1491
         group = df.query(f"taxid == @taxid")
 
         reload(plot)
@@ -101,10 +102,11 @@ for name in names:
 
     d_fits = None
     if cfg.make_fits:
-        d_fits, df_results = fit.get_fits(df_top_N, cfg)
+        d_fits, df_results = fit.get_fits(df, cfg)
         all_fit_results[name] = df_results
 
     if False:
+        reload(plot)
         plot.plot_single_group(group, cfg, d_fits)
 
     # reload(fit)
@@ -112,27 +114,3 @@ for name in names:
         plot.plot_individual_error_rates(cfg, df, d_fits=d_fits)
         plt.close("all")
 
-
-# x = x
-
-
-#%%
-
-
-if len(all_fit_results) != 0:
-
-    fig, ax = plt.subplots(figsize=(10, 10))
-    plot.plot_fit_results(
-        all_fit_results,
-        ax,
-        xlim=(-3, 18),
-        ylim=(0, 0.7),
-        alpha_plot=0.1,
-        alpha_hist=0.0,
-    )
-    if cfg.make_plots:
-        fig.savefig(f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf")
-else:
-    print("No fits to plot")
-
-# %%

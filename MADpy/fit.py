@@ -97,12 +97,16 @@ def get_posterior_predictive(mcmc, data):
 #%%
 
 
-def get_y_mean_and_hpdi(mcmc, data):
+def get_y_average_and_hpdi(mcmc, data, func=jnp.median, return_hpdi=True):
+    """ func = central tendency function, e.g. jnp.mean or jnp.median
+    """
     posterior_predictive = get_posterior_predictive(mcmc, data)
     predictions_fraction = posterior_predictive / data["N"]
-    y_mean = jnp.mean(predictions_fraction, axis=0)
+    y_average = func(predictions_fraction, axis=0)
+    if not return_hpdi:
+        return y_average
     y_hpdi = numpyro.diagnostics.hpdi(predictions_fraction, prob=0.68)
-    return y_mean, y_hpdi
+    return y_average, y_hpdi
 
 
 #%%
@@ -162,7 +166,7 @@ def SDOM(x, axis=0):
 
 
 def get_mean_of_variable(mcmc, variable, axis=0):
-    return np.mean(mcmc.get_samples()[variable], axis=axis)
+    return np.mean(mcmc.get_samples()[variable], axis=axis).item()
 
 
 def get_SDOM_of_variable(mcmc, variable, axis=0):
@@ -186,12 +190,14 @@ def compute_n_sigma(d_results_PMD, d_results_null):
     return n_sigma
 
 
-def compare_models(mcmc_PMD, mcmc_null, data):
+def compute_fit_results(mcmc_PMD, mcmc_null, data):
     d_results_PMD = get_lppd_and_waic(mcmc_PMD, data)
     d_results_null = get_lppd_and_waic(mcmc_null, data)
 
     d_results = {}
-    d_results["D_max"] = get_mean_of_variable(mcmc_PMD, "D_max")
+    # y_frac = y/N, on the first position
+    y_frac_median, y_frac_hpdi = get_y_average_and_hpdi(mcmc_PMD, data, func=jnp.median)
+    d_results["D_max"] = y_frac_median[0].item()
 
     n_sigma = compute_n_sigma(d_results_PMD, d_results_null)
     d_results["n_sigma"] = n_sigma.item()
@@ -200,10 +206,18 @@ def compare_models(mcmc_PMD, mcmc_null, data):
     d_results["waic_weight"] = waic_weights[0]
     d_results["waic_weight_null"] = waic_weights[1]
 
-    # probability of a single succes
-    d_results["p_succes"] = get_mean_of_variable(mcmc_PMD, "p")
-    d_results["dispersion"] = get_mean_of_variable(mcmc_PMD, "theta")
+    # y_frac = y/N, on the first position, HPDIs
+    d_results["D_max_lower_hpdi"] = y_frac_hpdi[0, 0].item()
+    d_results["D_max_upper_hpdi"] = y_frac_hpdi[1, 0].item()
 
+    # marginalized values:
+
+    # probability of a single succes
+    d_results["p_succes_mean"] = get_mean_of_variable(mcmc_PMD, "p")
+    # dispersion or shape of beta/bino
+    d_results["dispersion_mean"] = get_mean_of_variable(mcmc_PMD, "theta")
+    # marginalized D_max
+    d_results["D_max_marginalized_mean"] = get_mean_of_variable(mcmc_PMD, "D_max")
     return d_results
 
 
@@ -245,16 +259,11 @@ def group_to_numpyro_data(group):
     return data
 
 
-def get_d_out(df_results, d_y_means, d_y_hpdis):
-    return {"df_results": df_results, "d_y_means": d_y_means, "d_y_hpdis": d_y_hpdis}
-
-
-def match_taxid_order_in_df_results(df_results, df):
-    return df_results.loc[pd.unique(df.taxid)]
+def match_taxid_order_in_df_fit_results(df_fit_results, df):
+    return df_fit_results.loc[pd.unique(df.taxid)]
 
 
 def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
-
     # print(f"fit_chunk: {current_process()=} \n", flush=True)
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
@@ -264,9 +273,7 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
     if do_tqdm:
         it = tqdm(it, desc="MCMC fits")
 
-    d_results = {}
-    d_y_means = {}
-    d_y_hpdis = {}
+    d_fits = {}
 
     for taxid, group in it:
 
@@ -275,11 +282,11 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
         fit_mcmc(mcmc_PMD, data)
         fit_mcmc(mcmc_null, data)
 
-        y_mean_PMD, y_hpdi_PMD = get_y_mean_and_hpdi(mcmc_PMD, data)
-        y_mean_null, y_hpdi_null = get_y_mean_and_hpdi(mcmc_null, data)
-        d_y_means[taxid] = {"PMD": y_mean_PMD, "null": y_mean_null}
-        d_y_hpdis[taxid] = {"PMD": y_hpdi_PMD, "null": y_hpdi_null}
-        d_results[taxid] = compare_models(mcmc_PMD, mcmc_null, data)
+        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(mcmc_PMD, data, func=jnp.median)
+        fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
+        fit_result["N_alignments"] = group.N_alignments.iloc[0]
+
+        d_fits[taxid] = {"median": y_median_PMD, "hpdi": y_hpdi_PMD, "fit_result": fit_result}
 
         # if False:
         #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
@@ -287,10 +294,11 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
         #     use_last_state_as_warmup_state(mcmc_PMD)
         #     use_last_state_as_warmup_state(mcmc_null)
 
-    df_results = pd.DataFrame.from_dict(d_results, orient="index")
-    df_results = match_taxid_order_in_df_results(df_results, df)
-    d_fits = get_d_out(df_results, d_y_means, d_y_hpdis)
-    return d_fits
+    fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
+
+    df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
+    df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
+    return d_fits, df_fit_results
 
 
 def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
@@ -316,42 +324,51 @@ def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
     generator = (delayed(fit_chunk)(chunk, mcmc_kwargs, do_tqdm=do) for chunk, do in it)
     results = Parallel(n_jobs=num_cores)(generator)
 
-    df_results = pd.concat([res["df_results"] for res in results])
-    df_results = match_taxid_order_in_df_results(df_results, df)
+    df_fit_results = pd.concat([res[1] for res in results])
+    df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
 
-    d_y_means = {}
-    d_y_hpdis = {}
+    d_fits = {}
     for result in results:
-        d_y_means = {**d_y_means, **result["d_y_means"]}
-        d_y_hpdis = {**d_y_hpdis, **result["d_y_hpdis"]}
-
-    d_fits = get_d_out(df_results, d_y_means, d_y_hpdis)
-    return d_fits
+        d_fits = {**d_fits, **result[0]}
+    return d_fits, df_fit_results
 
 
-def save_df_results(df_results, filename):
+def save_df_fit_results(df_fit_results, filename):
     utils.init_parent_folder(filename)
-    df_results.to_csv(filename)
+    df_fit_results.to_csv(filename)
+
+
+def _get_fit_filenames(cfg):
+    d_filename = {}
+    d_filename["df_fit_results"] = f"./data/fits/{cfg.name}__N_taxids__{cfg.N_taxids}.csv"
+    d_filename["d_fits"] = d_filename["df_fit_results"].replace(".csv", ".dill")
+    return d_filename
+
+
+def _load_fits(cfg):
+
+    d_filename = _get_fit_filenames(cfg)
+
+    if cfg.verbose:
+        print(f"Loading fits from pregenerated file, {d_filename['d_fits']}.", flush=True)
+    d_fits, df_fit_results = utils.load_dill(d_filename["d_fits"])
+
+    if not utils.file_exists(d_filename["df_fit_results"]):
+        save_df_fit_results(df_fit_results, d_filename["df_fit_results"])
+
+    return d_fits, df_fit_results
 
 
 def get_fits(df, cfg):
 
-    # name = utils.extract_name(cfg.filename)
-    filename_df_results = "./data/fits/" + cfg.name + f"__N_taxids__{cfg.N_taxids}.csv"
-    filename_d_fits = filename_df_results.replace(".csv", ".dill")
+    d_filename = _get_fit_filenames(cfg)
 
     # if file d_fits exists, use this
-    if utils.file_exists(filename_d_fits, cfg.force_fits):
-        if cfg.verbose:
-            print(f"Loading fits from pregenerated file, {filename_d_fits}.", flush=True)
-        d_fits = utils.load_dill(filename_d_fits)
-        df_results = d_fits["df_results"]
-        if not utils.file_exists(filename_df_results):
-            save_df_results(df_results, filename_df_results)
-        return d_fits, df_results
+    if utils.file_exists(d_filename["d_fits"], cfg.force_fits):
+        return _load_fits(cfg)
 
     if cfg.verbose:
-        print(f"Generating fits and saving to file: {filename_d_fits}.")
+        print(f"Generating fits and saving to file: {d_filename['d_fits']}.")
 
     df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
 
@@ -365,13 +382,9 @@ def get_fits(df, cfg):
         chain_method="sequential",
     )
 
-    d_fits = compute_fits(df, mcmc_kwargs, num_cores=num_cores)
+    d_fits, df_fit_results = compute_fits(df_top_N, mcmc_kwargs, num_cores=num_cores)
 
-    df_results = d_fits["df_results"]
-    save_df_results(df_results, filename_df_results)
-    utils.save_dill(filename_d_fits, d_fits)
+    save_df_fit_results(df_fit_results, d_filename["df_fit_results"])
+    utils.save_dill(d_filename["d_fits"], [d_fits, df_fit_results])
 
-    return d_fits, df_results
-
-
-#%%
+    return d_fits, df_fit_results

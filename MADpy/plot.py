@@ -38,8 +38,8 @@ def set_rc_params(fig_dpi=300):
     mpl.rc("axes", edgecolor="k", linewidth=2)
 
 
-def set_style(fig_dpi=50):
-    plt.style.use("./MADpy/style.mplstyle")
+def set_style(style_path="./MADpy/style.mplstyle", fig_dpi=50):
+    plt.style.use(style_path)
     set_rc_params(fig_dpi=fig_dpi)
 
 
@@ -50,22 +50,23 @@ def str_round(x, **kwargs):
         return str(x)
 
 
-def fit_results_to_string(series, group):
+def fit_results_to_string(fit_result, group):
     s = ""
-    s += r"$D_\mathrm{max} = " + f"{series['D_max']:.3f}" + r"$" + "\n"
 
-    # w_PMD = series["waic_weight"]
-    # w_null = series["waic_weight_null"]
-    # s += r"$w_\mathrm{WAIC} = " + f"{w_PMD:.2f}" + r"$" + "\n"
-    # s += r"$1-w_\mathrm{WAIC} = 10^{"
-    # s += f"{str_round(np.log10(w_null), sigfigs=3)}" + r"}$" + "\n"
+    D_max = fit_result["D_max"]
+    D_max_lower_hpdi = D_max - fit_result["D_max_lower_hpdi"]
+    D_max_upper_hpdi = fit_result["D_max_upper_hpdi"] - D_max
 
-    s += r"$n_\sigma = " + f"{series['n_sigma']:.3f}" + r"$" + "\n"
+    s += r"$D_\mathrm{max} = " + f"{D_max:.3f}" + r"_{-"
+    s += f"{D_max_lower_hpdi:.3f}" + r"}^{+"
+    s += f"{D_max_upper_hpdi:.3f}" + r"}$" + "\n"
+
+    s += r"$n_\sigma = " + f"{fit_result['n_sigma']:.3f}" + r"$" + "\n"
 
     s += "\n"
-    dispersion = utils.human_format(series["dispersion"])
+    dispersion = utils.human_format(fit_result["dispersion_mean"])
     s += r"$\mathrm{dispersion} = " + f"{dispersion}" + r"$" + "\n"
-    s += r"$p_\mathrm{succes} = " + f"{series['p_succes']:.3f}" + r"$" + "\n"
+    s += r"$p_\mathrm{succes} = " + f"{fit_result['p_succes_mean']:.3f}" + r"$" + "\n"
 
     s += "\n"
     N_alignments = utils.human_format(group["N_alignments"].iloc[0])
@@ -81,8 +82,9 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
     taxid = group["taxid"].iloc[0]
 
-    if d_fits and (taxid in d_fits["d_y_means"]):
+    if d_fits and (taxid in d_fits):
         has_fits = True
+        d_fit = d_fits[taxid]
     else:
         has_fits = False
 
@@ -97,12 +99,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     group_direction["forward"] = utils.get_forward(group)
     group_direction["reverse"] = utils.get_reverse(group)
 
-    fig, axes = plt.subplots(
-        ncols=2,
-        figsize=figsize,
-        sharey=True,
-        gridspec_kw={"wspace": 0.14},
-    )
+    fig, axes = plt.subplots(ncols=2, figsize=figsize, sharey=True, gridspec_kw={"wspace": 0.14},)
 
     for direction, ax in zip(["reverse", "forward"], axes):
 
@@ -143,14 +140,24 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     if has_fits:
 
         z = group.pos.values
-        y_means = d_fits["d_y_means"][taxid]
-        y_hpdis = d_fits["d_y_hpdis"][taxid]
 
-        df_results = d_fits["df_results"]
+        y_median = d_fit["median"]
+        y_hpdi = d_fit["hpdi"]
+        fit_result = d_fit["fit_result"]
 
-        plot_bayesian_fits(z, y_means, y_hpdis, ax_forward, ax_reverse, color="C2")
+        hpdi = y_hpdi.copy()
+        hpdi[0, :] = y_median - hpdi[0, :]
+        hpdi[1, :] = hpdi[1, :] - y_median
 
-        s = fit_results_to_string(df_results.loc[taxid], group)
+        # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html
+        kw = dict(fmt="none", color="C2", capsize=6, capthick=1.5)
+        label = r"Fit (68\% HDPI)"
+        ax_forward.errorbar(z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw)
+        ax_reverse.errorbar(z[z < 0], y_median[z < 0], hpdi[:, z < 0], **kw)
+
+        # plot_bayesian_fits(z, y_median, y_hpdi, ax_forward, ax_reverse, color="C2")
+
+        s = fit_results_to_string(fit_result, group)
         ax_reverse.text(
             0.05,
             0.90,
@@ -179,16 +186,12 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
         ymax = ymax_overall
 
     ax_reverse.set(
-        xlabel="Read Position",
-        xticks=range(-max_pos, -1 + 1, 2),
-        ylim=(0, ymax),
+        xlabel="Read Position", xticks=range(-max_pos, -1 + 1, 2), ylim=(0, ymax),
     )
     ax_reverse.set_title(" Reverse", loc="left", pad=10, fontdict=dict(fontsize=30))
 
     ax_forward.set(
-        xlabel="Read Position",
-        xticks=range(1, max_pos + 1, 2),
-        ylim=(0, ymax),
+        xlabel="Read Position", xticks=range(1, max_pos + 1, 2), ylim=(0, ymax),
     )
     ax_forward.set_title("Forward ", loc="right", pad=10, fontdict=dict(fontsize=30))
 
@@ -198,22 +201,23 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     return fig
 
 
-def plot_bayesian_fits(z, y_means, y_hpdis, ax_forward, ax_reverse, color):
+# def plot_bayesian_fits(z, y_median, y_hpdi, ax_forward, ax_reverse, color):
 
-    mean = y_means["PMD"]
-    hpdi = y_hpdis["PMD"].copy()
-    hpdi[0, :] = mean - hpdi[0, :]
-    hpdi[1, :] = hpdi[1, :] - mean
+#     hpdi = y_hpdi.copy()
+#     hpdi[0, :] = y_median - hpdi[0, :]
+#     hpdi[1, :] = hpdi[1, :] - y_median
 
-    # ax_forward.plot(z[z > 0], mean[z > 0], color=color)
-    # ax_reverse.plot(z[z < 0], mean[z < 0], color=color)
-    kw = dict(fmt="none", color=color)
-    ax_forward.errorbar(z[z > 0], mean[z > 0], hpdi[:, z > 0], label=r"Fit (68\% HDPI)", **kw)
-    ax_reverse.errorbar(z[z < 0], mean[z < 0], hpdi[:, z < 0], **kw)
+#     # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html
+#     kw = dict(fmt="none", color=color)
+#     ax_forward.errorbar(z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=r"Fit (68\% HDPI)", **kw)
+#     ax_reverse.errorbar(z[z < 0], y_median[z < 0], hpdi[:, z < 0], **kw)
 
-    # kwargs = dict(alpha=0.1, color=color, label="Fit (68\% HDPI)")
-    # ax_forward.fill_between(z[z > 0], hpdi[0, z > 0], hpdi[1, z > 0], **kwargs)
-    # ax_reverse.fill_between(z[z < 0], hpdi[0, z < 0], hpdi[1, z < 0], **kwargs)
+# ax_forward.plot(z[z > 0], mean[z > 0], color=color)
+# ax_reverse.plot(z[z < 0], mean[z < 0], color=color)
+
+# kwargs = dict(alpha=0.1, color=color, label="Fit (68\% HDPI)")
+# ax_forward.fill_between(z[z > 0], hpdi[0, z > 0], hpdi[1, z > 0], **kwargs)
+# ax_reverse.fill_between(z[z < 0], hpdi[0, z < 0], hpdi[1, z < 0], **kwargs)
 
 
 #%%
@@ -463,13 +467,7 @@ def plot_individual_error_rates(cfg, df, d_fits=None, max_plots=None):
 
 
 def _plot_fit_results(
-    all_fit_results,
-    ax,
-    colorbar=False,
-    xlim=(-3, 18),
-    ylim=(0, 1),
-    alpha_plot=0.1,
-    alpha_hist=0.0,
+    all_fit_results, ax, colorbar=False, xlim=(-3, 18), ylim=(0, 1), alpha_plot=0.1, alpha_hist=0.0,
 ):
 
     # from matplotlib.ticker import LogFormatter
@@ -517,10 +515,7 @@ def _plot_fit_results(
     #     l.set_markersize(50)
 
     ax.set(
-        xlim=xlim,
-        ylim=ylim,
-        xlabel=r"$n_\sigma$",
-        ylabel=r"$D_\mathrm{max}$",
+        xlim=xlim, ylim=ylim, xlabel=r"$n_\sigma$", ylabel=r"$D_\mathrm{max}$",
     )
 
     # return ax
@@ -531,12 +526,7 @@ def plot_fit_results(all_fit_results, cfg, savefig=True):
     if len(all_fit_results) >= 2 and cfg.make_plots:
         fig, ax = plt.subplots(figsize=(10, 10))
         _plot_fit_results(
-            all_fit_results,
-            ax,
-            xlim=(-3, 18),
-            ylim=(0, 0.7),
-            alpha_plot=0.1,
-            alpha_hist=0.0,
+            all_fit_results, ax, xlim=(-3, 18), ylim=(0, 0.7), alpha_plot=0.1, alpha_hist=0.0,
         )
         if savefig:
             fig.savefig(f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf")

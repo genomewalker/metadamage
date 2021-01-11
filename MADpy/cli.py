@@ -10,7 +10,11 @@ from MADpy import utils
 @click.command()
 @click.argument("filename", type=click.Path(exists=True), nargs=-1)
 @click.option("--verbose", is_flag=True, default=True, help="Verbose. Flag. Default is True.")
-@click.option("--number_of_fits", default=10, help="Number of fits to make. Default is 10.")
+@click.option(
+    "--number_of_fits",
+    default=10,
+    help="Number of fits to make. Default is 10. -1 or 0 indicates to fit all TaxIDs.",
+)
 @click.option("--number_of_plots", default=10, help="Number of plots to make. Default is 10.")
 @click.option("--make_plots", default=True, is_flag=True, help="Make plots. Flag. Default is True")
 @click.option("--make_fits", default=True, is_flag=True, help="Make plots. Flag. Default is True")
@@ -27,7 +31,16 @@ def main(
     num_cores,
     force_plots,
 ):
-    """ filename: eg. ./data/input/data_ancient.txt"""
+    """Metagenomics Ancient Damage python: MADpy
+    run as e.g.:
+
+    $ MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt
+
+    or by running first for two files and then compare them:
+
+    MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
+
+    """
 
     filenames = filename
     all_fit_results = {}
