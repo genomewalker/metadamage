@@ -38,7 +38,7 @@ cfg = DotDict(
     {
         "name": "KapK",
         # "N_taxids": 1000,
-        "N_taxids": 100,
+        "N_taxids": -1,
         # "N_aligmnets_minimum": 0,
         # "N_reads_minimum": 0,
         "max_pos": None,
@@ -69,7 +69,6 @@ filenames = {
 
 names = ["EC-Ext-14-Lib-14-Index1"]  # control
 names = ["KapK-12-1-35-Ext-12-Lib-12-Index2"]
-
 filenames = {k: v for k, v in filenames.items() if k in names}
 
 all_fit_results = {}
@@ -88,12 +87,7 @@ for name, filename in filenames.items():
 
     if False:
         taxid = 9606
-        taxid = 9615
-        taxid = 1491
-        taxid = 190548
         group = df.query(f"taxid == @taxid")
-
-        reload(plot)
         plot.plot_single_group(group, cfg)
 
     d_fits = None
@@ -107,8 +101,5 @@ for name, filename in filenames.items():
 
     # reload(fit)
     if cfg.make_plots:
-
-        x = x
-
-        plot.plot_error_rates(cfg, df, d_fits=d_fits)
-        plt.close("all")
+        plot.set_style()
+        plot.plot_fit_results(all_fit_results, cfg)

@@ -1,3 +1,4 @@
+from jax.api import xla_computation
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -342,34 +343,148 @@ def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
 
 #%%
 
-# xlim = (-3, 18)
-# ylim = (0, 1)
-# alpha_plot = 0.1
+xlim = (-3, 18)
+ylim = (0, 1)
+alpha_plot = 0.1
+
+from matplotlib import colors
 
 
-def _plot_fit_results(all_fit_results, ax, xlim=(-3, 18), ylim=(0, 1), alpha_plot=0.1):
+def transform(x_org, vmin=0, vmax=1, func=lambda x: x):
+    x = func(x_org)
+    x_std = (x - x.min()) / (x.max() - x.min())
+    x_scaled = x_std * (vmax - vmin) + vmin
+    return x_scaled
 
-    for i, (name, df_res) in enumerate(all_fit_results.items()):
 
-        x = df_res["n_sigma"].values
-        y = df_res["D_max"].values
-        c = f"C{i}"
+def inverse_transform(x_scaled, vmin, vmax, xmin, xmax, func_inv=lambda x: x):
+    x_std = (x_scaled - vmin) / (vmax - vmin)
+    x = x_std * (xmax - xmin) + xmin
+    return func_inv(x)
 
-        ax.plot(x, y, ".", color=c, alpha=alpha_plot)
-        ax.plot(np.NaN, np.NaN, ".", color=c, label=name)  # add fake points for legend
 
-    ax.legend(markerscale=2)
-    ax.set(
-        xlim=xlim, ylim=ylim, xlabel=r"$n_\sigma$", ylabel=r"$D_\mathrm{max}$",
-    )
+# def _plot_fit_results(all_fit_results, ax, xlim=(-3, 18), ylim=(0, 1), alpha_plot=0.1):
+
+#%%
+
+from matplotlib.ticker import EngFormatter
+import copy
+
+
+class ExpFormatter(EngFormatter):
+    def __call__(self, x, pos=None):
+        s = "%s%s" % (self.format_eng(10 ** x), self.unit)
+        # Remove the trailing separator when there is neither prefix nor unit
+        if self.sep and s.endswith(self.sep):
+            s = s[: -len(self.sep)]
+        return self.fix_minus(s)
+
+
+def get_custom_legend(zs, ax, vmin, vmax, func, cmaps):
+
+    legend_elements = {}
+    handles = []
+    labels = []
+
+    for i, (name, z) in enumerate(zs.items()):
+        # break
+
+        log10 = np.log10(z)
+        log_max = int(log10.max())  # round down
+        log_min = int(log10.min()) + 1  # round up
+
+        z = 10 ** np.arange(log_min, log_max + 1, 2)[-3:]
+        s = transform(z, vmin=vmin, vmax=vmax, func=func)
+        c = np.log10(z)
+
+        # plot points outside canvas
+        x = np.repeat(ax.get_xlim()[1] * 1.1, len(z))
+        y = np.repeat(ax.get_ylim()[1] * 1.1, len(z))
+
+        kw_cols = dict(cmap=cmaps[i], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
+        scatter = ax.scatter(x, y, s=s, c=c, **kw_cols, alpha=0.5, label=name)
+
+        kw = dict(prop="colors", fmt=ExpFormatter())
+        handle, label = scatter.legend_elements(**kw)
+
+        elements_sizes, _ = scatter.legend_elements(prop="sizes")
+        for i in range(len(handle)):
+            size = elements_sizes[i].get_markersize()
+            handle[i].set_markersize(size)
+            handle[i].set_markeredgewidth(0)
+
+        handles.extend(handle)
+        labels.extend(label)
+
+    N = len(handles)
+    legend_elements_colors = [
+        [copy.copy(handles[i]) for i in [N // 2 - 1, N - 1]],
+        [copy.copy(labels[i]) for i in [N // 2 - 1, N - 1]],
+    ]
+
+    for i in range(len(legend_elements_colors[0])):
+        cmap = matplotlib.cm.get_cmap(cmaps[i])
+        legend_elements_colors[0][i].set_markersize(20)
+        legend_elements_colors[0][i].set_markerfacecolor(cmap(0.75))
+
+    return (handles, labels), legend_elements_colors
+
+
+#%%
+
+#%%
 
 
 def plot_fit_results(all_fit_results, cfg, savefig=True):
 
-    if len(all_fit_results) >= 2 and cfg.make_plots:
-        fig, ax = plt.subplots(figsize=(10, 10))
-        _plot_fit_results(all_fit_results, ax, xlim=(-3, 18), ylim=(0, 0.7), alpha_plot=0.1)
-        if savefig:
-            fig.savefig(f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf")
-    else:
-        print("No fits to plot")
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    cmaps = {0: "Blues", 1: "Reds"}
+
+    vmin, vmax, func = 10, 600, np.sqrt
+
+    zs = {}
+
+    for i, (name, df_res) in enumerate(all_fit_results.items()):
+        x = df_res["n_sigma"].values
+        y = df_res["D_max"].values
+        z = df_res["N_alignments"].values
+        zs[name] = z
+        s = transform(z, vmin=vmin, vmax=vmax, func=func)
+        c = np.log10(z)
+
+        kw_cols = dict(cmap=cmaps[i], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
+        scatter = ax.scatter(x, y, s=s, c=c, **kw_cols, alpha=0.5)
+
+    xlabel = r"$n_\sigma$"
+    ylabel = r"$D_\mathrm{max}$"
+    ax.set(xlim=xlim, ylim=ylim, xlabel=xlabel, ylabel=ylabel)
+
+    legend_elements, legend_elements_colors = get_custom_legend(zs, ax, vmin, vmax, func, cmaps)
+    legend_elements_colors[1] = list(all_fit_results.keys())
+
+    # Create a legend for the first line.
+    first_legend = plt.legend(
+        *legend_elements,
+        loc="upper right",
+        title=r"$N_\mathrm{alignments}$",
+        title_fontsize=34,
+        ncol=2,
+    )
+
+    # Add the legend manually to the current Axes.
+    ax.add_artist(first_legend)
+
+    # Create another legend for the second line.
+    plt.legend(*legend_elements_colors, loc="upper left", ncol=1)
+
+    # if len(all_fit_results) >= 2 and cfg.make_plots:
+    # fig, ax = plt.subplots(figsize=(10, 10))
+    # _plot_fit_results(all_fit_results, ax, xlim=(-3, 18), ylim=(0, 0.7), alpha_plot=0.1)
+    if savefig:
+        fig.savefig(f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf")
+    # else:
+    # print("No fits to plot")
+
+
+# %%
