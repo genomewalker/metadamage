@@ -337,8 +337,8 @@ def plot_individual_error_rates(cfg, df, d_fits=None, max_plots=None):
     if max_plots is None:
         max_plots = cfg.max_plots
 
-    name = utils.extract_name(cfg.filename)
-    filename = f"./figures/error_rates__{name}__N_taxids__{max_plots}.pdf"
+    # name = utils.extract_name(cfg.filename)
+    filename = f"./figures/error_rates__{cfg.name}__N_taxids__{max_plots}.pdf"
 
     if utils.file_exists(filename, cfg.force_plots):
         if cfg.verbose:
@@ -462,7 +462,7 @@ def plot_individual_error_rates(cfg, df, d_fits=None, max_plots=None):
 # alpha_hist = 0.1
 
 
-def plot_fit_results(
+def _plot_fit_results(
     all_fit_results,
     ax,
     colorbar=False,
@@ -472,12 +472,7 @@ def plot_fit_results(
     alpha_hist=0.0,
 ):
 
-    from mpl_scatter_density import ScatterDensityArtist
-
-    from astropy.visualization import LogStretch
-    from astropy.visualization.mpl_normalize import ImageNormalize
-
-    from matplotlib.ticker import LogFormatter
+    # from matplotlib.ticker import LogFormatter
 
     # vmax = [len(df_res) for df_res in all_fit_results.values()]
 
@@ -489,6 +484,11 @@ def plot_fit_results(
 
         # norm = ImageNormalize(vmin=0.0, vmax=vmax, stretch=LogStretch())
         if alpha_hist > 0:
+
+            from mpl_scatter_density import ScatterDensityArtist
+            from astropy.visualization import LogStretch
+            from astropy.visualization.mpl_normalize import ImageNormalize
+
             kwargs = dict(dpi=10, color=c, alpha=alpha_hist)  # norm=norm
             a = ScatterDensityArtist(ax, x, y, **kwargs)
             ax.add_artist(a)
@@ -524,3 +524,21 @@ def plot_fit_results(
     )
 
     # return ax
+
+
+def plot_fit_results(all_fit_results, cfg, savefig=True):
+
+    if len(all_fit_results) >= 2 and cfg.make_plots:
+        fig, ax = plt.subplots(figsize=(10, 10))
+        _plot_fit_results(
+            all_fit_results,
+            ax,
+            xlim=(-3, 18),
+            ylim=(0, 0.7),
+            alpha_plot=0.1,
+            alpha_hist=0.0,
+        )
+        if savefig:
+            fig.savefig(f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf")
+    else:
+        print("No fits to plot")

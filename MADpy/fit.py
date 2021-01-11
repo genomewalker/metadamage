@@ -336,8 +336,8 @@ def save_df_results(df_results, filename):
 
 def get_fits(df, cfg):
 
-    name = utils.extract_name(cfg.filename)
-    filename_df_results = "./data/fits/" + name + f"__N_taxids__{cfg.N_taxids}.csv"
+    # name = utils.extract_name(cfg.filename)
+    filename_df_results = "./data/fits/" + cfg.name + f"__N_taxids__{cfg.N_taxids}.csv"
     filename_d_fits = filename_df_results.replace(".csv", ".dill")
 
     # if file d_fits exists, use this

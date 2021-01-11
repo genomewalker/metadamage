@@ -6,6 +6,7 @@ setup(
     author="Christian Michelsen",
     author_email="christianmichelsen@gmail.com",
     description="Metagenomics Ancient Damage python: MADpy",
+    url="https://github.com/ChristianMichelsen/MADpy",
     packages=find_packages(),
     include_package_data=True,
     entry_points="""

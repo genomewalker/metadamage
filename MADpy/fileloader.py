@@ -181,7 +181,7 @@ def cut_NANs_away(df):
 
 
 def get_top_N_taxids(df, N_taxids):
-    if N_taxids:
+    if N_taxids > 0:
         return df.pipe(extract_top_N_taxids, N_taxids)
     else:
         return df
@@ -225,8 +225,8 @@ def _load_dataframe_dask(filename):
 
 def load_dataframe(cfg):
 
-    name = utils.extract_name(cfg.filename)
-    filename_parquet = "./data/parquet/" + name + ".parquet"
+    # name = utils.extract_name(cfg.name)
+    filename_parquet = "./data/parquet/" + cfg.name + ".parquet"
 
     if utils.file_exists(filename_parquet, cfg.force_reload):
         if cfg.verbose:
