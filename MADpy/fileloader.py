@@ -226,7 +226,7 @@ def _load_dataframe_dask(filename):
 def load_dataframe(cfg):
 
     # name = utils.extract_name(cfg.name)
-    filename_parquet = "./data/parquet/" + cfg.name + ".parquet"
+    filename_parquet = f"./data/parquet/{cfg.name}.parquet"
 
     if utils.file_exists(filename_parquet, cfg.force_reload):
         if cfg.verbose:

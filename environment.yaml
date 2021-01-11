@@ -17,6 +17,7 @@ dependencies:
   - dill
   - jax
   - joblib
+  - pypdf2
   - pip:
     - git+https://github.com/pyro-ppl/numpyro.git
     - sigfig

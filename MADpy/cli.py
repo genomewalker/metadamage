@@ -9,7 +9,7 @@ from MADpy import utils
 
 @click.command()
 @click.argument("filename", type=click.Path(exists=True), nargs=-1)
-@click.option("--verbose", is_flag=True, default=True, help="Verbose. Flag. Default is True.")
+@click.option("--verbose", is_flag=True, default=False, help="Verbose. Flag. Default is True.")
 @click.option(
     "--number_of_fits",
     default=10,
@@ -19,7 +19,12 @@ from MADpy import utils
 @click.option("--make_plots", default=True, is_flag=True, help="Make plots. Flag. Default is True")
 @click.option("--make_fits", default=True, is_flag=True, help="Make plots. Flag. Default is True")
 @click.option("--num_cores", default=1, help="Number of cores to use. Default is 1.")
-@click.option("--force_plots", is_flag=True, help="Force plots. Flag. Default is False")
+@click.option(
+    "--force_plots", is_flag=True, default=False, help="Force plots. Flag. Default is False"
+)
+@click.option(
+    "--parallel_plots", is_flag=True, default=False, help="Plot in parallel. Default is False"
+)
 @click.version_option()  # __version__
 def main(
     filename,
@@ -30,6 +35,7 @@ def main(
     make_fits,
     num_cores,
     force_plots,
+    parallel_plots,
 ):
     """Metagenomics Ancient Damage python: MADpy
     run as e.g.:
@@ -61,6 +67,7 @@ def main(
                 "force_plots": force_plots,
                 "force_fits": False,
                 "num_cores": num_cores,
+                "parallel_plots": True if num_cores > 1 and parallel_plots else False,
             }
         )
         click.echo(cfg)
@@ -78,4 +85,5 @@ def main(
             plot.plot_error_rates(cfg, df, d_fits=d_fits)
 
     if len(all_fit_results) >= 2:
+        plot.set_style()
         plot.plot_fit_results(all_fit_results, cfg)

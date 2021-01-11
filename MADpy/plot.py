@@ -16,13 +16,10 @@ from pathlib import Path
 from importlib import reload
 import sigfig
 
+from functools import partial
 import subprocess
 
-# from PyPDF2 import PdfFileMerger, PdfFileReader
-
-# import utils
-# import fit
-# import fileloader
+from PyPDF2 import PdfFileMerger, PdfFileReader
 
 from MADpy import utils
 from MADpy import fit
@@ -69,7 +66,7 @@ def fit_results_to_string(fit_result):
     s += r"$p_\mathrm{succes} = " + f"{fit_result['p_succes_mean']:.3f}" + r"$" + "\n"
 
     s += "\n"
-    N_alignments = utils.human_format(fit_result["N_alignments"].iloc[0])
+    N_alignments = utils.human_format(fit_result["N_alignments"])
     s += r"$N_\mathrm{alignments} = " + f"{N_alignments}" + r"$" + "\n"
 
     return s
@@ -203,69 +200,75 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 #%%
 
 
-# def filename_to_tmp_file(filename):
-#     return filename.replace("figures/", "figures/tmp/").replace(".pdf", "")
+def filename_to_tmp_file(filename):
+    return filename.replace("figures/", "figures/tmp/").replace(".pdf", "")
 
 
-# # useful function for parallel saving of files
-# def plot_and_save_single_group(i_group_group, filename, **kwargs):
-#     i_group, group = i_group_group
+# useful function for parallel saving of files
+def _plot_and_save_single_group_worker(i, group, filename, cfg, d_fits):
 
-#     try:
-#         fig = plot_single_group(group, **kwargs)
-#         filename = filename_to_tmp_file(filename) + f"__{i_group:06d}.pdf"
-#         utils.init_parent_folder(filename)
-#         fig.savefig(filename)
-#         return None
+    set_style()  # set style in child process
 
-#     except:
-#         taxid = group.taxid.iloc[0]
-#         return taxid
+    try:
+        fig = plot_single_group(group, cfg, d_fits)
+        filename = filename_to_tmp_file(filename) + f"__{i:06d}.pdf"
+        utils.init_parent_folder(filename)
+        fig.savefig(filename)
+        return None
+
+    except Exception as e:
+        raise e
+        # taxid = group.taxid.iloc[0]
+        # return taxid
 
 
-# def parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
+from joblib import delayed
 
-#     groupby = df_top_N.groupby("taxid", sort=False, observed=True)
 
-#     func = partial(
-#         plot_and_save_single_group,
-#         cfg=cfg,
-#         d_fits=d_fits,
-#         filename=filename,
-#     )
+def parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
-#     generator = ((i_group, group) for i_group, (name, group) in enumerate(groupby))
+    groupby = df_top_N.groupby("taxid", sort=False, observed=True)
 
-#     desc = f"Plotting {utils.human_format(groupby.ngroups)} TaxIDs in parallel"
-#     errors = p_umap(func, generator, length=groupby.ngroups, desc=desc)
-#     errors = set([error for error in errors if error])
-#     if len(errors) >= 1:
-#         print(f"Got errors at TaxIDs: {errors}")
+    kwargs = dict(filename=filename, cfg=cfg, d_fits=d_fits)
+    generator = (
+        delayed(_plot_and_save_single_group_worker)(i, group, **kwargs)
+        for i, (name, group) in enumerate(groupby)
+    )
 
-#     # Call the PdfFileMerger
-#     mergedObject = PdfFileMerger()
+    total = groupby.ngroups
+    print(
+        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {cfg.num_cores} cores:",
+        flush=True,
+    )
+    res = utils.ProgressParallel(use_tqdm=True, total=total, n_jobs=cfg.num_cores)(generator)
+    errors = set([error for error in res if error])
 
-#     # Loop through all of them and append their pages
-#     pdfs = sorted(Path(".").rglob(f"{filename_to_tmp_file(filename)}*.pdf"))
-#     for pdf in pdfs:
-#         mergedObject.append(PdfFileReader(str(pdf), "rb"))
+    if len(errors) >= 1:
+        print(f"Got errors at TaxIDs: {errors}")
 
-#     # Write all the files into a file which is named as shown below
+    # Call the PdfFileMerger
+    mergedObject = PdfFileMerger()
 
-#     filename_tmp = filename.replace(".pdf", "_tmp.pdf")
+    # Loop through all of them and append their pages
+    pdfs = sorted(Path(".").rglob(f"{filename_to_tmp_file(filename)}*.pdf"))
+    for pdf in pdfs:
+        mergedObject.append(PdfFileReader(str(pdf), "rb"))
 
-#     mergedObject.write(filename_tmp)
+    # Write all the files into a file which is named as shown below
+    filename_tmp = filename.replace(".pdf", "_tmp.pdf")
 
-#     # delete temporary files
-#     for pdf in pdfs:
-#         pdf.unlink()
+    mergedObject.write(filename_tmp)
 
-#     # make the combined pdf smaller by compression using the following command:
-#     # ps2pdf filename_big filename_small
-#     process = subprocess.run(["ps2pdf", filename_tmp, filename])
-#     Path(filename_tmp).unlink()
+    # delete temporary files
+    for pdf in pdfs:
+        pdf.unlink()
 
-#     Path("./figures/tmp").rmdir()
+    # make the combined pdf smaller by compression using the following command:
+    # ps2pdf filename_big filename_small
+    process = subprocess.run(["ps2pdf", filename_tmp, filename])
+    Path(filename_tmp).unlink()
+
+    Path("./figures/tmp").rmdir()
 
 
 def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
@@ -331,11 +334,10 @@ def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
 
     df_top_N = fileloader.get_top_N_taxids(df, max_plots)
 
-    # if cfg.parallel_plots:
-    # parallel_saving_of_error_rates(cfg, df, filename, d_fits)
-    # else:
-
-    seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
+    if cfg.parallel_plots:
+        parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
+    else:
+        seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
 
 
 #%%

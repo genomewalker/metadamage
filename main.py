@@ -32,18 +32,13 @@ import numpyro
 
 numpyro.enable_x64()
 
-
-plot.set_rc_params(fig_dpi=50)
-# paths = fileloader.load_paths()
-
-if utils.is_ipython():
-    plot.set_style(style_path="style.mplstyle")
+plot.set_style(fig_dpi=50)
 
 cfg = DotDict(
     {
         "name": "KapK",
         # "N_taxids": 1000,
-        "N_taxids": 10,
+        "N_taxids": 100,
         # "N_aligmnets_minimum": 0,
         # "N_reads_minimum": 0,
         "max_pos": None,
@@ -68,12 +63,12 @@ cfg = DotDict(
 
 
 filenames = {
-    "KapK": "../data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
-    "control": "../data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    "KapK-12-1-35-Ext-12-Lib-12-Index2": "./data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    "EC-Ext-14-Lib-14-Index1": "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
 }
 
-names = ["control"]
-names = ["KapK"]
+names = ["EC-Ext-14-Lib-14-Index1"]  # control
+names = ["KapK-12-1-35-Ext-12-Lib-12-Index2"]
 
 filenames = {k: v for k, v in filenames.items() if k in names}
 
@@ -95,6 +90,7 @@ for name, filename in filenames.items():
         taxid = 9606
         taxid = 9615
         taxid = 1491
+        taxid = 190548
         group = df.query(f"taxid == @taxid")
 
         reload(plot)
@@ -111,6 +107,8 @@ for name, filename in filenames.items():
 
     # reload(fit)
     if cfg.make_plots:
+
+        x = x
+
         plot.plot_error_rates(cfg, df, d_fits=d_fits)
         plt.close("all")
-
