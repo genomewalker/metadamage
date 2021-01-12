@@ -11,6 +11,6 @@ setup(
     include_package_data=True,
     entry_points="""
         [console_scripts]
-        MADpy=MADpy.cli:main
+        MADpy=MADpy.cli:cli
     """,
 )

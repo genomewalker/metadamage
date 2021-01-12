@@ -6,6 +6,8 @@ from MADpy import fit
 from MADpy import plot
 from MADpy import utils
 
+from main import main
+
 
 @click.command()
 @click.argument("filename", type=click.Path(exists=True), nargs=-1)
@@ -13,20 +15,24 @@ from MADpy import utils
 @click.option(
     "--number_of_fits",
     default=10,
-    help="Number of fits to make. Default is 10. -1 or 0 indicates to fit all TaxIDs.",
+    help="Number of fits to make. Default is 10. '-1' or '0' indicates to fit all TaxIDs.",
 )
 @click.option("--number_of_plots", default=10, help="Number of plots to make. Default is 10.")
-@click.option("--make_plots", default=True, is_flag=True, help="Make plots. Flag. Default is True")
-@click.option("--make_fits", default=True, is_flag=True, help="Make plots. Flag. Default is True")
+@click.option(
+    "--make_plots", default=True, is_flag=True, help="Make plots. Flag. Default is True",
+)
+@click.option(
+    "--make_fits", default=True, is_flag=True, help="Make plots. Flag. Default is True",
+)
 @click.option("--num_cores", default=1, help="Number of cores to use. Default is 1.")
 @click.option(
-    "--force_plots", is_flag=True, default=False, help="Force plots. Flag. Default is False"
+    "--force_plots", is_flag=True, default=False, help="Force plots. Flag. Default is False",
 )
 @click.option(
-    "--parallel_plots", is_flag=True, default=False, help="Plot in parallel. Default is False"
+    "--parallel_plots", is_flag=True, default=False, help="Plot in parallel. Default is False",
 )
-@click.version_option()  # __version__
-def main(
+@click.version_option()
+def cli(
     filename,
     verbose,
     number_of_fits,
@@ -38,53 +44,86 @@ def main(
     parallel_plots,
 ):
     """Metagenomics Ancient Damage python: MADpy
+
+    FILENAME is the name of the file(s) to fit (with the ancient-model)
+
     run as e.g.:
 
-    $ MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt
+    \b
+        $ MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt
 
-    or by running first for two files and then compare them:
+    or by running two files and then compare them:
 
-    MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
+    \b
+        $ MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
 
     """
 
     filenames = filename
-    all_fit_results = {}
 
-    for filename in filenames:
+    cfg = DotDict(
+        {
+            "N_taxids": number_of_fits,
+            "max_pos": None,
+            "verbose": verbose,
+            "make_fits": make_fits,
+            "make_plots": make_plots,
+            "max_plots": number_of_plots,
+            "force_reload": False,
+            "force_plots": force_plots,
+            "force_fits": False,
+            "num_cores": num_cores,
+            "parallel_plots": True if num_cores > 1 and parallel_plots else False,
+        }
+    )
 
-        cfg = DotDict(
-            {
-                "filename": filename,
-                "name": utils.extract_name(filename),
-                "N_taxids": number_of_fits,
-                "max_pos": None,
-                "verbose": verbose,
-                "make_fits": make_fits,
-                "make_plots": make_plots,
-                "max_plots": number_of_plots,
-                "force_reload": False,
-                "force_plots": force_plots,
-                "force_fits": False,
-                "num_cores": num_cores,
-                "parallel_plots": True if num_cores > 1 and parallel_plots else False,
-            }
-        )
-        click.echo(cfg)
+    print(filenames)
+    print(cfg)
 
-        df = fileloader.load_dataframe(cfg)
-        # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
+    main(filenames, cfg)
 
-        d_fits = None
-        if cfg.make_fits:
-            d_fits, df_results = fit.get_fits(df, cfg)
-            all_fit_results[cfg.name] = df_results
+    # all_fit_results = {}
 
-        if cfg.make_plots:
-            plot.set_style()
-            plot.plot_error_rates(cfg, df, d_fits=d_fits)
+    # for filename in filenames:
+    #     cfg["filename"] = filename
+    #     cfg["name"] = utils.extract_name(filename)
 
-    if len(all_fit_results) >= 1:
-        plot.set_style()
-        N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
-        plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
+    #     df = fileloader.load_dataframe(cfg)
+    #     # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
+
+    #     d_fits = None
+    #     if cfg.make_fits:
+    #         d_fits, df_results = fit.get_fits(df, cfg)
+    #         all_fit_results[cfg.name] = df_results
+
+    #     if cfg.make_plots:
+    #         plot.set_style()
+    #         plot.plot_error_rates(cfg, df, d_fits=d_fits)
+
+    # if len(all_fit_results) >= 1:
+    #     plot.set_style()
+    #     N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
+    #     plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
+
+    # all_fit_results = {}
+
+    # for filename in filenames:
+
+    #     click.echo(cfg)
+
+    #     df = fileloader.load_dataframe(cfg)
+    #     # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
+
+    #     d_fits = None
+    #     if cfg.make_fits:
+    #         d_fits, df_results = fit.get_fits(df, cfg)
+    #         all_fit_results[cfg.name] = df_results
+
+    #     if cfg.make_plots:
+    #         plot.set_style()
+    #         plot.plot_error_rates(cfg, df, d_fits=d_fits)
+
+    # if len(all_fit_results) >= 1:
+    #     plot.set_style()
+    #     N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
+    #     plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)

@@ -304,6 +304,10 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
 def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
 
     N_taxids = len(pd.unique(df.taxid))
+
+    if num_cores > N_taxids:
+        num_cores = N_taxids
+
     print(f"Fitting {N_taxids} taxids using {num_cores} cores, please wait.", flush=True)
 
     if num_cores == 1:

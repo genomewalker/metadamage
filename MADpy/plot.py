@@ -80,6 +80,7 @@ from matplotlib.patches import Rectangle
 
 
 def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
+    # utils.avoid_fontconfig_warning()
 
     taxid = group["taxid"].iloc[0]
 
@@ -212,7 +213,6 @@ def filename_to_tmp_file(filename):
 def _plot_and_save_single_group_worker(i, group, filename, cfg, d_fits):
 
     set_style()  # set style in child process
-
     try:
         fig = plot_single_group(group, cfg, d_fits)
         filename = filename_to_tmp_file(filename) + f"__{i:06d}.pdf"
@@ -230,6 +230,7 @@ from joblib import delayed
 
 
 def parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
+    utils.avoid_fontconfig_warning()
 
     groupby = df_top_N.groupby("taxid", sort=False, observed=True)
 
@@ -240,15 +241,19 @@ def parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
     )
 
     total = groupby.ngroups
+    num_cores = cfg.num_cores
+    if num_cores > total:
+        num_cores = total
+
     print(
-        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {cfg.num_cores} cores:",
+        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {num_cores} cores:",
         flush=True,
     )
-    res = utils.ProgressParallel(use_tqdm=True, total=total, n_jobs=cfg.num_cores)(generator)
+    res = utils.ProgressParallel(use_tqdm=True, total=total, n_jobs=num_cores)(generator)
     errors = set([error for error in res if error])
 
     if len(errors) >= 1:
-        print(f"Got errors at TaxIDs: {errors}")
+        print(f"Got errors at TaxIDs: {errors}", flush=True)
 
     # Call the PdfFileMerger
     mergedObject = PdfFileMerger()
@@ -377,13 +382,30 @@ class ExpFormatter(EngFormatter):
         return self.fix_minus(s)
 
 
-def get_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
+def _get_legend_handles_names(kw_cols, use_monospace_font=True):
+    # get legend for the names
+    legend_names = []
+    for name, kw_col in kw_cols.items():
+        cmap = matplotlib.cm.get_cmap(kw_col["cmap"])
+        kw = dict(marker="o", color="w", markersize=20, alpha=0.8)
+        label = name.replace("_", "\_")
+        if use_monospace_font:
+            label = r"\texttt{" + label + r"}"
+        circle = Line2D([0], [0], label=label, markerfacecolor=cmap(0.75), **kw)
+        legend_names.append(circle)
+    return legend_names
+
+
+def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
 
     log10 = np.log10(zs)
     log_max = int(log10.max()) + 1  # round up
     log_min = int(log10.min()) + 1  # round up
 
-    z = 10 ** np.arange(log_min, log_max)
+    if log_min != log_max:
+        z = 10 ** np.arange(log_min, log_max)
+    else:
+        z = 10 ** np.array([log_max - 1, log_max])
     s = transform(z, vmin=vmin, vmax=vmax, func=func)
     c = np.log10(z)
 
@@ -403,20 +425,36 @@ def get_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
         handle[i].set_markersize(size)
         handle[i].set_markeredgewidth(0)
 
-    # get legend for the names
-    legend_names = []
-    for name, kw_col in kw_cols.items():
-        cmap = matplotlib.cm.get_cmap(kw_col["cmap"])
-        kw = dict(marker="o", color="w", markersize=20, alpha=0.8)
-        circle = Line2D([0], [0], label=name, markerfacecolor=cmap(0.75), **kw)
-        legend_names.append(circle)
+    return (handle, label), _get_legend_handles_names(kw_cols)
 
-    return (handle, label), legend_names
+
+def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
+
+    legend_N_alignments, legend_names = make_custom_legend(zs, ax, vmin, vmax, func, kw_cols)
+
+    # Create a legend for the first line.
+    ax.add_artist(
+        plt.legend(
+            *legend_N_alignments,
+            title=r"$N_\mathrm{alignments}$",
+            title_fontsize=40,
+            fontsize=34,
+            bbox_to_anchor=(1.01, 1),
+            loc="upper left",
+        )
+    )
+
+    # Create another legend for the second line.
+    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=30)
+    plt.legend(handles=legend_names, **kw_leg_names)
 
 
 #%%
 
-#%%
+# fig, ax = plt.subplots(figsize=(10, 10))
+# # ax.set(title='data\_ancient')
+# # ax.set(title='$\detokenize{data\_ancient}$')
+# ax.set(title=)
 
 
 def minmax(x):
@@ -465,23 +503,7 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
     ylabel = r"$D_\mathrm{max}$"
     ax.set(xlim=xlim, ylim=ylim, xlabel=xlabel, ylabel=ylabel)
 
-    legend_N_alignments, legend_names = get_custom_legend(zs, ax, vmin, vmax, func, kw_cols)
-
-    # Create a legend for the first line.
-    ax.add_artist(
-        plt.legend(
-            *legend_N_alignments,
-            title=r"$N_\mathrm{alignments}$",
-            title_fontsize=40,
-            fontsize=34,
-            bbox_to_anchor=(1.01, 1),
-            loc="upper left",
-        )
-    )
-
-    # Create another legend for the second line.
-    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=30)
-    plt.legend(handles=legend_names, **kw_leg_names)
+    set_custom_legends(zs, ax, vmin, vmax, func, kw_cols)
 
     title = f"Fit results "
     if N_alignments_min > 0:
