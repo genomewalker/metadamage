@@ -67,9 +67,9 @@ filenames = {
     "EC-Ext-14-Lib-14-Index1": "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
 }
 
-names = ["EC-Ext-14-Lib-14-Index1"]  # control
-names = ["KapK-12-1-35-Ext-12-Lib-12-Index2"]
-filenames = {k: v for k, v in filenames.items() if k in names}
+# names = ["EC-Ext-14-Lib-14-Index1"]  # control
+# names = ["KapK-12-1-35-Ext-12-Lib-12-Index2"]
+# filenames = {k: v for k, v in filenames.items() if k in names}
 
 all_fit_results = {}
 
@@ -102,4 +102,4 @@ for name, filename in filenames.items():
     # reload(fit)
     if cfg.make_plots:
         plot.set_style()
-        plot.plot_fit_results(all_fit_results, cfg)
+        plot.plot_fit_results(all_fit_results, cfg, N_alignments_min=10_000)

@@ -171,7 +171,7 @@ def human_format(num, digits=3, mode="eng"):
         num /= 1000.0
 
     if mode == "eng" or mode == "SI":
-        translate = ["", "K", "M", "G", "T"]
+        translate = ["", "k", "M", "G", "T"]
     elif mode == "scientific" or mode == "latex":
         translate = ["", r"\cdot 10^3", r"\cdot 10^6", r"\cdot 10^9", r"\cdot 10^12"]
     else:

@@ -37,7 +37,10 @@ def set_rc_params(fig_dpi=300):
 
 
 def set_style(style_path="./MADpy/style.mplstyle", fig_dpi=50):
-    plt.style.use(style_path)
+    try:
+        plt.style.use(style_path)
+    except FileNotFoundError:
+        print(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
     set_rc_params(fig_dpi=fig_dpi)
 
 
@@ -305,11 +308,6 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 #%%
 
 
-# # from p_tqdm import p_uimap
-# from own_p_tqdm import p_map, p_umap
-# from functools import partial
-
-
 def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
 
     """
@@ -350,20 +348,16 @@ alpha_plot = 0.1
 from matplotlib import colors
 
 
-def transform(x_org, vmin=0, vmax=1, func=lambda x: x):
+def transform(x_org, vmin=0, vmax=1, func=lambda x: x, xmin=None, xmax=None):
     x = func(x_org)
-    x_std = (x - x.min()) / (x.max() - x.min())
+    if xmin is None:
+        xmin = x.min()
+    if xmax is None:
+        xmax = x.max()
+    x_std = (x - xmin) / (xmax - xmin)
     x_scaled = x_std * (vmax - vmin) + vmin
     return x_scaled
 
-
-def inverse_transform(x_scaled, vmin, vmax, xmin, xmax, func_inv=lambda x: x):
-    x_std = (x_scaled - vmin) / (vmax - vmin)
-    x = x_std * (xmax - xmin) + xmin
-    return func_inv(x)
-
-
-# def _plot_fit_results(all_fit_results, ax, xlim=(-3, 18), ylim=(0, 1), alpha_plot=0.1):
 
 #%%
 
@@ -380,54 +374,46 @@ class ExpFormatter(EngFormatter):
         return self.fix_minus(s)
 
 
-def get_custom_legend(zs, ax, vmin, vmax, func, cmaps):
+def get_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
 
-    legend_elements = {}
-    handles = []
-    labels = []
+    log10 = np.log10(zs)
+    log_max = int(log10.max()) + 1  # round up
+    log_min = int(log10.min()) + 1  # round up
 
-    for i, (name, z) in enumerate(zs.items()):
-        # break
+    z = 10 ** np.arange(log_min, log_max)
+    s = transform(z, vmin=vmin, vmax=vmax, func=func)
+    c = np.log10(z)
 
-        log10 = np.log10(z)
-        log_max = int(log10.max())  # round down
-        log_min = int(log10.min()) + 1  # round up
+    # plot points outside canvas
+    x = np.repeat(ax.get_xlim()[1] * 1.1, len(z))
+    y = np.repeat(ax.get_ylim()[1] * 1.1, len(z))
 
-        z = 10 ** np.arange(log_min, log_max + 1, 2)[-3:]
-        s = transform(z, vmin=vmin, vmax=vmax, func=func)
-        c = np.log10(z)
+    # make all grey scatterplot for N_alignments legend
+    scatter = ax.scatter(x, y, s=s, c=c, alpha=0.5, cmap="Greys", vmin=0, vmax=1)
 
-        # plot points outside canvas
-        x = np.repeat(ax.get_xlim()[1] * 1.1, len(z))
-        y = np.repeat(ax.get_ylim()[1] * 1.1, len(z))
+    kw = dict(prop="colors", fmt=ExpFormatter())
+    handle, label = scatter.legend_elements(**kw)
 
-        kw_cols = dict(cmap=cmaps[i], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
-        scatter = ax.scatter(x, y, s=s, c=c, **kw_cols, alpha=0.5, label=name)
+    elements_sizes, _ = scatter.legend_elements(prop="sizes")
+    for i in range(len(handle)):
+        size = elements_sizes[i].get_markersize()
+        handle[i].set_markersize(size)
+        handle[i].set_markeredgewidth(0)
 
-        kw = dict(prop="colors", fmt=ExpFormatter())
-        handle, label = scatter.legend_elements(**kw)
-
-        elements_sizes, _ = scatter.legend_elements(prop="sizes")
-        for i in range(len(handle)):
-            size = elements_sizes[i].get_markersize()
-            handle[i].set_markersize(size)
-            handle[i].set_markeredgewidth(0)
-
-        handles.extend(handle)
-        labels.extend(label)
-
-    N = len(handles)
+    # Get markers for names as dots in legend
+    N = len(handle)
     legend_elements_colors = [
-        [copy.copy(handles[i]) for i in [N // 2 - 1, N - 1]],
-        [copy.copy(labels[i]) for i in [N // 2 - 1, N - 1]],
+        [copy.copy(handle[i]) for i in [N // 2 - 1, N - 1]],
+        [copy.copy(label[i]) for i in [N // 2 - 1, N - 1]],
     ]
 
-    for i in range(len(legend_elements_colors[0])):
-        cmap = matplotlib.cm.get_cmap(cmaps[i])
+    for i, (name, kw_cols) in enumerate(kw_cols.items()):
+        cmap = matplotlib.cm.get_cmap(kw_cols["cmap"])
         legend_elements_colors[0][i].set_markersize(20)
         legend_elements_colors[0][i].set_markerfacecolor(cmap(0.75))
+        legend_elements_colors[1][i] = name
 
-    return (handles, labels), legend_elements_colors
+    return (handle, label), legend_elements_colors
 
 
 #%%
@@ -435,54 +421,111 @@ def get_custom_legend(zs, ax, vmin, vmax, func, cmaps):
 #%%
 
 
-def plot_fit_results(all_fit_results, cfg, savefig=True):
+def minmax(x):
+    return np.min(x), np.max(x)
+
+
+def get_z_min_max(all_fit_results):
+    z_minmax = np.array([minmax(df["N_alignments"]) for df in all_fit_results.values()])
+    zmin = z_minmax[:, 0].min()
+    zmax = z_minmax[:, 1].max()
+    return zmin, zmax
+
+
+def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0):
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    cmaps = {0: "Blues", 1: "Reds"}
+    cmaps_list = ["Blues", "Reds", "Greens", "Purples"]
+    cmaps = {name: cmap for name, cmap in zip(all_fit_results.keys(), cmaps_list)}
 
+    zmin, zmax = get_z_min_max(all_fit_results)
     vmin, vmax, func = 10, 600, np.sqrt
 
-    zs = {}
+    zs = np.array([], dtype=int)
+    kw_cols = {}
 
-    for i, (name, df_res) in enumerate(all_fit_results.items()):
+    for name, df_res in all_fit_results.items():
         x = df_res["n_sigma"].values
         y = df_res["D_max"].values
         z = df_res["N_alignments"].values
-        zs[name] = z
-        s = transform(z, vmin=vmin, vmax=vmax, func=func)
+
+        if N_alignments_min > 0:
+            mask = z > N_alignments_min
+            x = x[mask]
+            y = y[mask]
+            z = z[mask]
+        zs = np.append(zs, z)
+
+        s = transform(z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax))
         c = np.log10(z)
 
-        kw_cols = dict(cmap=cmaps[i], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
-        scatter = ax.scatter(x, y, s=s, c=c, **kw_cols, alpha=0.5)
+        kw_cols[name] = dict(cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
+        ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
 
     xlabel = r"$n_\sigma$"
     ylabel = r"$D_\mathrm{max}$"
     ax.set(xlim=xlim, ylim=ylim, xlabel=xlabel, ylabel=ylabel)
 
-    legend_elements, legend_elements_colors = get_custom_legend(zs, ax, vmin, vmax, func, cmaps)
-    legend_elements_colors[1] = list(all_fit_results.keys())
+    legend_N_alignments, legend_names = get_custom_legend(zs, ax, vmin, vmax, func, kw_cols)
 
     # Create a legend for the first line.
-    first_legend = plt.legend(
-        *legend_elements,
-        loc="upper right",
-        title=r"$N_\mathrm{alignments}$",
-        title_fontsize=34,
-        ncol=2,
+    ax.add_artist(
+        plt.legend(
+            *legend_N_alignments,
+            title=r"$N_\mathrm{alignments}$",
+            title_fontsize=40,
+            fontsize=34,
+            bbox_to_anchor=(1.01, 1),
+            loc="upper left",
+        )
     )
 
-    # Add the legend manually to the current Axes.
-    ax.add_artist(first_legend)
-
     # Create another legend for the second line.
-    plt.legend(*legend_elements_colors, loc="upper left", ncol=1)
+    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=30)
+    plt.legend(*legend_names, **kw_leg_names)
 
-    # if len(all_fit_results) >= 2 and cfg.make_plots:
-    # fig, ax = plt.subplots(figsize=(10, 10))
-    # _plot_fit_results(all_fit_results, ax, xlim=(-3, 18), ylim=(0, 0.7), alpha_plot=0.1)
-    if savefig:
-        fig.savefig(f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf")
+    title = f"Fit results "
+    if N_alignments_min > 0:
+        N_aligments = utils.human_format(N_alignments_min)
+        title += f"with cut on " + r"$N_\mathrm{alignments}>$  " + f"{N_aligments}"
+    else:
+        title += "with no cut on " + r"$N_\mathrm{alignments}$"
+
+    ax.text(
+        -0.1,
+        1.15,
+        title,
+        transform=ax.transAxes,
+        horizontalalignment="left",
+        verticalalignment="top",
+        fontsize=50,
+    )
+
+    return fig, ax
+
+
+def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
+
+    if not isinstance(N_alignments_mins, (list, tuple)):
+        N_alignments_mins = [N_alignments_mins]
+
+    if not 0 in N_alignments_mins:
+        N_alignments_mins = [0] + N_alignments_mins
+
+    filename = f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf"
+    utils.init_parent_folder(filename)
+    with PdfPages(filename) as pdf:
+        for N_alignments_min in N_alignments_mins:
+            fig, ax = plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min)
+            # pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
+            pdf.savefig(fig)
+
+        d = pdf.infodict()
+        d["Title"] = "Error Rate Distributions"
+        d["Author"] = "Christian Michelsen"
+        d["CreationDate"] = datetime.datetime.today()
+
     # else:
     # print("No fits to plot")
 
