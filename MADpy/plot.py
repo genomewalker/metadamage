@@ -362,6 +362,9 @@ def transform(x_org, vmin=0, vmax=1, func=lambda x: x, xmin=None, xmax=None):
 #%%
 
 from matplotlib.ticker import EngFormatter
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+
 import copy
 
 
@@ -400,20 +403,15 @@ def get_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
         handle[i].set_markersize(size)
         handle[i].set_markeredgewidth(0)
 
-    # Get markers for names as dots in legend
-    N = len(handle)
-    legend_elements_colors = [
-        [copy.copy(handle[i]) for i in [N // 2 - 1, N - 1]],
-        [copy.copy(label[i]) for i in [N // 2 - 1, N - 1]],
-    ]
+    # get legend for the names
+    legend_names = []
+    for name, kw_col in kw_cols.items():
+        cmap = matplotlib.cm.get_cmap(kw_col["cmap"])
+        kw = dict(marker="o", color="w", markersize=20, alpha=0.8)
+        circle = Line2D([0], [0], label=name, markerfacecolor=cmap(0.75), **kw)
+        legend_names.append(circle)
 
-    for i, (name, kw_cols) in enumerate(kw_cols.items()):
-        cmap = matplotlib.cm.get_cmap(kw_cols["cmap"])
-        legend_elements_colors[0][i].set_markersize(20)
-        legend_elements_colors[0][i].set_markerfacecolor(cmap(0.75))
-        legend_elements_colors[1][i] = name
-
-    return (handle, label), legend_elements_colors
+    return (handle, label), legend_names
 
 
 #%%
@@ -483,7 +481,7 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
 
     # Create another legend for the second line.
     kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=30)
-    plt.legend(*legend_names, **kw_leg_names)
+    plt.legend(handles=legend_names, **kw_leg_names)
 
     title = f"Fit results "
     if N_alignments_min > 0:

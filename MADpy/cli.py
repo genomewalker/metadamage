@@ -84,7 +84,7 @@ def main(
             plot.set_style()
             plot.plot_error_rates(cfg, df, d_fits=d_fits)
 
-    if len(all_fit_results) >= 2:
+    if len(all_fit_results) >= 1:
         plot.set_style()
         N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
