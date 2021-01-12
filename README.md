@@ -34,5 +34,14 @@ Then run as:
 ```console
 $ MADpy --help
 $ MADpy ./data/input/data_ancient.txt
+$ MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt
 ```
+
+MADpy also allows for fitting and plotting multiple files (and automatically compares their fit results):
+###### 4)
+```console
+$ MADpy --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
+```
+
+
 
