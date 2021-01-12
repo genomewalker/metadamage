@@ -91,47 +91,5 @@ if utils.is_ipython():
         }
     )
 
-    main(filenames, cfg)
-
-
-# filenames = {
-#     "KapK-12-1-35-Ext-12-Lib-12-Index2": "./data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
-#     "EC-Ext-14-Lib-14-Index1": "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
-# }
-
-# # names = ["EC-Ext-14-Lib-14-Index1"]  # control
-# # names = ["KapK-12-1-35-Ext-12-Lib-12-Index2"]
-# # filenames = {k: v for k, v in filenames.items() if k in names}
-
-# all_fit_results = {}
-
-# # if __name__ == "__main__":
-# for name, filename in filenames.items():
-
-#     print(f"\n\n{name}:", flush=True)
-#     cfg.name = name
-#     cfg.filename = filename
-
-#     df = fileloader.load_dataframe(cfg)
-#     df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
-#     group = next((group for name, group in df_top_N.groupby("taxid", sort=False)))
-#     taxid = group["taxid"].iloc[0]
-
-#     if False:
-#         taxid = 9606
-#         group = df.query(f"taxid == @taxid")
-#         plot.plot_single_group(group, cfg)
-
-#     d_fits = None
-#     if cfg.make_fits:
-#         d_fits, df_results = fit.get_fits(df, cfg)
-#         all_fit_results[name] = df_results
-
-#     if False:
-#         reload(plot)
-#         plot.plot_single_group(group, cfg, d_fits)
-
-#     # reload(fit)
-#     if cfg.make_plots:
-#         plot.set_style()
-#         plot.plot_fit_results(all_fit_results, cfg, N_alignments_min=10_000)
+    if False:
+        main(filenames, cfg)
