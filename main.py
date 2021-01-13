@@ -17,11 +17,18 @@ numpyro.enable_x64()
 
 def main(filenames, cfg):
 
+
     if cfg.verbose:
         tqdm.write(f"\nRunning MADpy on {len(filenames)} file(s) using the following configuration: \n")
         tqdm.write(f"{pformat(cfg)}\n")
 
     all_fit_results = {}
+
+    N_inner_loop = 1 + cfg.make_fits + cfg.make_plots
+    bar_format = "{desc}" # |{bar}| [{elapsed}]
+    tqdm_kwargs = dict(bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False)
+    pad = utils.string_pad_left_and_right
+
     with tqdm(filenames, desc="Overall progress", dynamic_ncols=True) as it:
         for filename in it:
 
@@ -29,22 +36,29 @@ def main(filenames, cfg):
             cfg["name"] = utils.extract_name(filename)
             it.set_postfix(name=cfg.name)
 
-            df = fileloader.load_dataframe(cfg)
-            # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
 
-            if False:
-                taxid = 241227
-                group = df.query("taxid == @taxid")
+            with tqdm(**tqdm_kwargs) as pbar:
+                pbar.set_description(pad("Loading", left=4))
+                df = fileloader.load_dataframe(cfg)
+                pbar.update()
+                # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
 
-            d_fits = None
-            if cfg.make_fits:
-                d_fits, df_results = fit.get_fits(df, cfg)
-                all_fit_results[cfg.name] = df_results
+                if False:
+                    taxid = 241227
+                    group = df.query("taxid == @taxid")
 
-            if cfg.make_plots:
-                plot.set_style()
-                plot.plot_error_rates(cfg, df, d_fits=d_fits)
+                d_fits = None
+                if cfg.make_fits:
+                    pbar.set_description(pad("Fitting", left=4))
+                    d_fits, df_results = fit.get_fits(df, cfg)
+                    all_fit_results[cfg.name] = df_results
+                    pbar.update()
 
+                if cfg.make_plots:
+                    pbar.set_description(pad("Plotting", left=4))
+                    plot.set_style()
+                    plot.plot_error_rates(cfg, df, d_fits=d_fits)
+                    pbar.update()
 
     if len(all_fit_results) >= 1:
         plot.set_style()

@@ -265,8 +265,8 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
 
     it = df.groupby("taxid", sort=False, observed=True)
     if do_tqdm:
-        desc = "Fitting data (with MCMC)"
-        it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=1) #
+        desc = utils.string_pad_left_and_right("MCMC", left=8)
+        it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2) #
 
     d_fits = {}
     for taxid, group in it:

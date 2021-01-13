@@ -182,7 +182,8 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     groupby = df_top_N.groupby("taxid", sort=False, observed=True)
-    desc = f"Plotting {utils.human_format(groupby.ngroups)} TaxIDs in seriel"
+    # desc = f"Plotting {utils.human_format(groupby.ngroups)} TaxIDs in seriel"
+    desc = utils.string_pad_left_and_right("TaxIDs", left=8)
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:

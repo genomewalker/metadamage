@@ -81,6 +81,13 @@ def avoid_fontconfig_warning():
     os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
+def string_pad_left_and_right(s, left=0, right=0, char=' '):
+    N = len(s)
+    s = s.ljust(N+right, char)
+    N = len(s)
+    s = s.rjust(N+left, char)
+    return s
+
 # def compute_fraction_and_uncertainty(x, N):
 #     f = x / N
 #     sf = np.sqrt(f * (1 - f) / N)
