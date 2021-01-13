@@ -1,11 +1,7 @@
 import numpy as np
-import matplotlib
-import pandas as pd
-from pandas.core.groupby import groupby
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import datetime
 from PyPDF2 import PdfFileMerger, PdfFileReader
-from PyPDF2.utils import PdfReadError
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -29,15 +25,8 @@ def set_style(style_path="./MADpy/style.mplstyle", fig_dpi=50):
     try:
         plt.style.use(style_path)
     except FileNotFoundError:
-        print(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
+        tqdm.write(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
     set_rc_params(fig_dpi=fig_dpi)
-
-
-def str_round(x, **kwargs):
-    try:
-        return sigfig.round(str(x), **kwargs)
-    except ValueError:
-        return str(x)
 
 
 def fit_results_to_string(fit_result):
@@ -65,12 +54,8 @@ def fit_results_to_string(fit_result):
     return s
 
 
-from matplotlib.patches import Rectangle
-
 
 def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
-    # utils.avoid_fontconfig_warning()
-
     taxid = group["taxid"].iloc[0]
 
     if d_fits and (taxid in d_fits):
@@ -201,27 +186,15 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
-
-        errors = {}
-        with tqdm(groupby, desc=desc) as it:
+        with tqdm(groupby, desc=desc, leave=False, dynamic_ncols=True) as it:
             for taxid, group in it:
                 it.set_postfix(taxid=taxid)
-                # break
-                try:
-                    fig = plot_single_group(group, cfg, d_fits)
-                    if fig:
-                        pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
-                except Exception as e:
-                    errors[taxid] = str(e)
-                    continue
-
+                fig = plot_single_group(group, cfg, d_fits)
+                pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
             d = pdf.infodict()
             d["Title"] = "Error Rate Distributions"
             d["Author"] = "Christian Michelsen"
             d["CreationDate"] = datetime.datetime.today()
-
-            if len(errors) >= 1:
-                print(f"Got errors at TaxIDs: {errors}")
 
 
 def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
@@ -231,23 +204,16 @@ def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
     'AT' = 'A2T' = 'A.T' = 'A->T' ...
     """
 
-    if not cfg.make_plots:
-        if cfg.verbose:
-            print("Not plotting any error rates since 'make_plots' is False")
-        return None
-
     if max_plots is None:
         max_plots = cfg.max_plots
 
     filename = f"./figures/error_rates__{cfg.name}__N_taxids__{max_plots}.pdf"
-
-    if utils.file_exists(filename, cfg.force_plots):
+    if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=max_plots):
         if cfg.verbose:
-            print(f"Error rates plot already exist, {filename}", flush=True)
+            tqdm.write(f"Plot of error rates already exist: {filename}\n")
         return None
 
     df_top_N = fileloader.get_top_N_taxids(df, max_plots)
-
     seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
 
 
@@ -285,7 +251,7 @@ def _get_legend_handles_names(kw_cols, use_monospace_font=True):
     # get legend for the names
     legend_names = []
     for name, kw_col in kw_cols.items():
-        cmap = matplotlib.cm.get_cmap(kw_col["cmap"])
+        cmap = mpl.cm.get_cmap(kw_col["cmap"])
         kw = dict(marker="o", color="w", markersize=20, alpha=0.8)
         label = name.replace("_", "\_")
         if use_monospace_font:
@@ -429,18 +395,19 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
 
     filename = f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf"
 
-
-    if utils.file_exists(filename, cfg.force_plots):
+    if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
         if cfg.verbose:
-            print(f"Error rates plot already exist, {filename}", flush=True)
+            tqdm.write(f"\nPlot of fit results already exist: {filename}") # flush=True
         return None
 
+    if cfg.verbose:
+        tqdm.write(f"\n\nPlotting fit results.")
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         for N_alignments_min in N_alignments_mins:
             fig, ax = plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min)
-            # pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
-            pdf.savefig(fig)
+            pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
+            # pdf.savefig(fig)
 
         d = pdf.infodict()
         d["Title"] = "Error Rate Distributions"

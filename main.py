@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from dotmap import DotMap as DotDict
 from importlib import reload
+from pprint import pprint, pformat
 
 from MADpy import fileloader
 from MADpy import fit
@@ -14,30 +15,36 @@ numpyro.enable_x64()
 
 #%%
 
-
 def main(filenames, cfg):
 
+    if cfg.verbose:
+        tqdm.write(f"\nRunning MADpy on {len(filenames)} file(s) using the following configuration: \n")
+        tqdm.write(f"{pformat(cfg)}\n")
+
     all_fit_results = {}
+    with tqdm(filenames, desc="Overall progress", dynamic_ncols=True) as it:
+        for filename in it:
 
-    for filename in filenames:
-        cfg["filename"] = filename
-        cfg["name"] = utils.extract_name(filename)
+            cfg["filename"] = filename
+            cfg["name"] = utils.extract_name(filename)
+            it.set_postfix(name=cfg.name)
 
-        df = fileloader.load_dataframe(cfg)
-        # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
+            df = fileloader.load_dataframe(cfg)
+            # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
 
-        if False:
-            taxid = 241227
-            group = df.query("taxid == @taxid")
+            if False:
+                taxid = 241227
+                group = df.query("taxid == @taxid")
 
-        d_fits = None
-        if cfg.make_fits:
-            d_fits, df_results = fit.get_fits(df, cfg)
-            all_fit_results[cfg.name] = df_results
+            d_fits = None
+            if cfg.make_fits:
+                d_fits, df_results = fit.get_fits(df, cfg)
+                all_fit_results[cfg.name] = df_results
 
-        if cfg.make_plots:
-            plot.set_style()
-            plot.plot_error_rates(cfg, df, d_fits=d_fits)
+            if cfg.make_plots:
+                plot.set_style()
+                plot.plot_error_rates(cfg, df, d_fits=d_fits)
+
 
     if len(all_fit_results) >= 1:
         plot.set_style()
@@ -47,7 +54,7 @@ def main(filenames, cfg):
 
 if utils.is_ipython():
 
-    print("Doing iPython plot")
+    tqdm.write("Doing iPython plot")
 
     # filenames = [
     #     "./data/input/data_ancient.txt",
@@ -74,6 +81,8 @@ if utils.is_ipython():
             "num_cores": 6,
         }
     )
+
+
 
     if False:
         main(filenames, cfg)

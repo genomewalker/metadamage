@@ -2,13 +2,13 @@ import numpy as np
 from scipy.stats.distributions import chi2 as sp_chi2
 from scipy.stats import norm as sp_norm
 from pathlib import Path
-from itertools import product
 from dotmap import DotMap as DotDict
-import yaml
-from scipy.special import softmax
 from scipy import stats
 import dill
 import shutil
+from PyPDF2 import PdfFileReader
+from tqdm.auto import tqdm
+from joblib import Parallel
 
 
 def is_ipython():
@@ -16,18 +16,6 @@ def is_ipython():
         return __IPYTHON__
     except NameError:
         return False
-
-
-# def load_paths():
-#     with open("paths.yaml", "r") as file:
-#         paths = DotDict(yaml.safe_load(file))
-#     return paths
-
-
-# def get_filename(cfg):
-#     paths = load_paths()
-#     filename = paths[cfg.name]
-#     return filename
 
 
 def extract_name(filename):
@@ -43,17 +31,6 @@ def delete_folder(path):
 
 def clean_up_after_dask():
     delete_folder("./dask-worker-space")
-
-
-# def replace_string(s, mapping, remove_between_dots=True):
-#     res = s
-#     for s_in, s_out in mapping.items():
-#         res = res.replace(s_in, s_out)
-
-#     if remove_between_dots:
-#         split = res.split(".")
-#         res = f"{split[0]}__{split[-2]}.{split[-1]}"
-#     return res
 
 
 def is_forward(df):
@@ -98,9 +75,7 @@ def save_dill(filename, x):
 
 
 def avoid_fontconfig_warning():
-
     import os
-
     os.environ["LANG"] = "en_US.UTF-8"
     os.environ["LC_CTYPE"] = "en_US.UTF-8"
     os.environ["LC_ALL"] = "en_US.UTF-8"
@@ -191,6 +166,18 @@ def file_exists(filename, forced=False):
     return Path(filename).exists() and not forced
 
 
+def is_pdf_valid(filename, forced=False, N_pages=None):
+    try:
+        if file_exists(filename, forced=forced):
+            pdf_reader = PdfFileReader(filename)
+            if N_pages is None:
+                return True
+            if N_pages == pdf_reader.numPages:
+                return True
+    except:
+        pass
+    return False
+
 # def get_percentile_as_lim(x, percentile_max=99):
 #     # percentile_max = 99.5
 #     percentile_min = 100 - percentile_max
@@ -235,9 +222,6 @@ def set_minimum_tpr(cut, thresholds, fpr, tpr):
 
 #%%
 
-
-from tqdm import tqdm
-from joblib import Parallel
 
 
 class ProgressParallel(Parallel):

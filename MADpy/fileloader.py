@@ -1,15 +1,12 @@
 import numpy as np
 import pandas as pd
-from dotmap import DotMap as DotDict
-from pathlib import Path
-
+from tqdm.auto import tqdm
 
 import dask
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client, LocalCluster
 
-# import utils
 from MADpy import utils
 
 
@@ -225,17 +222,16 @@ def _load_dataframe_dask(filename):
 
 def load_dataframe(cfg):
 
-    # name = utils.extract_name(cfg.name)
     filename_parquet = f"./data/parquet/{cfg.name}.parquet"
 
     if utils.file_exists(filename_parquet, cfg.force_reload):
         if cfg.verbose:
-            print("Loading DataFrame from parquet-file. ", flush=True)
+            tqdm.write("Loading DataFrame from parquet-file.")
         df = pd.read_parquet(filename_parquet)
         return df
 
     if cfg.verbose:
-        print("Creating DataFrame, please wait.")
+        tqdm.write("Creating DataFrame, please wait.")
 
     try:
         df = _load_dataframe_dask(cfg.filename)
@@ -247,8 +243,7 @@ def load_dataframe(cfg):
         df[col] = df[col].astype("category")
 
     if cfg.verbose:
-        print("Saving DataFrame to file (parquet) for faster loading.")
-
+        tqdm.write("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
     utils.init_parent_folder(filename_parquet)
     df.to_parquet(filename_parquet, engine="pyarrow")
 

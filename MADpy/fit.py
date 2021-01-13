@@ -1,9 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-import dill
-from tqdm import tqdm
-
+import matplotlib.pyplot as plt
+from tqdm.auto import tqdm
+from joblib import Parallel, delayed
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKey as Key
@@ -14,12 +13,7 @@ from numpyro import distributions as dist
 from numpyro.infer import MCMC, NUTS, Predictive
 from numpyro.infer import log_likelihood
 
-from joblib import Parallel, delayed
-from multiprocessing import current_process
-import warnings
-import os
 
-# import utils
 from MADpy import utils
 from MADpy import fileloader
 
@@ -271,10 +265,10 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
 
     it = df.groupby("taxid", sort=False, observed=True)
     if do_tqdm:
-        it = tqdm(it, desc="MCMC fits")
+        desc = "Fitting data (with MCMC)"
+        it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=1) #
 
     d_fits = {}
-
     for taxid, group in it:
 
         data = group_to_numpyro_data(group)
@@ -308,7 +302,8 @@ def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
     if num_cores > N_taxids:
         num_cores = N_taxids
 
-    print(f"Fitting {N_taxids} taxids using {num_cores} cores, please wait.", flush=True)
+    n = N_taxids // num_cores
+    # tqdm.write(f"Fitting {N_taxids} taxids using {num_cores} core(s) (i.e. {n} pr. core), please wait.") # flush=True
 
     if num_cores == 1:
         return fit_chunk(df, mcmc_kwargs, do_tqdm=do_tqdm)
@@ -353,8 +348,8 @@ def _load_fits(cfg):
 
     d_filename = _get_fit_filenames(cfg)
 
-    if cfg.verbose:
-        print(f"Loading fits from pregenerated file, {d_filename['d_fits']}.", flush=True)
+    # if cfg.verbose:
+    #     tqdm.write(f"Loading fits from pregenerated file, {d_filename['d_fits']}.\n") # flush=True
     d_fits, df_fit_results = utils.load_dill(d_filename["d_fits"])
 
     if not utils.file_exists(d_filename["df_fit_results"]):
@@ -371,8 +366,8 @@ def get_fits(df, cfg):
     if utils.file_exists(d_filename["d_fits"], cfg.force_fits):
         return _load_fits(cfg)
 
-    if cfg.verbose:
-        print(f"Generating fits and saving to file: {d_filename['d_fits']}.")
+    # if cfg.verbose:
+    #     tqdm.write(f"Generating fits and saving to file: {d_filename['d_fits']}.")
 
     df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
 
