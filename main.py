@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 from pandas.core.groupby import groupby
 from tqdm import tqdm
@@ -9,16 +8,13 @@ from functools import partial
 from dotmap import DotMap as DotDict
 
 import datetime
-from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 from importlib import reload
 
 import os
 import tempfile
 
-os.environ["MPLCONFIGDIR"] = tempfile.mkdtemp()
-import matplotlib
+
 import seaborn as sns
 
 # import tracemalloc
@@ -46,6 +42,10 @@ def main(filenames, cfg):
         df = fileloader.load_dataframe(cfg)
         # df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
 
+        if False:
+            taxid = 241227
+            group = df.query("taxid == @taxid")
+
         d_fits = None
         if cfg.make_fits:
             d_fits, df_results = fit.get_fits(df, cfg)
@@ -65,15 +65,15 @@ if utils.is_ipython():
 
     print("Doing iPython plot")
 
-    filenames = [
-        "./data/input/data_ancient.txt",
-        "./data/input/data_control.txt",
-    ]
-
     # filenames = [
-    #     "./data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
-    #     "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    #     "./data/input/data_ancient.txt",
+    #     "./data/input/data_control.txt",
     # ]
+
+    filenames = [
+        "./data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+        "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    ]
 
     cfg = DotDict(
         {
@@ -82,12 +82,12 @@ if utils.is_ipython():
             "verbose": True,
             "make_fits": True,
             "make_plots": True,
-            "max_plots": 100,
+            "max_plots": 1000,
             "force_reload": False,
             "force_plots": False,
             "force_fits": False,
             "parallel_plots": True,
-            "num_cores": 5,
+            "num_cores": 6,
         }
     )
 

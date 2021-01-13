@@ -1,33 +1,26 @@
-from jax.api import xla_computation
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib
 import pandas as pd
 from pandas.core.groupby import groupby
 from tqdm import tqdm
-
 import datetime
+import sigfig
+from PyPDF2 import PdfFileMerger, PdfFileReader
+from PyPDF2.utils import PdfReadError
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import EngFormatter
+from matplotlib.lines import Line2D
 
-# from matplotlib.ticker import MaxNLocator
-from pathlib import Path
-from importlib import reload
-import sigfig
-
-from functools import partial
-import subprocess
-
-from PyPDF2 import PdfFileMerger, PdfFileReader
 
 from MADpy import utils
 from MADpy import fit
 from MADpy import fileloader
-
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 
 def set_rc_params(fig_dpi=300):
@@ -205,81 +198,6 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 #%%
 
 
-def filename_to_tmp_file(filename):
-    return filename.replace("figures/", "figures/tmp/").replace(".pdf", "")
-
-
-# useful function for parallel saving of files
-def _plot_and_save_single_group_worker(i, group, filename, cfg, d_fits):
-
-    set_style()  # set style in child process
-    try:
-        fig = plot_single_group(group, cfg, d_fits)
-        filename = filename_to_tmp_file(filename) + f"__{i:06d}.pdf"
-        utils.init_parent_folder(filename)
-        fig.savefig(filename)
-        return None
-
-    except Exception as e:
-        raise e
-        # taxid = group.taxid.iloc[0]
-        # return taxid
-
-
-from joblib import delayed
-
-
-def parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
-    utils.avoid_fontconfig_warning()
-
-    groupby = df_top_N.groupby("taxid", sort=False, observed=True)
-
-    kwargs = dict(filename=filename, cfg=cfg, d_fits=d_fits)
-    generator = (
-        delayed(_plot_and_save_single_group_worker)(i, group, **kwargs)
-        for i, (name, group) in enumerate(groupby)
-    )
-
-    total = groupby.ngroups
-    num_cores = cfg.num_cores
-    if num_cores > total:
-        num_cores = total
-
-    print(
-        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {num_cores} cores:",
-        flush=True,
-    )
-    res = utils.ProgressParallel(use_tqdm=True, total=total, n_jobs=num_cores)(generator)
-    errors = set([error for error in res if error])
-
-    if len(errors) >= 1:
-        print(f"Got errors at TaxIDs: {errors}", flush=True)
-
-    # Call the PdfFileMerger
-    mergedObject = PdfFileMerger()
-
-    # Loop through all of them and append their pages
-    pdfs = sorted(Path(".").rglob(f"{filename_to_tmp_file(filename)}*.pdf"))
-    for pdf in pdfs:
-        mergedObject.append(PdfFileReader(str(pdf), "rb"))
-
-    # Write all the files into a file which is named as shown below
-    filename_tmp = filename.replace(".pdf", "_tmp.pdf")
-
-    mergedObject.write(filename_tmp)
-
-    # delete temporary files
-    for pdf in pdfs:
-        pdf.unlink()
-
-    # make the combined pdf smaller by compression using the following command:
-    # ps2pdf filename_big filename_small
-    process = subprocess.run(["ps2pdf", filename_tmp, filename])
-    Path(filename_tmp).unlink()
-
-    Path("./figures/tmp").rmdir()
-
-
 def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     groupby = df_top_N.groupby("taxid", sort=False, observed=True)
@@ -310,9 +228,6 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
                 print(f"Got errors at TaxIDs: {errors}")
 
 
-#%%
-
-
 def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
 
     """
@@ -328,7 +243,6 @@ def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
     if max_plots is None:
         max_plots = cfg.max_plots
 
-    # name = utils.extract_name(cfg.filename)
     filename = f"./figures/error_rates__{cfg.name}__N_taxids__{max_plots}.pdf"
 
     if utils.file_exists(filename, cfg.force_plots):
@@ -338,10 +252,7 @@ def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
 
     df_top_N = fileloader.get_top_N_taxids(df, max_plots)
 
-    if cfg.parallel_plots:
-        parallel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
-    else:
-        seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
+    seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
 
 
 #%%
@@ -349,8 +260,6 @@ def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
 xlim = (-3, 18)
 ylim = (0, 1)
 alpha_plot = 0.1
-
-from matplotlib import colors
 
 
 def transform(x_org, vmin=0, vmax=1, func=lambda x: x, xmin=None, xmax=None):
@@ -365,12 +274,6 @@ def transform(x_org, vmin=0, vmax=1, func=lambda x: x, xmin=None, xmax=None):
 
 
 #%%
-
-from matplotlib.ticker import EngFormatter
-from matplotlib.patches import Patch
-from matplotlib.lines import Line2D
-
-import copy
 
 
 class ExpFormatter(EngFormatter):
@@ -445,16 +348,11 @@ def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
     )
 
     # Create another legend for the second line.
-    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=30)
+    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=26)
     plt.legend(handles=legend_names, **kw_leg_names)
 
 
 #%%
-
-# fig, ax = plt.subplots(figsize=(10, 10))
-# # ax.set(title='data\_ancient')
-# # ax.set(title='$\detokenize{data\_ancient}$')
-# ax.set(title=)
 
 
 def minmax(x):
@@ -534,6 +432,13 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
         N_alignments_mins = [0] + N_alignments_mins
 
     filename = f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf"
+
+
+    if utils.file_exists(filename, cfg.force_plots):
+        if cfg.verbose:
+            print(f"Error rates plot already exist, {filename}", flush=True)
+        return None
+
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         for N_alignments_min in N_alignments_mins:
@@ -546,8 +451,6 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
         d["Author"] = "Christian Michelsen"
         d["CreationDate"] = datetime.datetime.today()
 
-    # else:
-    # print("No fits to plot")
 
 
 # %%

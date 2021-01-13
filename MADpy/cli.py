@@ -28,9 +28,6 @@ from main import main
 @click.option(
     "--force_plots", is_flag=True, default=False, help="Force plots. Flag. Default is False",
 )
-@click.option(
-    "--parallel_plots", is_flag=True, default=False, help="Plot in parallel. Default is False",
-)
 @click.version_option()
 def cli(
     filename,
@@ -41,7 +38,6 @@ def cli(
     make_fits,
     num_cores,
     force_plots,
-    parallel_plots,
 ):
     """Metagenomics Ancient Damage python: MADpy
 
@@ -73,7 +69,6 @@ def cli(
             "force_plots": force_plots,
             "force_fits": False,
             "num_cores": num_cores,
-            "parallel_plots": True if num_cores > 1 and parallel_plots else False,
         }
     )
 
