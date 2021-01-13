@@ -22,15 +22,8 @@ Afterwards remember to activcate the new environment:
 $ conda activate MADpy
 ```
 
-
-Install as local package
-###### 3)
-```console
-$ pip install --editable .
-```
-
 Then run as:
-###### 4)
+###### 3)
 ```console
 $ MADpy --help
 $ MADpy ./data/input/data_ancient.txt

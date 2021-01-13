@@ -1,7 +1,6 @@
 name: MADpy
 channels:
   - conda-forge
-  - bioconda
   - defaults
 dependencies:
   - python>=3.8
@@ -9,7 +8,6 @@ dependencies:
   - numpy
   - pandas
   - matplotlib
-  - seaborn
   - tqdm
   - dotmap
   - dask
@@ -20,7 +18,4 @@ dependencies:
   - pypdf2
   - pip:
     - git+https://github.com/pyro-ppl/numpyro.git
-    - sigfig
-  # - git+https://github.com/scikit-hep/probfit.git
-   # - pipe-subprocess
-    # - mpl-scatter-density
+    - --editable=. # install MADpy here

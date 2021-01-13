@@ -1,11 +1,9 @@
 import numpy as np
-import seaborn as sns
 import matplotlib
 import pandas as pd
 from pandas.core.groupby import groupby
 from tqdm import tqdm
 import datetime
-import sigfig
 from PyPDF2 import PdfFileMerger, PdfFileReader
 from PyPDF2.utils import PdfReadError
 
@@ -17,11 +15,9 @@ from matplotlib.ticker import MultipleLocator
 from matplotlib.ticker import EngFormatter
 from matplotlib.lines import Line2D
 
-
 from MADpy import utils
 from MADpy import fit
 from MADpy import fileloader
-
 
 def set_rc_params(fig_dpi=300):
     plt.rcParams["figure.figsize"] = (16, 10)
