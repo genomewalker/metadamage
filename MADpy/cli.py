@@ -9,25 +9,37 @@ from MADpy import utils
 from main import main
 
 
+d_help = {
+    "verbose": "Verbose. Flag. Default is True.",
+    "number_of_fits": "Number of fits to make. Default is 10. '-1' or '0' indicates to fit all TaxIDs.",
+    "number_of_plots": "Number of plots to make. Default is 10.",
+    "make_plots": "Make plots. Flag. Default is True.",
+    "make_fits": "Make plots. Flag. Default is True.",
+    "num_cores": "Number of cores to use. Default is 1.",
+    "force_plots": "Force plots. Flag. Default is False.",
+}
+
+
+def option(string, **kwargs):
+    string_no_dashes = string.replace("--", "")
+    try:
+        help = d_help[string_no_dashes]
+    except KeyError as e:
+        print(f"\n'd_help' does not contain {string_no_dashes} \n")
+        raise e
+    kwargs["help"] = help
+    return click.option(string, **kwargs)
+
+
 @click.command()
 @click.argument("filename", type=click.Path(exists=True), nargs=-1)
-@click.option("--verbose", is_flag=True, default=False, help="Verbose. Flag. Default is True.")
-@click.option(
-    "--number_of_fits",
-    default=10,
-    help="Number of fits to make. Default is 10. '-1' or '0' indicates to fit all TaxIDs.",
-)
-@click.option("--number_of_plots", default=10, help="Number of plots to make. Default is 10.")
-@click.option(
-    "--make_plots", default=True, is_flag=True, help="Make plots. Flag. Default is True",
-)
-@click.option(
-    "--make_fits", default=True, is_flag=True, help="Make plots. Flag. Default is True",
-)
-@click.option("--num_cores", default=1, help="Number of cores to use. Default is 1.")
-@click.option(
-    "--force_plots", is_flag=True, default=False, help="Force plots. Flag. Default is False",
-)
+@option("--verbose", is_flag=True, default=False)
+@option("--number_of_fits", default=10)
+@option("--number_of_plots", default=10)
+@option("--make_plots", default=True, is_flag=True)
+@option("--make_fits", default=True, is_flag=True)
+@option("--num_cores", default=1)
+@option("--force_plots", is_flag=True, default=False)
 @click.version_option()
 def cli(
     filename,
@@ -73,3 +85,4 @@ def cli(
     )
 
     main(filenames, cfg)
+
