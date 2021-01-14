@@ -17,7 +17,6 @@ numpyro.enable_x64()
 
 def main(filenames, cfg):
 
-
     if cfg.verbose:
         tqdm.write(f"\nRunning MADpy on {len(filenames)} file(s) using the following configuration: \n")
         tqdm.write(f"{pformat(cfg)}\n")
