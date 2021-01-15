@@ -84,5 +84,7 @@ def cli(
         }
     )
 
-    main(filenames, cfg)
-
+    if len(filenames) > 0:
+        main(filenames, cfg)
+    else:
+        print("Running with any argument(s). Use '--help' for more help.")

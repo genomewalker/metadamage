@@ -11,20 +11,24 @@ from MADpy import plot
 from MADpy import utils
 
 import numpyro
+
 numpyro.enable_x64()
 
 #%%
 
+
 def main(filenames, cfg):
 
     if cfg.verbose:
-        tqdm.write(f"\nRunning MADpy on {len(filenames)} file(s) using the following configuration: \n")
+        tqdm.write(
+            f"\nRunning MADpy on {len(filenames)} file(s) using the following configuration: \n"
+        )
         tqdm.write(f"{pformat(cfg)}\n")
 
     all_fit_results = {}
 
     N_inner_loop = 1 + cfg.make_fits + cfg.make_plots
-    bar_format = "{desc}" # |{bar}| [{elapsed}]
+    bar_format = "{desc}"  # |{bar}| [{elapsed}]
     tqdm_kwargs = dict(bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False)
     pad = utils.string_pad_left_and_right
 
@@ -34,7 +38,6 @@ def main(filenames, cfg):
             cfg["filename"] = filename
             cfg["name"] = utils.extract_name(filename)
             it.set_postfix(name=cfg.name)
-
 
             with tqdm(**tqdm_kwargs) as pbar:
                 pbar.set_description(pad("Loading", left=4))
@@ -66,18 +69,19 @@ def main(filenames, cfg):
 
 
 if utils.is_ipython():
+    # if __name__ == "__main__":
 
     tqdm.write("Doing iPython plot")
 
-    # filenames = [
-    #     "./data/input/data_ancient.txt",
-    #     "./data/input/data_control.txt",
-    # ]
-
     filenames = [
-        "./data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
-        "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+        "./data/input/data_ancient.txt",
+        "./data/input/data_control.txt",
     ]
+
+    # filenames = [
+    #     "./data/input/KapK-12-1-35-Ext-12-Lib-12-Index2.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    #     "./data/input/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.family.bdamage.gz.counts.txt",
+    # ]
 
     cfg = DotDict(
         {
@@ -95,7 +99,6 @@ if utils.is_ipython():
         }
     )
 
-
-
     if False:
+    # if True:
         main(filenames, cfg)

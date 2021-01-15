@@ -1,7 +1,6 @@
 import numpy as np
 from tqdm.auto import tqdm
 import datetime
-from PyPDF2 import PdfFileMerger, PdfFileReader
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
