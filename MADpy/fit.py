@@ -92,8 +92,7 @@ def get_posterior_predictive(mcmc, data):
 
 
 def get_y_average_and_hpdi(mcmc, data, func=jnp.median, return_hpdi=True):
-    """ func = central tendency function, e.g. jnp.mean or jnp.median
-    """
+    """func = central tendency function, e.g. jnp.mean or jnp.median"""
     posterior_predictive = get_posterior_predictive(mcmc, data)
     predictions_fraction = posterior_predictive / data["N"]
     y_average = func(predictions_fraction, axis=0)
@@ -266,7 +265,7 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
     it = df.groupby("taxid", sort=False, observed=True)
     if do_tqdm:
         desc = utils.string_pad_left_and_right("MCMC", left=8)
-        it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2) #
+        it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2)  #
 
     d_fits = {}
     for taxid, group in it:
@@ -297,13 +296,13 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
 
 def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
 
-    N_taxids = len(pd.unique(df.taxid))
+    max_fits = len(pd.unique(df.taxid))
 
-    if num_cores > N_taxids:
-        num_cores = N_taxids
+    if num_cores > max_fits:
+        num_cores = max_fits
 
-    n = N_taxids // num_cores
-    # tqdm.write(f"Fitting {N_taxids} taxids using {num_cores} core(s) (i.e. {n} pr. core), please wait.") # flush=True
+    n = max_fits // num_cores
+    # tqdm.write(f"Fitting {max_fits} taxids using {num_cores} core(s) (i.e. {n} pr. core), please wait.") # flush=True
 
     if num_cores == 1:
         return fit_chunk(df, mcmc_kwargs, do_tqdm=do_tqdm)
@@ -339,7 +338,9 @@ def save_df_fit_results(df_fit_results, filename):
 
 def _get_fit_filenames(cfg):
     d_filename = {}
-    d_filename["df_fit_results"] = f"./data/fits/{cfg.name}__N_taxids__{cfg.N_taxids}.csv"
+    d_filename[
+        "df_fit_results"
+    ] = f"./data/fits/{cfg.name}__number_of_fits__{cfg.number_of_fits}.csv"
     d_filename["d_fits"] = d_filename["df_fit_results"].replace(".csv", ".dill")
     return d_filename
 
@@ -369,7 +370,7 @@ def get_fits(df, cfg):
     # if cfg.verbose:
     #     tqdm.write(f"Generating fits and saving to file: {d_filename['d_fits']}.")
 
-    df_top_N = fileloader.get_top_N_taxids(df, cfg.N_taxids)
+    df_top_N = fileloader.get_top_max_fits(df, cfg.number_of_fits)
 
     num_cores = utils.get_num_cores(cfg)
 

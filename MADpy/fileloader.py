@@ -127,15 +127,15 @@ def delayed_list_unknown_length(lst):
     return delayed_list_tmp(lst)
 
 
-def extract_top_N_taxids_dask(df, N_taxids):
-    top_N_taxids = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(N_taxids).index
-    df_top_N = df[df["taxid"].isin(delayed_list(top_N_taxids, N_taxids))]
+def extract_top_max_fits_dask(df, max_fits):
+    top_max_fits = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(max_fits).index
+    df_top_N = df[df["taxid"].isin(delayed_list(top_max_fits, max_fits))]
     return df_top_N
 
 
-def extract_top_N_taxids(df, N_taxids):
-    top_N_taxids = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(N_taxids).index
-    df_top_N = df[df["taxid"].isin(top_N_taxids)]
+def extract_top_max_fits(df, max_fits):
+    top_max_fits = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(max_fits).index
+    df_top_N = df[df["taxid"].isin(top_max_fits)]
     return df_top_N
 
 
@@ -177,9 +177,9 @@ def cut_NANs_away(df):
     return df.loc[~mask_bad]
 
 
-def get_top_N_taxids(df, N_taxids):
-    if N_taxids > 0:
-        return df.pipe(extract_top_N_taxids, N_taxids)
+def get_top_max_fits(df, number_of_fits):
+    if number_of_fits is not None and number_of_fits > 0:
+        return df.pipe(extract_top_max_fits, number_of_fits)
     else:
         return df
 
@@ -224,7 +224,7 @@ def load_dataframe(cfg):
 
     filename_parquet = f"./data/parquet/{cfg.name}.parquet"
 
-    if utils.file_exists(filename_parquet, cfg.force_reload):
+    if utils.file_exists(filename_parquet, cfg.force_reload_files):
         if cfg.verbose:
             tqdm.write("Loading DataFrame from parquet-file.")
         df = pd.read_parquet(filename_parquet)
@@ -238,7 +238,7 @@ def load_dataframe(cfg):
     except FileNotFoundError as e:
         raise AssertionError(f"\n\nFile: {cfg.filename} not found. \n{e}")
 
-    categorical_cols = ["taxid", "direction"]  # not N_taxids as it is numerical
+    categorical_cols = ["taxid", "direction"]  # not max_fits as it is numerical
     for col in categorical_cols:
         df[col] = df[col].astype("category")
 

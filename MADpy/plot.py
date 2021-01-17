@@ -14,6 +14,7 @@ from MADpy import utils
 from MADpy import fit
 from MADpy import fileloader
 
+
 def set_rc_params(fig_dpi=300):
     plt.rcParams["figure.figsize"] = (16, 10)
     plt.rcParams["figure.dpi"] = fig_dpi
@@ -53,7 +54,6 @@ def fit_results_to_string(fit_result):
     return s
 
 
-
 def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     taxid = group["taxid"].iloc[0]
 
@@ -64,16 +64,21 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
     colors = ["C0", "C1", "C2", "C3", "C4"]
 
-    if cfg.max_pos is None:
-        max_pos = group.pos.max()
+    if cfg.max_position is None:
+        max_position = group.pos.max()
     else:
-        max_pos = cfg.max_pos
+        max_position = cfg.max_position
 
     group_direction = {}
     group_direction["forward"] = utils.get_forward(group)
     group_direction["reverse"] = utils.get_reverse(group)
 
-    fig, axes = plt.subplots(ncols=2, figsize=figsize, sharey=True, gridspec_kw={"wspace": 0.14},)
+    fig, axes = plt.subplots(
+        ncols=2,
+        figsize=figsize,
+        sharey=True,
+        gridspec_kw={"wspace": 0.14},
+    )
 
     for direction, ax in zip(["reverse", "forward"], axes):
 
@@ -160,12 +165,16 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
         ymax = ymax_overall
 
     ax_reverse.set(
-        xlabel="Read Position", xticks=range(-max_pos, -1 + 1, 2), ylim=(0, ymax),
+        xlabel="Read Position",
+        xticks=range(-max_position, -1 + 1, 2),
+        ylim=(0, ymax),
     )
     ax_reverse.set_title(" Reverse", loc="left", pad=10, fontdict=dict(fontsize=30))
 
     ax_forward.set(
-        xlabel="Read Position", xticks=range(1, max_pos + 1, 2), ylim=(0, ymax),
+        xlabel="Read Position",
+        xticks=range(1, max_position + 1, 2),
+        ylim=(0, ymax),
     )
     ax_forward.set_title("Forward ", loc="right", pad=10, fontdict=dict(fontsize=30))
 
@@ -197,23 +206,23 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
             d["CreationDate"] = datetime.datetime.today()
 
 
-def plot_error_rates(cfg, df, d_fits=None, max_plots=None):
+def plot_error_rates(cfg, df, d_fits=None, number_of_fits=None):
 
     """
     freq_strings: list of frequencies encoded as string. First letter corresponds to reference and last letter to sequence. This way allows the following string:
     'AT' = 'A2T' = 'A.T' = 'A->T' ...
     """
 
-    if max_plots is None:
-        max_plots = cfg.max_plots
+    if number_of_fits is None:
+        number_of_fits = cfg.number_of_fits
 
-    filename = f"./figures/error_rates__{cfg.name}__N_taxids__{max_plots}.pdf"
-    if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=max_plots):
+    filename = f"./figures/error_rates__{cfg.name}__number_of_fits__{number_of_fits}.pdf"
+    if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_fits):
         if cfg.verbose:
             tqdm.write(f"Plot of error rates already exist: {filename}\n")
         return None
 
-    df_top_N = fileloader.get_top_N_taxids(df, max_plots)
+    df_top_N = fileloader.get_top_max_fits(df, number_of_fits)
     seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
 
 
@@ -393,11 +402,11 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     if not 0 in N_alignments_mins:
         N_alignments_mins = [0] + N_alignments_mins
 
-    filename = f"./figures/all_fit_results__N_taxids__{cfg.N_taxids}.pdf"
+    filename = f"./figures/all_fit_results__number_of_fits__{cfg.number_of_fits}.pdf"
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
         if cfg.verbose:
-            tqdm.write(f"\nPlot of fit results already exist: {filename}") # flush=True
+            tqdm.write(f"\nPlot of fit results already exist: {filename}")  # flush=True
         return None
 
     if cfg.verbose:
@@ -413,7 +422,6 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
         d["Title"] = "Error Rate Distributions"
         d["Author"] = "Christian Michelsen"
         d["CreationDate"] = datetime.datetime.today()
-
 
 
 # %%

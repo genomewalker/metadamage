@@ -2,13 +2,91 @@ import numpy as np
 from scipy.stats.distributions import chi2 as sp_chi2
 from scipy.stats import norm as sp_norm
 from pathlib import Path
-from dotmap import DotMap as DotDict
 from scipy import stats
 import dill
 import shutil
 from PyPDF2 import PdfFileReader
 from tqdm.auto import tqdm
 from joblib import Parallel
+import pandas as pd
+
+# def __post_init__
+
+#%%
+
+
+from psutil import cpu_count
+
+from typing import Optional, List, Union
+from pathlib import Path
+from click_help_colors import HelpColorsGroup, HelpColorsCommand
+from rich.console import Console
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Config:
+    # filenames: List[Path]
+    max_fits: Optional[int]
+    max_plots: Optional[int]
+    max_cores: int
+    max_position: Optional[int]
+    verbose: bool
+    force_reload_files: bool
+    force_plots: bool
+    force_fits: bool
+    version: str
+    #
+    filename: Optional[str] = None
+    name: Optional[str] = None
+    number_of_fits: Optional[int] = None
+
+    num_cores: int = field(init=False)
+
+    def __post_init__(self):
+        self._set_num_cores()
+
+    def _set_num_cores(self):
+        available_cores = cpu_count(logical=True)
+        if self.max_cores > available_cores:
+            self.num_cores = available_cores - 1
+            if self.verbose:
+                print(
+                    f"'max-cores' is set to a value larger than the maximum available",
+                    f"so clipping to {self.num_cores} (available-1) cores",
+                )
+        elif self.max_cores < 0:
+            self.num_cores = available_cores - self.max_cores
+            if self.verbose:
+                print(
+                    f"'max-cores' is set to a negative value",
+                    f"so using {self.num_cores} (available-max_cores) cores",
+                )
+        else:
+            self.num_cores = self.max_cores
+
+    def set_number_of_fits(self, df):
+        if self.max_fits is not None and self.max_fits > 0:
+            self.number_of_fits = self.max_fits
+        else:
+            self.number_of_fits = len(pd.unique(df.taxid))
+        if self.verbose:
+            print(f"Setting number_of_fits to {self.number_of_fits}")
+
+    @property
+    def make_fits(self):
+        if self.max_fits is None or self.max_fits > 0:
+            return True
+        return False
+
+    @property
+    def make_plots(self):
+        if self.max_plots is None or self.max_plots > 0:
+            return True
+        return False
+
+
+#%%
 
 
 def is_ipython():
@@ -20,6 +98,12 @@ def is_ipython():
 
 def extract_name(filename):
     return Path(filename).stem.split(".")[0]
+
+
+def file_is_valid(file):
+    if Path(file).exists() and Path(file).stat().st_size > 0:
+        return True
+    return False
 
 
 def delete_folder(path):
@@ -76,17 +160,19 @@ def save_dill(filename, x):
 
 def avoid_fontconfig_warning():
     import os
+
     os.environ["LANG"] = "en_US.UTF-8"
     os.environ["LC_CTYPE"] = "en_US.UTF-8"
     os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-def string_pad_left_and_right(s, left=0, right=0, char=' '):
+def string_pad_left_and_right(s, left=0, right=0, char=" "):
     N = len(s)
-    s = s.ljust(N+right, char)
+    s = s.ljust(N + right, char)
     N = len(s)
-    s = s.rjust(N+left, char)
+    s = s.rjust(N + left, char)
     return s
+
 
 # def compute_fraction_and_uncertainty(x, N):
 #     f = x / N
@@ -185,6 +271,7 @@ def is_pdf_valid(filename, forced=False, N_pages=None):
         pass
     return False
 
+
 # def get_percentile_as_lim(x, percentile_max=99):
 #     # percentile_max = 99.5
 #     percentile_min = 100 - percentile_max
@@ -228,7 +315,6 @@ def set_minimum_tpr(cut, thresholds, fpr, tpr):
 
 
 #%%
-
 
 
 class ProgressParallel(Parallel):
