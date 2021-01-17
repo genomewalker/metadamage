@@ -105,4 +105,4 @@ def cli(
 
 
 def main_cli():
-    app()
+    app(prog_name="MADpy")
