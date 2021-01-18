@@ -25,11 +25,6 @@ def set_rc_params(fig_dpi=300):
 def set_style(style_path=None, fig_dpi=50):
     if style_path is None:
         style_path = utils.find_style_file()
-
-    tqdm.write("\n\n")
-    tqdm.write(f"trying to use this stile file: {style_path}")
-    tqdm.write("\n\n")
-
     try:
         plt.style.use(style_path)
     except OSError:
