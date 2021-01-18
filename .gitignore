@@ -17,6 +17,12 @@ __pycache__/
 !/data/input/data_ancient.txt
 !/data/input/data_control.txt
 
+# Virtuelenv information
+.python-version
+
+# remove PyPI wheels
+/dist/
+
 # VS Code
 .vscode/
 
