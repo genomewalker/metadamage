@@ -294,20 +294,12 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
     return d_fits, df_fit_results
 
 
-def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
+def compute_fits(df, cfg, mcmc_kwargs, do_tqdm=True):
 
-    max_fits = len(pd.unique(df.taxid))
-
-    if num_cores > max_fits:
-        num_cores = max_fits
-
-    n = max_fits // num_cores
-    # tqdm.write(f"Fitting {max_fits} taxids using {num_cores} core(s) (i.e. {n} pr. core), please wait.") # flush=True
-
-    if num_cores == 1:
+    if cfg.num_cores == 1:
         return fit_chunk(df, mcmc_kwargs, do_tqdm=do_tqdm)
 
-    N_chunks = num_cores  # for now
+    N_chunks = cfg.num_cores  # for now
     taxid_chunks = np.array_split(df.taxid.unique(), N_chunks)
     chunks = [df.loc[df.taxid.isin(chunk)] for chunk in taxid_chunks]
 
@@ -320,7 +312,7 @@ def compute_fits(df, mcmc_kwargs, num_cores=1, do_tqdm=True):
 
     it = zip(chunks, dos)
     generator = (delayed(fit_chunk)(chunk, mcmc_kwargs, do_tqdm=do) for chunk, do in it)
-    results = Parallel(n_jobs=num_cores)(generator)
+    results = Parallel(n_jobs=cfg.num_cores)(generator)
 
     df_fit_results = pd.concat([res[1] for res in results])
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
@@ -372,8 +364,6 @@ def get_fits(df, cfg):
 
     df_top_N = fileloader.get_top_max_fits(df, cfg.number_of_fits)
 
-    num_cores = utils.get_num_cores(cfg)
-
     mcmc_kwargs = dict(
         progress_bar=False,
         num_warmup=500,
@@ -382,7 +372,7 @@ def get_fits(df, cfg):
         chain_method="sequential",
     )
 
-    d_fits, df_fit_results = compute_fits(df_top_N, mcmc_kwargs, num_cores=num_cores)
+    d_fits, df_fit_results = compute_fits(df_top_N, cfg, mcmc_kwargs)
 
     save_df_fit_results(df_fit_results, d_filename["df_fit_results"])
     utils.save_dill(d_filename["d_fits"], [d_fits, df_fit_results])

@@ -22,17 +22,13 @@ def set_rc_params(fig_dpi=300):
     mpl.rc("axes", edgecolor="k", linewidth=2)
 
 
-# def find_style_file():
-#     if Path("./metadamage/style.mplstyle").exists():
-#         return "./metadamage/style.mplstyle"
-#     if Path("style.mplstyle").exists():
-#         return "style.mplstyle"
+def set_style(style_path=None, fig_dpi=50):
+    if style_path is None:
+        style_path = utils.find_style_file()
 
-
-def set_style(style_path="style.mplstyle", fig_dpi=50):
-
-    # print(Path.cwd())
-    # print(find_style_file())
+    tqdm.write("\n\n")
+    tqdm.write(f"trying to use this stile file: {style_path}")
+    tqdm.write("\n\n")
 
     try:
         plt.style.use(style_path)

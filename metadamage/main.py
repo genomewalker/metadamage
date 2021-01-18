@@ -92,6 +92,7 @@ def main(filenames, cfg):
 #         max_fits=None,
 #         max_plots=None,
 #         max_cores=2,
+#         max_position=15,
 #         verbose=True,
 #         force_reload_files=False,
 #         force_plots=False,
@@ -99,6 +100,11 @@ def main(filenames, cfg):
 #         version="0.1.0",
 #     )
 
-#     # if False:
-#     if True:
+#     import metadamage
+
+#     for x in importlib_resources.contents('metadamage'):
+#         print(x)
+
+#     if False:
+#         # if True:
 #         main(filenames, cfg)

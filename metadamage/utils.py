@@ -10,6 +10,8 @@ from tqdm.auto import tqdm
 from joblib import Parallel
 import pandas as pd
 import toml
+import importlib.resources as importlib_resources
+
 
 # def __post_init__
 
@@ -90,6 +92,11 @@ class Config:
 
 
 #%%
+
+
+def find_style_file():
+    with importlib_resources.path("metadamage", "style.mplstyle") as path:
+        return path
 
 
 def get_version():
