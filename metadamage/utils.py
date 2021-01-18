@@ -9,9 +9,8 @@ from PyPDF2 import PdfFileReader
 from tqdm.auto import tqdm
 from joblib import Parallel
 import pandas as pd
-import toml
 import importlib.resources as importlib_resources
-
+from importlib.metadata import version
 
 # def __post_init__
 
@@ -100,7 +99,8 @@ def find_style_file():
 
 
 def get_version():
-    return toml.load("../pyproject.toml")["tool"]["poetry"]["version"]
+    # return toml.load("../pyproject.toml")["tool"]["poetry"]["version"]
+    return version("metadamage")
 
 
 def is_ipython():

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "metadamage"
-version = "0.1.12"
+version = "0.1.13"
 description = "Metagenomics Ancient Damage: metadamage"
 authors = ["Christian Michelsen <christianmichelsen@gmail.com>"]
 license = "MIT"
@@ -26,7 +26,6 @@ rich = "^9.8.1"
 typer = {extras = ["all"], version = "^0.3.2"}
 click-help-colors = "^0.9"
 tqdm = "^4.56.0"
-toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

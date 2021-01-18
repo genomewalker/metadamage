@@ -10,7 +10,7 @@ from metadamage import utils
 from metadamage.main import main
 
 # __version__ = utils.get_version()
-__version__ = "0.1.12"
+__version__ = "0.1.13"
 
 
 def version_callback(value: bool):
