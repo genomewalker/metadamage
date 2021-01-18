@@ -75,7 +75,7 @@ def cli(
     run as e.g.:
 
     \b
-        $ metadamage --verbose --max-fits 10 --max_cores 2 ./data/input/data_ancient.txt
+        $ metadamage --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt
 
     or by for two files:
 

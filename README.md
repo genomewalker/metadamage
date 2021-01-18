@@ -26,14 +26,13 @@ Then run as:
 ###### 3)
 ```console
 $ metadamage --help
-$ metadamage ./data/input/data_ancient.txt
-$ metadamage --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt
+$ metadamage --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt
 ```
 
 metadamage also allows for fitting and plotting multiple files (and automatically compares their fit results):
 ###### 4)
 ```console
-$ metadamage --verbose --number_of_fits 10 --num_cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
+$ metadamage --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
 ```
 
 
