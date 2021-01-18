@@ -6,10 +6,10 @@ from rich.console import Console
 from dataclasses import dataclass, field
 
 from metadamage import utils
-from main import main
+from metadamage.main import main
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 
 def version_callback(value: bool):
