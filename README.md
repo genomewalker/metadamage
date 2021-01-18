@@ -1,4 +1,4 @@
-## Metagenomics Ancient Damage: metadamage
+## Metadamage - Metagenomics Ancient Damage
 
 
 If first time using:
