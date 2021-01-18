@@ -9,6 +9,7 @@ from PyPDF2 import PdfFileReader
 from tqdm.auto import tqdm
 from joblib import Parallel
 import pandas as pd
+import toml
 
 # def __post_init__
 
@@ -66,10 +67,12 @@ class Config:
             self.num_cores = self.max_cores
 
     def set_number_of_fits(self, df):
+        N_all_taxids = len(pd.unique(df.taxid))
+
         if self.max_fits is not None and self.max_fits > 0:
-            self.number_of_fits = self.max_fits
-        else:
-            self.number_of_fits = len(pd.unique(df.taxid))
+            self.number_of_fits = min(self.max_fits, N_all_taxids)
+        else:  # use all TaxIDs available
+            self.number_of_fits = N_all_taxids
         if self.verbose:
             print(f"Setting number_of_fits to {self.number_of_fits}")
 
@@ -87,6 +90,10 @@ class Config:
 
 
 #%%
+
+
+def get_version():
+    return toml.load("../pyproject.toml")["tool"]["poetry"]["version"]
 
 
 def is_ipython():

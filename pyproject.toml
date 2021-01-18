@@ -1,10 +1,14 @@
 [tool.poetry]
 name = "metadamage"
-version = "0.1.2"
+version = "0.1.8"
 description = "Metagenomics Ancient Damage: metadamage"
 authors = ["Christian Michelsen <christianmichelsen@gmail.com>"]
 license = "MIT"
+keywords = ['metadamage', 'metagenomics', 'ancient damage', 'DNA damage']
+repository = "https://github.com/ChristianMichelsen/metadamage"
 readme = "README.md"
+include = ["metadamage/style.mplstyle", 'pyproject.toml']
+
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -25,6 +29,7 @@ typer = {extras = ["all"], version = "^0.3.2"}
 fire = "^0.3.1"
 click-help-colors = "^0.9"
 tqdm = "^4.56.0"
+toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

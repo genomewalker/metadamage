@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm.auto import tqdm
 import datetime
+from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -21,10 +22,21 @@ def set_rc_params(fig_dpi=300):
     mpl.rc("axes", edgecolor="k", linewidth=2)
 
 
-def set_style(style_path="./MADpy-pkg/style.mplstyle", fig_dpi=50):
+# def find_style_file():
+#     if Path("./metadamage/style.mplstyle").exists():
+#         return "./metadamage/style.mplstyle"
+#     if Path("style.mplstyle").exists():
+#         return "style.mplstyle"
+
+
+def set_style(style_path="style.mplstyle", fig_dpi=50):
+
+    # print(Path.cwd())
+    # print(find_style_file())
+
     try:
         plt.style.use(style_path)
-    except FileNotFoundError:
+    except OSError:
         tqdm.write(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
     set_rc_params(fig_dpi=fig_dpi)
 

@@ -5,11 +5,12 @@ from click_help_colors import HelpColorsGroup, HelpColorsCommand
 from rich.console import Console
 from dataclasses import dataclass, field
 
+
 from metadamage import utils
 from metadamage.main import main
 
-
-__version__ = "0.1.2"
+# __version__ = utils.get_version()
+__version__ = "0.1.8"
 
 
 def version_callback(value: bool):

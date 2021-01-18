@@ -25,7 +25,7 @@ def main(filenames, cfg):
 
     if cfg.verbose:
         console.print(
-            f"\nRunning [bold green]MADpy-pkg[/bold green]",
+            f"\nRunning [bold green]metadamage[/bold green]",
             f"on {len(filenames)} file(s)",
             f"using the following configuration: \n",
         )
