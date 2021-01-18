@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "metadamage"
-version = "0.1.10"
+version = "0.1.11"
 description = "Metagenomics Ancient Damage: metadamage"
 authors = ["Christian Michelsen <christianmichelsen@gmail.com>"]
 license = "MIT"
