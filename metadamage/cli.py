@@ -5,10 +5,7 @@ from click_help_colors import HelpColorsGroup, HelpColorsCommand
 from rich.console import Console
 from dataclasses import dataclass, field
 
-# from MADpy_pkg import fileloader
-# from MADpy_pkg import fit
-# from MADpy_pkg import plot
-from MADpy_pkg import utils
+from metadamage import utils
 from main import main
 
 
@@ -70,19 +67,19 @@ def cli(
     # version
     version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
 ):
-    """Metagenomics Ancient Damage python: MADpy
+    """Metagenomics Ancient Damage: metadamage
 
     FILENAME is the name of the file(s) to fit (with the ancient-model)
 
     run as e.g.:
 
     \b
-        $ MADpy --verbose --max-fits 10 --max_cores 2 ./data/input/data_ancient.txt
+        $ metadamage --verbose --max-fits 10 --max_cores 2 ./data/input/data_ancient.txt
 
     or by for two files:
 
     \b
-        $ MADpy --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
+        $ metadamage --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
 
     """
 
@@ -109,4 +106,4 @@ def cli(
 
 
 def main_cli():
-    app(prog_name="MADpy")
+    app(prog_name="metadamage")

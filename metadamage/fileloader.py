@@ -7,7 +7,7 @@ import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client, LocalCluster
 
-from MADpy_pkg import utils
+from metadamage import utils
 
 
 set_ACTG = set(["A", "C", "G", "T"])

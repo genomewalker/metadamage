@@ -10,9 +10,9 @@ from matplotlib.ticker import MultipleLocator
 from matplotlib.ticker import EngFormatter
 from matplotlib.lines import Line2D
 
-from MADpy_pkg import utils
-from MADpy_pkg import fit
-from MADpy_pkg import fileloader
+from metadamage import utils
+from metadamage import fit
+from metadamage import fileloader
 
 
 def set_rc_params(fig_dpi=300):

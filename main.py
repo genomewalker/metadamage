@@ -7,10 +7,10 @@ from pprint import pprint, pformat
 
 from rich.console import Console
 
-from MADpy_pkg import fileloader
-from MADpy_pkg import fit
-from MADpy_pkg import plot
-from MADpy_pkg import utils
+from metadamage import fileloader
+from metadamage import fit
+from metadamage import plot
+from metadamage import utils
 
 import numpyro
 
