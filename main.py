@@ -7,10 +7,10 @@ from pprint import pprint, pformat
 
 from rich.console import Console
 
-from MADpy import fileloader
-from MADpy import fit
-from MADpy import plot
-from MADpy import utils
+from MADpy_pkg import fileloader
+from MADpy_pkg import fit
+from MADpy_pkg import plot
+from MADpy_pkg import utils
 
 import numpyro
 
@@ -25,7 +25,7 @@ def main(filenames, cfg):
 
     if cfg.verbose:
         console.print(
-            f"\nRunning [bold green]MADpy[/bold green]",
+            f"\nRunning [bold green]MADpy-pkg[/bold green]",
             f"on {len(filenames)} file(s)",
             f"using the following configuration: \n",
         )
@@ -77,34 +77,28 @@ def main(filenames, cfg):
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
 
-if utils.is_ipython():
+# if utils.is_ipython():
 
-    print("Doing iPython plot")
+#     print("Doing iPython plot")
 
-    filenames = [
-        "./data/input/data_ancient.txt",
-        "./data/input/data_control.txt",
-    ]
+#     filenames = [
+#         "./data/input/data_ancient.txt",
+#         "./data/input/data_control.txt",
+#     ]
 
-    reload(utils)
+#     reload(utils)
 
-    cfg = utils.Config(
-        max_fits=None,
-        max_plots=None,
-        max_cores=2,
-        verbose=True,
-        force_reload_files=False,
-        force_plots=False,
-        force_fits=False,
-        version="0.1.0",
-    )
+#     cfg = utils.Config(
+#         max_fits=None,
+#         max_plots=None,
+#         max_cores=2,
+#         verbose=True,
+#         force_reload_files=False,
+#         force_plots=False,
+#         force_fits=False,
+#         version="0.1.0",
+#     )
 
-    # if False:
-    if True:
-        main(filenames, cfg)
-
-
-#%%
-
-
-# %%
+#     # if False:
+#     if True:
+#         main(filenames, cfg)

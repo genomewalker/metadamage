@@ -10,9 +10,9 @@ from matplotlib.ticker import MultipleLocator
 from matplotlib.ticker import EngFormatter
 from matplotlib.lines import Line2D
 
-from MADpy import utils
-from MADpy import fit
-from MADpy import fileloader
+from MADpy_pkg import utils
+from MADpy_pkg import fit
+from MADpy_pkg import fileloader
 
 
 def set_rc_params(fig_dpi=300):
@@ -21,7 +21,7 @@ def set_rc_params(fig_dpi=300):
     mpl.rc("axes", edgecolor="k", linewidth=2)
 
 
-def set_style(style_path="./MADpy/style.mplstyle", fig_dpi=50):
+def set_style(style_path="./MADpy-pkg/style.mplstyle", fig_dpi=50):
     try:
         plt.style.use(style_path)
     except FileNotFoundError:

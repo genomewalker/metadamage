@@ -1,7 +1,15 @@
 import typer
-from typing import Optional, List
+from typing import Optional, List, Union
 from pathlib import Path
 from click_help_colors import HelpColorsGroup, HelpColorsCommand
+from rich.console import Console
+from dataclasses import dataclass, field
+
+# from MADpy_pkg import fileloader
+# from MADpy_pkg import fit
+# from MADpy_pkg import plot
+from MADpy_pkg import utils
+from main import main
 
 
 __version__ = "0.1.0"
@@ -45,42 +53,60 @@ class ColorfulApp(typer.Typer):
 app = ColorfulApp()
 
 
-def exists(file):
-    if file.is_file():
-        return True
-    return False
-
-
 @app.command()
-def main(
+def cli(
+    # input arguments (filenames)
     filenames: List[Path] = typer.Argument(..., help="username"),
-    max_fits: Optional[int] = typer.Option(None, help="[default: None]"),  # Optional[int] = None
-    max_fits: Optional[int] = typer.Option(None, help="[default: None]"),  # Optional[int] = None
-    max_plots: Optional[int] = typer.Option(None, help="[default: None]"),  # Optional[int] = None
+    # maximum values
+    max_fits: Optional[int] = typer.Option(None, help="[default: None]"),
+    max_plots: Optional[int] = typer.Option(None, help="[default: None]"),
     max_cores: int = 1,
+    max_position: int = typer.Option(15),
+    # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
-    force_reload_files: bool = typer.Option(False, "--force_reload_files"),
-    force_plots: bool = typer.Option(False, "--force_plots"),
-    force_fits: bool = typer.Option(False, "--force_fits"),
+    force_reload_files: bool = typer.Option(False, "--force-reload-files"),
+    force_plots: bool = typer.Option(False, "--force-plots"),
+    force_fits: bool = typer.Option(False, "--force-fits"),
+    # version
     version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
 ):
+    """Metagenomics Ancient Damage python: MADpy
+
+    FILENAME is the name of the file(s) to fit (with the ancient-model)
+
+    run as e.g.:
+
+    \b
+        $ MADpy --verbose --max-fits 10 --max_cores 2 ./data/input/data_ancient.txt
+
+    or by for two files:
+
+    \b
+        $ MADpy --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
+
     """
-    Say hi to NAME, optionally with a --lastname.
 
-    If --formal is used, say hi very formally.
-    """
+    d_cfg = {
+        "max_fits": max_fits,
+        "max_plots": max_plots,
+        "max_cores": max_cores,
+        "max_position": max_position,
+        #
+        "verbose": verbose,
+        #
+        "force_reload_files": force_reload_files,
+        "force_plots": force_plots,
+        "force_fits": force_fits,
+        "version": __version__,
+    }
 
-    for filename in filenames:
-        if not exists(filename):
-
-            continue
-        print(type(filename))
-
-        if verbose:
-            typer.echo(f"Good day Ms. {filename}.")
-        else:
-            typer.echo(f"Hello {filename}")
+    cfg = utils.Config(**d_cfg)
+    main(filenames, cfg)
 
 
-if __name__ == "__main__":
-    app()
+# if __name__ == "__main__":
+#     app()
+
+
+def main_cli():
+    app(prog_name="MADpy")

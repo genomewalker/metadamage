@@ -27,7 +27,7 @@ __pycache__/
 .DS_Store
 
 # setuptools
-MADpy.egg-info/
+MADpy-pkg.egg-info/
 
 # vim
 *.swp

@@ -14,8 +14,8 @@ from numpyro.infer import MCMC, NUTS, Predictive
 from numpyro.infer import log_likelihood
 
 
-from MADpy import utils
-from MADpy import fileloader
+from MADpy_pkg import utils
+from MADpy_pkg import fileloader
 
 numpyro.enable_x64()
 

@@ -1,10 +1,10 @@
 cff-version: 1.1.0
 message: If you use this software, please cite it as below.
-title: "Metagenomics Ancient Data python: MADpy"
+title: "Metagenomics Ancient Data python: MADpy-pkg"
 authors:
   - family-names: Michelsen
     given-names: Christian
     orcid: "https://orcid.org/0000-0001-8446-9348"
-repository-code: "https://github.com/ChristianMichelsen/MADpy"
+repository-code: "https://github.com/ChristianMichelsen/MADpy-pkg"
 date-released: 2021-01-13
 #doi: xxxx

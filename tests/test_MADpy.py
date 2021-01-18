@@ -1,4 +1,4 @@
-from MADpy import __version__
+from MADpy_pkg import __version__
 
 
 def test_version():
