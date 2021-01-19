@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "metadamage"
-version = "0.1.13"
+# version = "0.1.13"
+version = "0.0.0"
 description = "Metagenomics Ancient Damage: metadamage"
 authors = ["Christian Michelsen <christianmichelsen@gmail.com>"]
 license = "MIT"
@@ -26,6 +27,7 @@ rich = "^9.8.1"
 typer = {extras = ["all"], version = "^0.3.2"}
 click-help-colors = "^0.9"
 tqdm = "^4.56.0"
+poetry-dynamic-versioning = "^0.12.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"
@@ -37,6 +39,13 @@ pylint = "^2.6.0"
 [tool.poetry.scripts]
 metadamage = "metadamage.cli:main_cli"
 
+[tool.poetry-dynamic-versioning]
+enable = true
+# vcs = "git"
+style = "semver"
+# [tool.poetry-dynamic-versioning.substitution]
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+# requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
