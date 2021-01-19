@@ -10,15 +10,10 @@ from metadamage.__init__ import __version__
 from metadamage import utils
 from metadamage.main import main
 
-# __version__ = utils.get_version()
-# __version__ = "0
-
-
 def version_callback(value: bool):
     if value:
         typer.echo(f"Awesome CLI Version: {__version__}")
         raise typer.Exit()
-
 
 class CustomHelpColorsCommand(HelpColorsCommand):
     """Colorful command line main help. Colors one of:
