@@ -98,11 +98,6 @@ def find_style_file():
         return path
 
 
-def get_version():
-    # return toml.load("../pyproject.toml")["tool"]["poetry"]["version"]
-    return version("metadamage")
-
-
 def is_ipython():
     try:
         return __IPYTHON__
