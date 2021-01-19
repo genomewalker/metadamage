@@ -1,12 +1,15 @@
+# Scientific Library
 import numpy as np
 import pandas as pd
-from tqdm.auto import tqdm
 
+# Third Party
 import dask
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client, LocalCluster
+from tqdm.auto import tqdm
 
+# First Party
 from metadamage import utils
 
 

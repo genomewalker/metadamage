@@ -1,29 +1,31 @@
+# Scientific Library
 import numpy as np
-from scipy.stats.distributions import chi2 as sp_chi2
-from scipy.stats import norm as sp_norm
-from pathlib import Path
-from scipy import stats
-import dill
-import shutil
-from PyPDF2 import PdfFileReader
-from tqdm.auto import tqdm
-from joblib import Parallel
 import pandas as pd
-import importlib.resources as importlib_resources
+from scipy import stats
+from scipy.stats import norm as sp_norm
+from scipy.stats.distributions import chi2 as sp_chi2
+
+# Standard Library
+from dataclasses import dataclass, field
 from importlib.metadata import version
+import importlib.resources as importlib_resources
+from pathlib import Path
+import shutil
+from typing import List, Optional, Union
+
+# Third Party
+from PyPDF2 import PdfFileReader
+from click_help_colors import HelpColorsCommand, HelpColorsGroup
+import dill
+from joblib import Parallel
+from psutil import cpu_count
+from rich.console import Console
+from tqdm.auto import tqdm
+
 
 # def __post_init__
 
 #%%
-
-
-from psutil import cpu_count
-
-from typing import Optional, List, Union
-from pathlib import Path
-from click_help_colors import HelpColorsGroup, HelpColorsCommand
-from rich.console import Console
-from dataclasses import dataclass, field
 
 
 @dataclass
@@ -168,6 +170,7 @@ def save_dill(filename, x):
 
 
 def avoid_fontconfig_warning():
+    # Standard Library
     import os
 
     os.environ["LANG"] = "en_US.UTF-8"
@@ -292,8 +295,6 @@ def is_pdf_valid(filename, forced=False, N_pages=None):
 
 
 #%%
-
-from psutil import cpu_count
 
 
 def get_num_cores(cfg):

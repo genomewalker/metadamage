@@ -1,19 +1,20 @@
+# Scientific Library
+import matplotlib as mpl
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter, FormatStrFormatter, MultipleLocator
 import numpy as np
-from tqdm.auto import tqdm
+
+# Standard Library
 import datetime
 from pathlib import Path
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
-from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.ticker import MultipleLocator
-from matplotlib.ticker import EngFormatter
-from matplotlib.lines import Line2D
+# Third Party
+from tqdm.auto import tqdm
 
-from metadamage import utils
-from metadamage import fit
-from metadamage import fileloader
+# First Party
+from metadamage import fileloader, fit, utils
 
 
 def set_rc_params(fig_dpi=300):

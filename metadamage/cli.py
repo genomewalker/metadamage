@@ -1,19 +1,24 @@
-import typer
-from typing import Optional, List, Union
-from pathlib import Path
-from click_help_colors import HelpColorsGroup, HelpColorsCommand
-from rich.console import Console
+# Standard Library
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Optional, Union
 
+# Third Party
+from click_help_colors import HelpColorsCommand, HelpColorsGroup
+from rich.console import Console
+import typer
 
-from metadamage.__init__ import __version__
+# First Party
 from metadamage import utils
+from metadamage.__init__ import __version__
 from metadamage.main import main
+
 
 def version_callback(value: bool):
     if value:
         typer.echo(f"Awesome CLI Version: {__version__}")
         raise typer.Exit()
+
 
 class CustomHelpColorsCommand(HelpColorsCommand):
     """Colorful command line main help. Colors one of:

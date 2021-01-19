@@ -1,21 +1,22 @@
+# Scientific Library
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
-from joblib import Parallel, delayed
+
+# Third Party
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKey as Key
 from jax.scipy.special import logsumexp
-
+from joblib import delayed, Parallel
 import numpyro
 from numpyro import distributions as dist
-from numpyro.infer import MCMC, NUTS, Predictive
-from numpyro.infer import log_likelihood
+from numpyro.infer import log_likelihood, MCMC, NUTS, Predictive
+from tqdm.auto import tqdm
 
+# First Party
+from metadamage import fileloader, utils
 
-from metadamage import utils
-from metadamage import fileloader
 
 numpyro.enable_x64()
 

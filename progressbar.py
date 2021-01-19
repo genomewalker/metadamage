@@ -1,6 +1,9 @@
-from rich.progress import track
+# Standard Library
+from multiprocessing import Pool
 import time
-from rich.progress import Progress
+
+# Third Party
+from rich.progress import Progress, track
 
 
 if False:
@@ -19,6 +22,7 @@ if False:
 
 if False:
 
+    # Third Party
     from rich.panel import Panel
     from rich.progress import Progress
 
@@ -36,23 +40,25 @@ if False:
 
 if False:
 
-    from rich.progress import (
-        BarColumn,
-        DownloadColumn,
-        TextColumn,
-        TransferSpeedColumn,
-        TimeRemainingColumn,
-        Progress,
-        TaskID,
-        TimeElapsedColumn,
-    )
-
+    # Standard Library
     from concurrent.futures import ThreadPoolExecutor
     from functools import partial
     import os.path
     import sys
     from typing import Iterable
     from urllib.request import urlopen
+
+    # Third Party
+    from rich.progress import (
+        BarColumn,
+        DownloadColumn,
+        Progress,
+        TaskID,
+        TextColumn,
+        TimeElapsedColumn,
+        TimeRemainingColumn,
+        TransferSpeedColumn,
+    )
 
     progress = Progress(
         TextColumn("[bold blue]{task.fields[filename]}", justify="right"),
@@ -94,7 +100,6 @@ if False:
 #%%
 
 
-from multiprocessing import Pool
 
 
 def do_work(n):

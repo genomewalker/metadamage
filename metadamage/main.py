@@ -1,18 +1,19 @@
+# Scientific Library
 import numpy as np
 import pandas as pd
+
+# Standard Library
 from importlib import reload
+from pprint import pformat, pprint
 
-from tqdm.auto import tqdm
-from pprint import pprint, pformat
-
-from rich.console import Console
-
-from metadamage import fileloader
-from metadamage import fit
-from metadamage import plot
-from metadamage import utils
-
+# Third Party
 import numpyro
+from rich.console import Console
+from tqdm.auto import tqdm
+
+# First Party
+from metadamage import fileloader, fit, plot, utils
+
 
 numpyro.enable_x64()
 
