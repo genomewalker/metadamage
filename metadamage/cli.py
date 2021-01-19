@@ -16,7 +16,7 @@ from metadamage.main import main
 
 def version_callback(value: bool):
     if value:
-        typer.echo(f"Awesome CLI Version: {__version__}")
+        typer.echo(f"Metadamage CLI, version: {__version__}")
         raise typer.Exit()
 
 
@@ -45,7 +45,9 @@ class ColorfulApp(typer.Typer):
     def __init__(self, *args, cls=CustomHelpColorsGroup, **kwargs) -> None:
         super().__init__(*args, cls=cls, **kwargs)
 
-    def command(self, *args, cls=CustomHelpColorsCommand, **kwargs) -> typer.Typer.command:
+    def command(
+        self, *args, cls=CustomHelpColorsCommand, **kwargs
+    ) -> typer.Typer.command:
         return super().command(*args, cls=cls, **kwargs)
 
 
@@ -67,7 +69,9 @@ def cli(
     force_plots: bool = typer.Option(False, "--force-plots"),
     force_fits: bool = typer.Option(False, "--force-fits"),
     # version
-    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
+    version: Optional[bool] = typer.Option(
+        None, "--version", callback=version_callback
+    ),
 ):
     """Metagenomics Ancient Damage: metadamage
 

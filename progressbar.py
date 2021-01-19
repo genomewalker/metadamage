@@ -91,15 +91,17 @@ if False:
                 for url in urls:
                     filename = url.split("/")[-1]
                     dest_path = os.path.join(dest_dir, filename)
-                    task_id = progress.add_task("download", filename=filename, start=False)
+                    task_id = progress.add_task(
+                        "download", filename=filename, start=False
+                    )
                     pool.submit(copy_url, task_id, url, dest_path)
 
-    download(["https://releases.ubuntu.com/20.04/ubuntu-20.04.1-desktop-amd64.iso"], "./")
+    download(
+        ["https://releases.ubuntu.com/20.04/ubuntu-20.04.1-desktop-amd64.iso"], "./"
+    )
 
 
 #%%
-
-
 
 
 def do_work(n):

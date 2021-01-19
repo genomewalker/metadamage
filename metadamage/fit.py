@@ -276,11 +276,17 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
         fit_mcmc(mcmc_PMD, data)
         fit_mcmc(mcmc_null, data)
 
-        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(mcmc_PMD, data, func=jnp.median)
+        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
+            mcmc_PMD, data, func=jnp.median
+        )
         fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
         fit_result["N_alignments"] = group.N_alignments.iloc[0]
 
-        d_fits[taxid] = {"median": y_median_PMD, "hpdi": y_hpdi_PMD, "fit_result": fit_result}
+        d_fits[taxid] = {
+            "median": y_median_PMD,
+            "hpdi": y_hpdi_PMD,
+            "fit_result": fit_result,
+        }
 
         # if False:
         #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)

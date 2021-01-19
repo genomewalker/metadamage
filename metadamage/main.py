@@ -38,7 +38,9 @@ def main(filenames, cfg):
 
     N_inner_loop = 1 + cfg.make_fits + cfg.make_plots
     bar_format = "{desc}"  # |{bar}| [{elapsed}]
-    tqdm_kwargs = dict(bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False)
+    tqdm_kwargs = dict(
+        bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False
+    )
     pad = utils.string_pad_left_and_right
 
     with tqdm(filenames, desc="Overall progress", dynamic_ncols=True) as it:
