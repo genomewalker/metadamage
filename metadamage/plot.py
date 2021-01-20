@@ -283,10 +283,11 @@ def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
     log_max = int(log10.max()) + 1  # round up
     log_min = int(log10.min()) + 1  # round up
 
-    if log_min != log_max:
+    if log_max - log_min > 1:
         z = 10 ** np.arange(log_min, log_max)
     else:
         z = 10 ** np.array([log_max - 1, log_max])
+
     s = transform(z, vmin=vmin, vmax=vmax, func=func)
     c = np.log10(z)
 
@@ -326,7 +327,22 @@ def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
     )
 
     # Create another legend for the second line.
-    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=26)
+    name = list(kw_cols.keys())[0]
+
+    if len(name) > 60:
+        fontsize = 14
+    elif len(name) > 50:
+        fontsize = 16
+    elif len(name) > 40:
+        fontsize = 19
+    elif len(name) > 30:
+        fontsize = 23
+    elif len(name) > 20:
+        fontsize = 29
+    else:
+        fontsize = 35
+
+    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize)
     plt.legend(handles=legend_names, **kw_leg_names)
 
 
@@ -346,8 +362,6 @@ def get_z_min_max(all_fit_results):
 
 def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0):
 
-    fig, ax = plt.subplots(figsize=(10, 10))
-
     cmaps_list = ["Blues", "Reds", "Greens", "Purples"]
     cmaps = {name: cmap for name, cmap in zip(all_fit_results.keys(), cmaps_list)}
 
@@ -357,13 +371,21 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
     zs = np.array([], dtype=int)
     kw_cols = {}
 
+    fig, ax = plt.subplots(figsize=(10, 10))
+
     for name, df_res in all_fit_results.items():
+        # break
         x = df_res["n_sigma"].values
         y = df_res["D_max"].values
         z = df_res["N_alignments"].values
 
         if N_alignments_min > 0:
             mask = z > N_alignments_min
+
+            # if not values to plot, continue without plotting
+            if mask.sum() == 0:
+                continue
+
             x = x[mask]
             y = y[mask]
             z = z[mask]
@@ -374,6 +396,10 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
 
         kw_cols[name] = dict(cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
         ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
+
+    # if not plotting anything at all, quit
+    if len(zs) == 0:
+        return None
 
     xlabel = r"$n_\sigma$"
     ylabel = r"$D_\mathrm{max}$"
@@ -398,7 +424,7 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
         fontsize=50,
     )
 
-    return fig, ax
+    return fig
 
 
 def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
@@ -421,8 +447,10 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         for N_alignments_min in N_alignments_mins:
-            fig, ax = plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min)
-            pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
+            # break
+            fig = plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min)
+            if fig:
+                pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
             # pdf.savefig(fig)
 
         d = pdf.infodict()

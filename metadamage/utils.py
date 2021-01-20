@@ -107,8 +107,11 @@ def is_ipython():
         return False
 
 
-def extract_name(filename):
-    return Path(filename).stem.split(".")[0]
+def extract_name(filename, max_length=60):
+    name = Path(filename).stem.split(".")[0]
+    if len(name) > max_length:
+        name = name[:max_length] + "..."
+    return name
 
 
 def file_is_valid(file):
@@ -257,9 +260,7 @@ def human_format(num, digits=3, mode="eng"):
     else:
         raise AssertionError(f"'mode' has to be 'eng' or 'scientific', not {mode}.")
 
-    return "{}{}".format(
-        "{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude]
-    )
+    return "{}{}".format("{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude])
 
 
 # def group_contains_nans(group):

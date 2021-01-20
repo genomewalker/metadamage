@@ -38,9 +38,7 @@ def main(filenames, cfg):
 
     N_inner_loop = 1 + cfg.make_fits + cfg.make_plots
     bar_format = "{desc}"  # |{bar}| [{elapsed}]
-    tqdm_kwargs = dict(
-        bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False
-    )
+    tqdm_kwargs = dict(bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False)
     pad = utils.string_pad_left_and_right
 
     with tqdm(filenames, desc="Overall progress", dynamic_ncols=True) as it:
@@ -80,34 +78,32 @@ def main(filenames, cfg):
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
 
-# if utils.is_ipython():
+if utils.is_ipython():
 
-#     print("Doing iPython plot")
+    print("Doing iPython plot")
 
-#     filenames = [
-#         "./data/input/data_ancient.txt",
-#         "./data/input/data_control.txt",
-#     ]
+    filenames = [
+        "../data/input/Lok-75-Sample-2a-Ext-A17-Lib17A-Index1.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        # "../data/input/data_ancient.txt",
+        # "../data/input/data_control.txt",
+    ]
 
-#     reload(utils)
+    reload(utils)
 
-#     cfg = utils.Config(
-#         max_fits=None,
-#         max_plots=None,
-#         max_cores=2,
-#         max_position=15,
-#         verbose=True,
-#         force_reload_files=False,
-#         force_plots=False,
-#         force_fits=False,
-#         version="0.1.0",
-#     )
+    cfg = utils.Config(
+        max_fits=10,
+        max_plots=None,
+        max_cores=2,
+        max_position=15,
+        verbose=True,
+        force_reload_files=False,
+        force_plots=False,
+        force_fits=False,
+        version="0.0.0",
+    )
 
-#     import metadamage
+    import metadamage
 
-#     for x in importlib_resources.contents('metadamage'):
-#         print(x)
-
-#     if False:
-#         # if True:
-#         main(filenames, cfg)
+    if False:
+        # if True:
+        main(filenames, cfg)
