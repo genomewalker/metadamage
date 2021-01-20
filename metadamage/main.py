@@ -82,7 +82,7 @@ if utils.is_ipython():
         min_damage=None,
         min_sigma=None,
         min_alignments=None,
-        sort_by=utils.SortBy.damage,
+        sort_by=utils.SortBy.alignments,
         verbose=True,
         force_reload_files=False,
         force_plots=False,

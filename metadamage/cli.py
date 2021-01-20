@@ -52,7 +52,6 @@ class ColorfulApp(typer.Typer):
 app = ColorfulApp()
 
 
-
 @app.command()
 def cli(
     # input arguments (filenames)
@@ -67,7 +66,7 @@ def cli(
     min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
     min_alignments: Optional[int] = typer.Option(None, help="[default: None]"),
     #
-    sort_by: utils.SortBy = typer.Option(utils.SortBy.damage, case_sensitive=False),
+    sort_by: utils.SortBy = typer.Option(utils.SortBy.alignments, case_sensitive=False),
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
