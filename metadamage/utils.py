@@ -38,7 +38,7 @@ class Config:
     #
     min_D: Optional[int]
     min_sigma: Optional[int]
-    min_aligments: Optional[int]
+    min_alignments: Optional[int]
     #
     verbose: bool
     #
@@ -96,6 +96,33 @@ class Config:
         if self.max_plots is None or self.max_plots > 0:
             return True
         return False
+
+
+def fit_satisfies_thresholds(cfg, d_fit):
+    fit_result = d_fit["fit_result"]
+
+    def attribute_is_rejected(attribute, fit_name):
+        """Helper function to determine if
+        A) cfg.attribute exists and if A, then
+        B) check if the cut threshold is violated
+        Return true if both A) and B) and should thus be rejected
+        """
+        cut = getattr(cfg, attribute)
+        if cut is not None and (fit_result[fit_name] < cut):
+            return True
+        else:
+            return False
+
+    if attribute_is_rejected(attribute="min_D", fit_name="D_max"):
+        return False
+
+    if attribute_is_rejected(attribute="min_sigma", fit_name="n_sigma"):
+        return False
+
+    if attribute_is_rejected(attribute="min_alignments", fit_name="N_alignments"):
+        return False
+
+    return True
 
 
 #%%

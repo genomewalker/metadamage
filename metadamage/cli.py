@@ -64,7 +64,7 @@ def cli(
     # minimum fit values (used for deciding what to plot)
     min_D: Optional[float] = typer.Option(None, help="[default: None]"),
     min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
-    min_aligments: Optional[int] = typer.Option(None, help="[default: None]"),
+    min_alignments: Optional[int] = typer.Option(None, help="[default: None]"),
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
@@ -97,7 +97,7 @@ def cli(
         #
         "min_D": min_D,
         "min_sigma": min_sigma,
-        "min_aligments": min_aligments,
+        "min_alignments": min_alignments,
         #
         "verbose": verbose,
         #

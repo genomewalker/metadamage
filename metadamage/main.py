@@ -92,9 +92,12 @@ if utils.is_ipython():
 
     cfg = utils.Config(
         max_fits=10,
-        max_plots=None,
+        max_plots=5,
         max_cores=2,
         max_position=15,
+        min_D=None,
+        min_sigma=None,
+        min_alignments=None,
         verbose=True,
         force_reload_files=False,
         force_plots=False,

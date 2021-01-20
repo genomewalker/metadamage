@@ -17,6 +17,9 @@ __pycache__/
 !/data/input/data_ancient.txt
 !/data/input/data_control.txt
 
+# ignore figures
+/figures/
+
 # Virtuelenv information
 .python-version
 
