@@ -200,51 +200,76 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
     # desc = f"Plotting {utils.human_format(groupby.ngroups)} TaxIDs in seriel"
     desc = utils.string_pad_left_and_right("TaxIDs", left=8)
 
-    N_plots = len(groupby)
-    if cfg.max_plots is not None and cfg.max_plots < N_plots:
-        N_plots = cfg.max_plots
+    # N_plots = len(groupby)
+    # if cfg.max_plots is not None and cfg.max_plots < N_plots:
+    # N_plots = cfg.max_plots
 
-    i_plots_counter = 0
+    # i_plots_counter = 0
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
-        with tqdm(groupby, desc=desc, leave=False, dynamic_ncols=True, total=N_plots) as it:
-            for taxid, group in it:
-                it.set_postfix(taxid=taxid)
-                if utils.fit_satisfies_thresholds(cfg, d_fits[taxid]):
-                    fig = plot_single_group(group, cfg, d_fits)
-                    pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
-                    i_plots_counter += 1
-                # else:
-                #     if cfg.verbose:
-                #         print(f"TaxID {taxid} did not satisfy the thresholds ")
-                if i_plots_counter >= N_plots:
-                    break
+        # with tqdm(groupby, desc=desc, leave=False, dynamic_ncols=True, total=N_plots) as it:
+        # for taxid, group in it:
+        for taxid, group in tqdm(groupby, desc=desc):
+            # it.set_postfix(taxid=taxid)
+            # if utils.fit_satisfies_thresholds(cfg, d_fits[taxid]):
+            fig = plot_single_group(group, cfg, d_fits)
+            pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
+            # i_plots_counter += 1
+        # else:
+        #     if cfg.verbose:
+        #         print(f"TaxID {taxid} did not satisfy the thresholds ")
+        # if i_plots_counter >= N_plots:
+        # break
 
-            d = pdf.infodict()
-            d["Title"] = "Error Rate Distributions"
-            d["Author"] = "Christian Michelsen"
-            d["CreationDate"] = datetime.datetime.today()
+        d = pdf.infodict()
+        d["Title"] = "Error Rate Distributions"
+        d["Author"] = "Christian Michelsen"
+        d["CreationDate"] = datetime.datetime.today()
 
 
-def plot_error_rates(cfg, df, d_fits=None, number_of_fits=None):
+def plot_error_rates(cfg, df, d_fits, df_results):
 
     """
     freq_strings: list of frequencies encoded as string. First letter corresponds to reference and last letter to sequence. This way allows the following string:
     'AT' = 'A2T' = 'A.T' = 'A->T' ...
     """
 
-    if number_of_fits is None:
-        number_of_fits = cfg.number_of_fits
+    # reload(utils)
 
-    filename = f"./figures/error_rates__{cfg.name}__number_of_fits__{number_of_fits}.pdf"
-    if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_fits):
+    # if cfg.max_plots is None:
+    #     number_of_plots = cfg.number_of_fits
+    # else:
+    #     number_of_plots = cfg.max_plots
+
+    # # do not allow number of plots to be larger than number of fits
+    # if (cfg.number_of_fits is not None) and (number_of_plots > cfg.number_of_fits):
+    #     number_of_plots = cfg.number_of_fits
+
+    # # sort_by = "damage"
+    # taxids = utils.get_sorted_and_cutted_taxids(cfg, df_results)
+    # taxids_top = taxids[:number_of_plots]
+    # df_plot = df.query("taxid in @taxids_top")
+
+    number_of_plots = utils.get_number_of_plots(cfg)
+
+    df_plot_sorted = utils.get_sorted_and_cutted_df(
+        cfg,
+        df,
+        df_results,
+        number_of_plots,
+    )
+
+    filename = f"./figures/error_rates__{cfg.name}__sort_by__{cfg.sort_by}__number_of_plots__{number_of_plots}.pdf"
+    if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_plots):
         if cfg.verbose:
-            tqdm.write(f"Plot of error rates already exist: {filename}\n")
+            # tqdm.write(f"Plot of error rates already exist: {filename}\n")
+            print(f"Plot of error rates already exist: {filename}\n")
         return None
 
-    df_top_N = fileloader.get_top_max_fits(df, number_of_fits)
-    seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits)
+    # df_top_N = fileloader.get_top_max_fits(df, number_of_fits)
+
+    seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
 
 
 #%%
@@ -453,11 +478,14 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
         if cfg.verbose:
-            tqdm.write(f"\nPlot of fit results already exist: {filename}")  # flush=True
+            # tqdm.write(f"\nPlot of fit results already exist: {filename}")  # flush=True
+            print(f"\nPlot of fit results already exist: {filename}")  # flush=True
         return None
 
     if cfg.verbose:
-        tqdm.write(f"\n\nPlotting fit results.")
+        # tqdm.write(f"\n\nPlotting fit results.")
+        print(f"\n\nPlotting fit results.")
+
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         for N_alignments_min in N_alignments_mins:

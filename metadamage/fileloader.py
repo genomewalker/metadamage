@@ -131,23 +131,13 @@ def delayed_list_unknown_length(lst):
 
 
 def extract_top_max_fits_dask(df, max_fits):
-    top_max_fits = (
-        df.groupby("taxid", observed=True)["N_alignments"]
-        .sum()
-        .nlargest(max_fits)
-        .index
-    )
+    top_max_fits = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(max_fits).index
     df_top_N = df[df["taxid"].isin(delayed_list(top_max_fits, max_fits))]
     return df_top_N
 
 
 def extract_top_max_fits(df, max_fits):
-    top_max_fits = (
-        df.groupby("taxid", observed=True)["N_alignments"]
-        .sum()
-        .nlargest(max_fits)
-        .index
-    )
+    top_max_fits = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(max_fits).index
     df_top_N = df[df["taxid"].isin(top_max_fits)]
     return df_top_N
 
@@ -166,9 +156,7 @@ def keep_only_base_columns(df, base_cols_to_keep):
     columns_to_keep = []
     columns = df.columns
     base_columns = get_base_columns(df)
-    base_cols_to_discard = [
-        base for base in base_columns if base not in base_cols_to_keep
-    ]
+    base_cols_to_discard = [base for base in base_columns if base not in base_cols_to_keep]
     for col in columns:
         if col not in base_cols_to_discard:
             columns_to_keep.append(col)
@@ -241,12 +229,14 @@ def load_dataframe(cfg):
 
     if utils.file_exists(filename_parquet, cfg.force_reload_files):
         if cfg.verbose:
-            tqdm.write("Loading DataFrame from parquet-file.")
+            # tqdm.write("Loading DataFrame from parquet-file.")
+            print("Loading DataFrame from parquet-file.")
         df = pd.read_parquet(filename_parquet)
         return df
 
     if cfg.verbose:
-        tqdm.write("Creating DataFrame, please wait.")
+        # tqdm.write("Creating DataFrame, please wait.")
+        print("Creating DataFrame, please wait.")
 
     try:
         df = _load_dataframe_dask(cfg.filename)
@@ -258,7 +248,8 @@ def load_dataframe(cfg):
         df[col] = df[col].astype("category")
 
     if cfg.verbose:
-        tqdm.write("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
+        # tqdm.write("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
+        print("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
     utils.init_parent_folder(filename_parquet)
     df.to_parquet(filename_parquet, engine="pyarrow")
 

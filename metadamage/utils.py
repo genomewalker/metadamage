@@ -36,9 +36,11 @@ class Config:
     max_cores: int
     max_position: Optional[int]
     #
-    min_D: Optional[int]
+    min_damage: Optional[int]
     min_sigma: Optional[int]
     min_alignments: Optional[int]
+    #
+    sort_by: str
     #
     verbose: bool
     #
@@ -98,31 +100,40 @@ class Config:
         return False
 
 
-def fit_satisfies_thresholds(cfg, d_fit):
-    fit_result = d_fit["fit_result"]
+from enum import Enum
 
-    def attribute_is_rejected(attribute, fit_name):
-        """Helper function to determine if
-        A) cfg.attribute exists and if A, then
-        B) check if the cut threshold is violated
-        Return true if both A) and B) and should thus be rejected
-        """
-        cut = getattr(cfg, attribute)
-        if cut is not None and (fit_result[fit_name] < cut):
-            return True
-        else:
-            return False
 
-    if attribute_is_rejected(attribute="min_D", fit_name="D_max"):
-        return False
+class SortBy(str, Enum):
+    alignments = "alignments"
+    damage = "damage"
+    sigma = "sigma"
 
-    if attribute_is_rejected(attribute="min_sigma", fit_name="n_sigma"):
-        return False
 
-    if attribute_is_rejected(attribute="min_alignments", fit_name="N_alignments"):
-        return False
+# def fit_satisfies_thresholds(cfg, d_fit):
+#     fit_result = d_fit["fit_result"]
 
-    return True
+#     def attribute_is_rejected(attribute, fit_name):
+#         """Helper function to determine if
+#         A) cfg.attribute exists and if A, then
+#         B) check if the cut threshold is violated
+#         Return true if both A) and B) and should thus be rejected
+#         """
+#         cut = getattr(cfg, attribute)
+#         if cut is not None and (fit_result[fit_name] < cut):
+#             return True
+#         else:
+#             return False
+
+#     if attribute_is_rejected(attribute="min_damage", fit_name="D_max"):
+#         return False
+
+#     if attribute_is_rejected(attribute="min_sigma", fit_name="n_sigma"):
+#         return False
+
+#     if attribute_is_rejected(attribute="min_alignments", fit_name="N_alignments"):
+#         return False
+
+#     return True
 
 
 #%%
@@ -380,3 +391,57 @@ class ProgressParallel(Parallel):
             self._pbar.total = self.n_dispatched_tasks
         self._pbar.n = self.n_completed_tasks
         self._pbar.refresh()
+
+
+#%%
+
+
+def get_number_of_plots(cfg):
+    if cfg.max_plots is None:
+        number_of_plots = cfg.number_of_fits
+    else:
+        number_of_plots = cfg.max_plots
+    # do not allow number of plots to be larger than number of fits
+    if (cfg.number_of_fits is not None) and (number_of_plots > cfg.number_of_fits):
+        number_of_plots = cfg.number_of_fits
+    return number_of_plots
+
+
+def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
+
+    min_damage = cfg.min_damage if cfg.min_damage else -np.inf
+    min_sigma = cfg.min_sigma if cfg.min_sigma else -np.inf
+    min_alignments = cfg.min_alignments if cfg.min_alignments else -np.inf
+
+    query = (
+        f"D_max >= {min_damage} "
+        + f"and n_sigma >= {min_sigma} "
+        + f"and N_alignments >= {min_alignments}"
+    )
+
+    # cut away fits and TaxIDs which does not satisfy cut criteria
+    df_results_cutted = df_results.query(query)
+
+    d_sort_by = {
+        "alignments": "N_alignments",
+        "damage": "D_max",
+        "sigma": "n_sigma",
+    }
+    sort_by = d_sort_by[cfg.sort_by.lower()]
+
+    # sort the TaxIDs
+    df_results_cutted_ordered = df_results_cutted.sort_values(sort_by, ascending=False)
+
+    taxids = df_results_cutted_ordered.index
+    if number_of_plots is None:
+        number_of_plots = get_number_of_plots(cfg)
+    # get the number_of_plots in the top
+    taxids_top = taxids[:number_of_plots]
+
+    # the actual dataframe, unrelated to the fits
+    df_plot = df.query("taxid in @taxids_top")
+    # the actual dataframe, unrelated to the fits, now sorted
+    # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
+    df_plot_sorted = pd.concat([df_plot.query(f"taxid == {taxid}") for taxid in taxids_top])
+
+    return df_plot_sorted

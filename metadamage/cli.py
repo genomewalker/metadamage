@@ -52,19 +52,22 @@ class ColorfulApp(typer.Typer):
 app = ColorfulApp()
 
 
+
 @app.command()
 def cli(
     # input arguments (filenames)
-    filenames: List[Path] = typer.Argument(..., help="username"),
+    filenames: List[Path] = typer.Argument(...),
     # maximum values
     max_fits: Optional[int] = typer.Option(None, help="[default: None]"),
     max_plots: Optional[int] = typer.Option(None, help="[default: None]"),
     max_cores: int = 1,
     max_position: int = typer.Option(15),
     # minimum fit values (used for deciding what to plot)
-    min_D: Optional[float] = typer.Option(None, help="[default: None]"),
+    min_damage: Optional[float] = typer.Option(None, help="[default: None]"),
     min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
     min_alignments: Optional[int] = typer.Option(None, help="[default: None]"),
+    #
+    sort_by: utils.SortBy = typer.Option(utils.SortBy.damage, case_sensitive=False),
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
@@ -95,9 +98,11 @@ def cli(
         "max_cores": max_cores,
         "max_position": max_position,
         #
-        "min_D": min_D,
+        "min_damage": min_damage,
         "min_sigma": min_sigma,
         "min_alignments": min_alignments,
+        #
+        "sort_by": sort_by,
         #
         "verbose": verbose,
         #
