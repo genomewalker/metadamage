@@ -36,7 +36,7 @@ def main(filenames, cfg):
 
     all_fit_results = {}
 
-    N_inner_loop = 1 + cfg.make_fits + cfg.make_plots
+    N_inner_loop = 1 + cfg.do_make_fits + cfg.do_make_plots
     bar_format = "{desc}"  # |{bar}| [{elapsed}]
     tqdm_kwargs = dict(bar_format=bar_format, dynamic_ncols=True, total=N_inner_loop, leave=False)
     pad = utils.string_pad_left_and_right
@@ -60,13 +60,13 @@ def main(filenames, cfg):
                 pbar.update()
 
                 d_fits = None
-                if cfg.make_fits:
+                if cfg.do_make_fits:
                     pbar.set_description(pad("Fitting", left=4))
                     d_fits, df_results = fit.get_fits(df, cfg)
                     all_fit_results[cfg.name] = df_results
                     pbar.update()
 
-                if cfg.make_plots:
+                if cfg.do_make_plots:
                     pbar.set_description(pad("Plotting", left=4))
                     plot.set_style()
                     plot.plot_error_rates(cfg, df, d_fits=d_fits)
@@ -83,9 +83,9 @@ if utils.is_ipython():
     print("Doing iPython plot")
 
     filenames = [
-        "../data/input/Lok-75-Sample-2a-Ext-A17-Lib17A-Index1.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
-        # "../data/input/data_ancient.txt",
-        # "../data/input/data_control.txt",
+        "./data/input/Lok-75-Sample-2a-Ext-A17-Lib17A-Index1.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        # "./data/input/data_ancient.txt",
+        # "./data/input/data_control.txt",
     ]
 
     reload(utils)
@@ -102,7 +102,11 @@ if utils.is_ipython():
         version="0.0.0",
     )
 
-    import metadamage
+    import os
+    from pathlib import Path
+
+    path = Path().cwd().parent
+    os.chdir(path)
 
     if False:
         # if True:

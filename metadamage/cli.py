@@ -45,9 +45,7 @@ class ColorfulApp(typer.Typer):
     def __init__(self, *args, cls=CustomHelpColorsGroup, **kwargs) -> None:
         super().__init__(*args, cls=cls, **kwargs)
 
-    def command(
-        self, *args, cls=CustomHelpColorsCommand, **kwargs
-    ) -> typer.Typer.command:
+    def command(self, *args, cls=CustomHelpColorsCommand, **kwargs) -> typer.Typer.command:
         return super().command(*args, cls=cls, **kwargs)
 
 
@@ -63,15 +61,17 @@ def cli(
     max_plots: Optional[int] = typer.Option(None, help="[default: None]"),
     max_cores: int = 1,
     max_position: int = typer.Option(15),
+    # minimum fit values (used for deciding what to plot)
+    min_D: Optional[float] = typer.Option(None, help="[default: None]"),
+    min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
+    min_aligments: Optional[int] = typer.Option(None, help="[default: None]"),
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
     force_plots: bool = typer.Option(False, "--force-plots"),
     force_fits: bool = typer.Option(False, "--force-fits"),
     # version
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback
-    ),
+    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
 ):
     """Metagenomics Ancient Damage: metadamage
 
@@ -95,11 +95,16 @@ def cli(
         "max_cores": max_cores,
         "max_position": max_position,
         #
+        "min_D": min_D,
+        "min_sigma": min_sigma,
+        "min_aligments": min_aligments,
+        #
         "verbose": verbose,
         #
         "force_reload_files": force_reload_files,
         "force_plots": force_plots,
         "force_fits": force_fits,
+        #
         "version": __version__,
     }
 

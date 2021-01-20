@@ -35,7 +35,13 @@ class Config:
     max_plots: Optional[int]
     max_cores: int
     max_position: Optional[int]
+    #
+    min_D: Optional[int]
+    min_sigma: Optional[int]
+    min_aligments: Optional[int]
+    #
     verbose: bool
+    #
     force_reload_files: bool
     force_plots: bool
     force_fits: bool
@@ -80,13 +86,13 @@ class Config:
             print(f"Setting number_of_fits to {self.number_of_fits}")
 
     @property
-    def make_fits(self):
+    def do_make_fits(self):
         if self.max_fits is None or self.max_fits > 0:
             return True
         return False
 
     @property
-    def make_plots(self):
+    def do_make_plots(self):
         if self.max_plots is None or self.max_plots > 0:
             return True
         return False
