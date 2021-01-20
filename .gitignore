@@ -23,6 +23,10 @@ __pycache__/
 # remove PyPI wheels
 /dist/
 
+# ignore coverage report
+/htmlcov/
+.coverage
+
 # VS Code
 .vscode/
 

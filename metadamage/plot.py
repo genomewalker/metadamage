@@ -29,9 +29,7 @@ def set_style(style_path=None, fig_dpi=50):
     try:
         plt.style.use(style_path)
     except OSError:
-        tqdm.write(
-            f"Could not find Matplotlib style file. Aesthetics might not be optimal."
-        )
+        tqdm.write(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
     set_rc_params(fig_dpi=fig_dpi)
 
 
@@ -139,9 +137,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
         # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html
         kw = dict(fmt="none", color="C2", capsize=6, capthick=1.5)
         label = r"Fit (68\% HDPI)"
-        ax_forward.errorbar(
-            z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw
-        )
+        ax_forward.errorbar(z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw)
         ax_reverse.errorbar(z[z < 0], y_median[z < 0], hpdi[:, z < 0], **kw)
 
         s = fit_results_to_string(fit_result)
@@ -227,9 +223,7 @@ def plot_error_rates(cfg, df, d_fits=None, number_of_fits=None):
     if number_of_fits is None:
         number_of_fits = cfg.number_of_fits
 
-    filename = (
-        f"./figures/error_rates__{cfg.name}__number_of_fits__{number_of_fits}.pdf"
-    )
+    filename = f"./figures/error_rates__{cfg.name}__number_of_fits__{number_of_fits}.pdf"
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_fits):
         if cfg.verbose:
             tqdm.write(f"Plot of error rates already exist: {filename}\n")
@@ -275,7 +269,7 @@ def _get_legend_handles_names(kw_cols, use_monospace_font=True):
     for name, kw_col in kw_cols.items():
         cmap = mpl.cm.get_cmap(kw_col["cmap"])
         kw = dict(marker="o", color="w", markersize=20, alpha=0.8)
-        label = name.replace("_", "\_")
+        label = name.replace("_", r"\_")
         if use_monospace_font:
             label = r"\texttt{" + label + r"}"
         circle = Line2D([0], [0], label=label, markerfacecolor=cmap(0.75), **kw)
@@ -317,9 +311,7 @@ def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
 
 def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
 
-    legend_N_alignments, legend_names = make_custom_legend(
-        zs, ax, vmin, vmax, func, kw_cols
-    )
+    legend_N_alignments, legend_names = make_custom_legend(zs, ax, vmin, vmax, func, kw_cols)
 
     # Create a legend for the first line.
     ax.add_artist(
@@ -377,14 +369,10 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
             z = z[mask]
         zs = np.append(zs, z)
 
-        s = transform(
-            z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax)
-        )
+        s = transform(z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax))
         c = np.log10(z)
 
-        kw_cols[name] = dict(
-            cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None
-        )
+        kw_cols[name] = dict(cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
         ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
 
     xlabel = r"$n_\sigma$"
@@ -433,9 +421,7 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         for N_alignments_min in N_alignments_mins:
-            fig, ax = plot_fit_results_single_N_aligment(
-                all_fit_results, cfg, N_alignments_min
-            )
+            fig, ax = plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min)
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
             # pdf.savefig(fig)
 
