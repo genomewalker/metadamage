@@ -74,8 +74,8 @@ def cli(
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
-    force_plots: bool = typer.Option(False, "--force-plots"),
     force_fits: bool = typer.Option(False, "--force-fits"),
+    force_plots: bool = typer.Option(False, "--force-plots"),
     # version
     version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
 ):
@@ -110,8 +110,8 @@ def cli(
         "verbose": verbose,
         #
         "force_reload_files": force_reload_files,
-        "force_plots": force_plots,
         "force_fits": force_fits,
+        "force_plots": force_plots,
         #
         "version": __version__,
     }
