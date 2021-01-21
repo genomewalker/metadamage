@@ -22,8 +22,7 @@ jobs:
         uses: snok/install-poetry@v1.1.1
         with:
           virtualenvs-create: true
-          virtualenvs-in-project: false
-          virtualenvs-path: {cache-dir}/virtualenvs
+          virtualenvs-in-project: true
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
@@ -31,8 +30,7 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v2
         with:
-          # path: .venv
-          path: {cache-dir}/virtualenvs
+          path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
       #----------------------------------------------
       # install dependencies if cache does not exist
@@ -76,8 +74,7 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          # source .venv/bin/activate
-          source {cache-dir}/virtualenvs/bin/activate
+          source .venv/bin/activate
           poetry run pytest .
 
       #----------------------------------------------
@@ -104,17 +101,8 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          # source .venv/bin/activate
-          source {cache-dir}/virtualenvs/bin/activate
+          source .venv/bin/activate
           pytest .
-
-      #----------------------------------------------
-      #              run test suite 7
-      #----------------------------------------------
-      - name: Run tests
-        continue-on-error: true
-        run: |
-          poetry run pytest .
 
       # ----------------------------------------------
       #              Run Black formatter
