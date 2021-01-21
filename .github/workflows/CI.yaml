@@ -46,7 +46,7 @@ jobs:
           # source .venv/bin/activate
           # source $(poetry env info --path)/bin/activate
           # pytest .
-          poetry run pytest .
+          # poetry run pytest .
 
       #----------------------------------------------
       #              Run Black formatter
