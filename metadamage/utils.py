@@ -7,6 +7,7 @@ from scipy.stats.distributions import chi2 as sp_chi2
 
 # Standard Library
 from dataclasses import dataclass, field
+from enum import Enum
 from importlib.metadata import version
 import importlib.resources as importlib_resources
 from pathlib import Path
@@ -98,9 +99,6 @@ class Config:
         if self.max_plots is None or self.max_plots > 0:
             return True
         return False
-
-
-from enum import Enum
 
 
 class SortBy(str, Enum):
@@ -304,7 +302,9 @@ def human_format(num, digits=3, mode="eng"):
     else:
         raise AssertionError(f"'mode' has to be 'eng' or 'scientific', not {mode}.")
 
-    return "{}{}".format("{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude])
+    return "{}{}".format(
+        "{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude]
+    )
 
 
 # def group_contains_nans(group):
@@ -442,6 +442,8 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
     df_plot = df.query("taxid in @taxids_top")
     # the actual dataframe, unrelated to the fits, now sorted
     # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
-    df_plot_sorted = pd.concat([df_plot.query(f"taxid == {taxid}") for taxid in taxids_top])
+    df_plot_sorted = pd.concat(
+        [df_plot.query(f"taxid == {taxid}") for taxid in taxids_top]
+    )
 
     return df_plot_sorted
