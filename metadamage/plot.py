@@ -274,10 +274,6 @@ def plot_error_rates(cfg, df, d_fits, df_results):
 
 #%%
 
-xlim = (-3, 18)
-ylim = (0, 1)
-alpha_plot = 0.1
-
 
 def transform(x_org, vmin=0, vmax=1, func=lambda x: x, xmin=None, xmax=None):
     x = func(x_org)
@@ -405,22 +401,42 @@ cmaps_list = [
     "Greens",
     "Purples",
     "Oranges",
-    # "YlOrBr",
-    # "YlOrRd",
-    # "OrRd",
-    # "PuRd",
-    # "RdPu",
-    # "BuPu",
-    # "GnBu",
-    # "PuBu",
-    # "YlGnBu",
-    # "PuBuGn",
-    # "BuGn",
-    # "YlGn",
 ]
 
+# xlim = (-3, 18)
+# ylim = (0, 1)
 
-def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0):
+
+def find_fit_results_limits(all_fit_results):
+
+    n_sigma_min = np.inf
+    n_sigma_max = -np.inf
+
+    D_max_min = np.inf
+    D_max_max = -np.inf
+
+    for df_res in all_fit_results.values():
+        n_sigma = df_res["n_sigma"]
+        D_max = df_res["D_max"]
+
+        if min(n_sigma) < n_sigma_min:
+            n_sigma_min = min(n_sigma)
+        if max(n_sigma) > n_sigma_max:
+            n_sigma_max = max(n_sigma)
+
+        if min(D_max) < D_max_min:
+            D_max_min = min(D_max)
+        if max(D_max) > D_max_max:
+            D_max_max = max(D_max)
+
+    n_sigma_lim = (n_sigma_min - 0.2, n_sigma_max + 0.2)
+    D_max_lim = (max(D_max_min, 0), min(D_max_max + 0.1, 1))
+    return n_sigma_lim, D_max_lim
+
+
+def plot_fit_results_single_N_aligment(
+    all_fit_results, cfg, N_alignments_min=0, n_sigma_lim=(-3, 20), D_max_lim=(0, 1)
+):
 
     cmaps = {name: cmap for name, cmap in zip(all_fit_results.keys(), cmaps_list)}
 
@@ -462,7 +478,7 @@ def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0)
 
     xlabel = r"$n_\sigma$"
     ylabel = r"$D_\mathrm{max}$"
-    ax.set(xlim=xlim, ylim=ylim, xlabel=xlabel, ylabel=ylabel)
+    ax.set(xlim=n_sigma_lim, ylim=D_max_lim, xlabel=xlabel, ylabel=ylabel)
 
     set_custom_legends(zs, ax, vmin, vmax, func, kw_cols)
 
@@ -512,11 +528,20 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
         kw_it = enumerate(all_fit_results.items())
         all_fit_results = {key: val for i, (key, val) in kw_it if i < len(cmaps_list)}
 
+    n_sigma_lim, D_max_lim = find_fit_results_limits(all_fit_results)
+
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         for N_alignments_min in N_alignments_mins:
             # break
-            fig = plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min)
+
+            fig = plot_fit_results_single_N_aligment(
+                all_fit_results,
+                cfg,
+                N_alignments_min=N_alignments_min,
+                n_sigma_lim=n_sigma_lim,
+                D_max_lim=D_max_lim,
+            )
             if fig:
                 pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
             # pdf.savefig(fig)
