@@ -399,9 +399,29 @@ def get_z_min_max(all_fit_results):
     return zmin, zmax
 
 
+cmaps_list = [
+    "Blues",
+    "Reds",
+    "Greens",
+    "Purples",
+    "Oranges",
+    # "YlOrBr",
+    # "YlOrRd",
+    # "OrRd",
+    # "PuRd",
+    # "RdPu",
+    # "BuPu",
+    # "GnBu",
+    # "PuBu",
+    # "YlGnBu",
+    # "PuBuGn",
+    # "BuGn",
+    # "YlGn",
+]
+
+
 def plot_fit_results_single_N_aligment(all_fit_results, cfg, N_alignments_min=0):
 
-    cmaps_list = ["Blues", "Reds", "Greens", "Purples"]
     cmaps = {name: cmap for name, cmap in zip(all_fit_results.keys(), cmaps_list)}
 
     zmin, zmax = get_z_min_max(all_fit_results)
@@ -485,6 +505,12 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     if cfg.verbose:
         # tqdm.write(f"\n\nPlotting fit results.")
         print(f"\n\nPlotting fit results.")
+
+    if len(all_fit_results) > len(cmaps_list):
+        if cfg.verbose:
+            print(f"Only plotting the first {len(cmaps_list)} fits")
+        kw_it = enumerate(all_fit_results.items())
+        all_fit_results = {key: val for i, (key, val) in kw_it if i < len(cmaps_list)}
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:

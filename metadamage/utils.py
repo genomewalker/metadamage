@@ -64,11 +64,11 @@ class Config:
             self.num_cores = available_cores - 1
             if self.verbose:
                 print(
-                    f"'max-cores' is set to a value larger than the maximum available",
+                    f"'max_cores' is set to a value larger than the maximum available",
                     f"so clipping to {self.num_cores} (available-1) cores",
                 )
         elif self.max_cores < 0:
-            self.num_cores = available_cores - self.max_cores
+            self.num_cores = available_cores - abs(self.max_cores)
             if self.verbose:
                 print(
                     f"'max-cores' is set to a negative value",

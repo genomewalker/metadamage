@@ -173,11 +173,9 @@ def sort_by_alignments(df_top_N):
 
 def cut_NANs_away(df):
     # we throw away rows with no C references or G references
-    nan_mask = (df["C"] == 0) | (df["G"] == 0)
-    df_nans = df.loc[nan_mask]
-    bad_taxids = df_nans.taxid.unique()
-    mask_bad = df.taxid.isin(bad_taxids)
-    return df.loc[~mask_bad]
+    bad_taxids = df.query("C == 0 | G == 0").taxid.unique()
+    df_nans_removed = df.query("taxid not in @bad_taxids")
+    return df_nans_removed
 
 
 def get_top_max_fits(df, number_of_fits):

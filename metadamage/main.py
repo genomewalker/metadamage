@@ -35,20 +35,31 @@ def main(filenames, cfg):
     console.rule("[bold red]Chapter 2")
 
     all_fit_results = {}
+    N_files = len(filenames)
 
-    for filename in filenames:
+    for i_filename, filename in enumerate(filenames):
+        name = utils.extract_name(filename)
+
+        print(f"Now running file {i_filename}/{N_files}: {name}: ")
 
         if not utils.file_is_valid(filename):
-            print(f"Got error here: {filename}")
+            print(f"Got error here: {name}")
             continue
 
         cfg.filename = filename
-        cfg.name = utils.extract_name(filename)
+        cfg.name = name
 
         df = fileloader.load_dataframe(cfg)
-        cfg.set_number_of_fits(df)
+        if len(df) == 0:
+            print(
+                "Length of dataframe was 0. Stopping any further operations on this file. "
+                "This might be due to a quite restrictive cut at the moment "
+                "requiring that both C and G are present in the read.\n"
+            )
+            continue
 
         if cfg.do_make_fits:
+            cfg.set_number_of_fits(df)
             d_fits, df_results = fit.get_fits(df, cfg)
             all_fit_results[cfg.name] = df_results
 
@@ -67,7 +78,7 @@ if utils.is_ipython():
     print("Doing iPython plot")
 
     filenames = [
-        "./data/input/Lok-75-Sample-2a-Ext-A17-Lib17A-Index1.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
         # "./data/input/data_ancient.txt",
         # "./data/input/data_control.txt",
     ]
@@ -75,9 +86,9 @@ if utils.is_ipython():
     reload(utils)
 
     cfg = utils.Config(
-        max_fits=None,
-        max_plots=5,
-        max_cores=2,
+        max_fits=100,
+        max_plots=10,
+        max_cores=-1,
         max_position=15,
         min_damage=None,
         min_sigma=None,
@@ -95,6 +106,8 @@ if utils.is_ipython():
 
     path = Path().cwd().parent
     os.chdir(path)
+
+    filenames = list(Path("./data/input/").rglob("mikkel_data/*taxid.counts.txt"))
 
     if False:
         # if True:
