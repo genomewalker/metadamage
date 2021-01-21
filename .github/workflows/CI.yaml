@@ -43,8 +43,9 @@ jobs:
       #----------------------------------------------
       - name: Run tests
         run: |
-          # source .venv/bin/activate
+          source .venv/bin/activate
           # source $(poetry env info --path)/bin/activate
+          # source $HOME/.poetry/env
           # pytest .
           # poetry run pytest .
 
