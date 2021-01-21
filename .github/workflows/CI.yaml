@@ -22,7 +22,6 @@ jobs:
         uses: snok/install-poetry@v1.1.1
         with:
           virtualenvs-create: true
-          # virtualenvs-in-project: true
           virtualenvs-in-project: false
           virtualenvs-path: {cache-dir}/virtualenvs
       #----------------------------------------------
