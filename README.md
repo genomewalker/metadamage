@@ -78,6 +78,20 @@ The `metadamage` CLI has the following options.
   - `--version`: Print the current version of the program and exit.
 
 
+[tex-image-link-generator](https://tex-image-link-generator.herokuapp.com/)
+
+markdown
+![D_\mathrm{max}](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D)
+
+html
+<img src=
+"https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D"
+alt="D_\mathrm{max}">
+
+[jsfiddle.net](https://jsfiddle.net/8ndx694g/)
+<img src="https://render.githubusercontent.com/render/math?math=%24D_%5Cmathrm%7Bmax%7D%24">
+
+
 <!--
 ## Anaconda
 
@@ -108,8 +122,8 @@ git clone https://github.com/pyro-ppl/numpyro.git
 pip install -e .[dev]  # contains additional dependencies for NumPyro development -->
 
 
-<!-- poetry add git+https://github.com/sdispater/pendulum.git -->
-<!-- poetry add git+https://github.com/sdispater/pendulum.git#develop -->
+<!-- poetry add git+https://github.com/ChristianMichelsen/metadamage.git -->
+<!-- poetry add git+https://github.com/ChristianMichelsen/metadamage.git#develop -->
 <!-- poetry add ./my-package/ -->
 
 
