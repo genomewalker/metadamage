@@ -45,13 +45,14 @@ class ColorfulApp(typer.Typer):
     def __init__(self, *args, cls=CustomHelpColorsGroup, **kwargs) -> None:
         super().__init__(*args, cls=cls, **kwargs)
 
-    def command(
-        self, *args, cls=CustomHelpColorsCommand, **kwargs
-    ) -> typer.Typer.command:
+    def command(self, *args, cls=CustomHelpColorsCommand, **kwargs) -> typer.Typer.command:
         return super().command(*args, cls=cls, **kwargs)
 
 
 app = ColorfulApp()
+
+
+from typing import Literal
 
 
 @app.command()
@@ -69,15 +70,14 @@ def cli(
     min_alignments: Optional[int] = typer.Option(None, help="[default: None]"),
     #
     sort_by: utils.SortBy = typer.Option(utils.SortBy.alignments, case_sensitive=False),
+    # sort_by: Literal["alignments", "damage", "sigma"] = "alignments",
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
     force_plots: bool = typer.Option(False, "--force-plots"),
     force_fits: bool = typer.Option(False, "--force-fits"),
     # version
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback
-    ),
+    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
 ):
     """Metagenomics Ancient Damage: metadamage
 
