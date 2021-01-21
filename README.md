@@ -81,11 +81,12 @@ The `metadamage` CLI has the following options.
 [tex-image-link-generator](https://tex-image-link-generator.herokuapp.com/)
 
 markdown
-![D_\mathrm{max}](https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D)
+![D_\mathrm{max}](https://render.githubusercontent.com/render/math?math=%5CLarge+%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D)
+
 
 html
 <img src=
-"https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D"
+"https://render.githubusercontent.com/render/math?math=%5CLarge+%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D"
 alt="D_\mathrm{max}">
 
 [jsfiddle.net](https://jsfiddle.net/8ndx694g/)
