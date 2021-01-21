@@ -53,7 +53,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 1
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 1
         continue-on-error: true
         run: |
           source $(poetry env info --path)/bin/activate
@@ -62,7 +62,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 2
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 2
         continue-on-error: true
         run: |
           source $HOME/.poetry/env
@@ -71,7 +71,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 3
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 3
         continue-on-error: true
         run: |
           source .venv/bin/activate
@@ -80,7 +80,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 4
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 4
         continue-on-error: true
         run: |
           source $(poetry env info --path)/bin/activate
@@ -89,7 +89,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 5
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 5
         continue-on-error: true
         run: |
           source $HOME/.poetry/env
@@ -98,7 +98,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 6
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 6
         continue-on-error: true
         run: |
           source .venv/bin/activate
@@ -108,7 +108,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 7
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests  7
         continue-on-error: true
         run: |
           poetry run pytest .
@@ -117,7 +117,7 @@ jobs:
       #----------------------------------------------
       #              run test suite 8
       #----------------------------------------------
-      - name: Run tests
+      - name: Run tests 8
         continue-on-error: true
         run: |
           pytest .
