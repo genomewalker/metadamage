@@ -63,9 +63,12 @@ The `metadamage` CLI has the following options.
   - `--max-position`: Maximum position in the sequence to include. Default is +/- 15 (forward/reverse).
 
 - Minimum values or cuts/thresholds for plots
-  - `--min-damage`: Minimum threshold of damage ($D_\mathrm{max}$) in the fit to be included in the plot. Default is None, i.e. to not make any cuts.
-  - `--min-sigma`: Minimum threshold of sigma ($n_\sigma$) in the fit to be included in the plot. Default is None, i.e. to not make any cuts.
-  - `--min-alignments`: Minimum number of alignments ($N_\mathrm{alignments}$) in the sequence to be included in the plot. Default is None, i.e. to not make any cuts.
+  - `--min-damage`: Minimum threshold of damage (![D_\mathrm{max}](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D)
+) in the fit to be included in the plot. Default is None, i.e. to not make any cuts.
+  - `--min-sigma`: Minimum threshold of sigma (![n_\sigma](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+n_%5Csigma)
+) in the fit to be included in the plot. Default is None, i.e. to not make any cuts.
+  - `--min-alignments`: Minimum number of alignments (![N_\mathrm{alignments}](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+N_%5Cmathrm%7Balignments%7D)
+) in the sequence to be included in the plot. Default is None, i.e. to not make any cuts.
 
 - Other:
   - `--sort-by`:     [`alignments`|`damage`|`sigma`]. Which order to sort the plots by when only plotting e.g. the top 10 plots. Default is `alignments` (which is also independent on the fit).
@@ -78,19 +81,8 @@ The `metadamage` CLI has the following options.
   - `--version`: Print the current version of the program and exit.
 
 
-[tex-image-link-generator](https://tex-image-link-generator.herokuapp.com/)
-
-markdown
-![D_\mathrm{max}](https://render.githubusercontent.com/render/math?math=%5CLarge+%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D)
-
-
-html
-<img src=
-"https://render.githubusercontent.com/render/math?math=%5CLarge+%5Cdisplaystyle+D_%5Cmathrm%7Bmax%7D"
-alt="D_\mathrm{max}">
-
-[jsfiddle.net](https://jsfiddle.net/8ndx694g/)
-<img src="https://render.githubusercontent.com/render/math?math=%24D_%5Cmathrm%7Bmax%7D%24">
+<!-- [tex-image-link-generator](https://tex-image-link-generator.herokuapp.com/) -->
+<!-- https://gist.github.com/a-rodin/fef3f543412d6e1ec5b6cf55bf197d7b -->
 
 
 <!--
