@@ -104,6 +104,24 @@ jobs:
           source .venv/bin/activate
           pytest .
 
+
+      #----------------------------------------------
+      #              run test suite 7
+      #----------------------------------------------
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          poetry run pytest .
+
+
+      #----------------------------------------------
+      #              run test suite 8
+      #----------------------------------------------
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          pytest .
+
       # ----------------------------------------------
       #              Run Black formatter
       # ----------------------------------------------
