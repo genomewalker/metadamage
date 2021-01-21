@@ -26,6 +26,9 @@ __pycache__/
 # remove PyPI wheels
 /dist/
 
+# remove docker-related folder
+/docker/
+
 # ignore coverage report
 /htmlcov/
 .coverage

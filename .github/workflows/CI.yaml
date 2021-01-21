@@ -1,6 +1,6 @@
 name: CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   test:
@@ -38,19 +38,68 @@ jobs:
       - name: Install dependencies
         run: poetry install
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+
+      # #----------------------------------------------
+      # #              run test suite
+      # #----------------------------------------------
+      # - name: Run tests
+      #   run: |
+      #     source $(poetry env info --path)/bin/activate
+      #     # source $HOME/.poetry/env
+      #     # source .venv/bin/activate
+      #     poetry run pytest .
+      #     # pytest .
+
       #----------------------------------------------
-      #              run test suite
+      #              run test suite 1
       #----------------------------------------------
       - name: Run tests
         run: |
           source $(poetry env info --path)/bin/activate
-          # source $HOME/.poetry/env
-          # source .venv/bin/activate
-          # poetry run pytest .
+          poetry run pytest .
+
+      #----------------------------------------------
+      #              run test suite 2
+      #----------------------------------------------
+      - name: Run tests
+        run: |
+          source $HOME/.poetry/env
+          poetry run pytest .
+
+      #----------------------------------------------
+      #              run test suite 3
+      #----------------------------------------------
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          poetry run pytest .
+
+      #----------------------------------------------
+      #              run test suite 4
+      #----------------------------------------------
+      - name: Run tests
+        run: |
+          source $(poetry env info --path)/bin/activate
           pytest .
 
       #----------------------------------------------
-      #              Run Black formatter
+      #              run test suite 5
       #----------------------------------------------
+      - name: Run tests
+        run: |
+          source $HOME/.poetry/env
+          pytest .
+
+      #----------------------------------------------
+      #              run test suite 6
+      #----------------------------------------------
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          pytest .
+
+      # ----------------------------------------------
+      #              Run Black formatter
+      # ----------------------------------------------
       # - name: Code Quality
       #   run: poetry run black . --check
