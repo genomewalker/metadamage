@@ -16,6 +16,8 @@ from tqdm.auto import tqdm
 # First Party
 from metadamage import fileloader, fit, utils
 
+console = utils.console
+
 
 def set_rc_params(fig_dpi=300):
     plt.rcParams["figure.figsize"] = (16, 10)
@@ -29,9 +31,7 @@ def set_style(style_path=None, fig_dpi=50):
     try:
         plt.style.use(style_path)
     except OSError:
-        tqdm.write(
-            f"Could not find Matplotlib style file. Aesthetics might not be optimal."
-        )
+        tqdm.write(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
     set_rc_params(fig_dpi=fig_dpi)
 
 
@@ -139,9 +139,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
         # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html
         kw = dict(fmt="none", color="C2", capsize=6, capthick=1.5)
         label = r"Fit (68\% HDPI)"
-        ax_forward.errorbar(
-            z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw
-        )
+        ax_forward.errorbar(z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw)
         ax_reverse.errorbar(z[z < 0], y_median[z < 0], hpdi[:, z < 0], **kw)
 
         s = fit_results_to_string(fit_result)
@@ -239,22 +237,6 @@ def plot_error_rates(cfg, df, d_fits, df_results):
     'AT' = 'A2T' = 'A.T' = 'A->T' ...
     """
 
-    # reload(utils)
-
-    # if cfg.max_plots is None:
-    #     number_of_plots = cfg.number_of_fits
-    # else:
-    #     number_of_plots = cfg.max_plots
-
-    # # do not allow number of plots to be larger than number of fits
-    # if (cfg.number_of_fits is not None) and (number_of_plots > cfg.number_of_fits):
-    #     number_of_plots = cfg.number_of_fits
-
-    # # sort_by = "damage"
-    # taxids = utils.get_sorted_and_cutted_taxids(cfg, df_results)
-    # taxids_top = taxids[:number_of_plots]
-    # df_plot = df.query("taxid in @taxids_top")
-
     number_of_plots = utils.get_number_of_plots(cfg)
 
     df_plot_sorted = utils.get_sorted_and_cutted_df(
@@ -268,10 +250,13 @@ def plot_error_rates(cfg, df, d_fits, df_results):
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_plots):
         if cfg.verbose:
             # tqdm.write(f"Plot of error rates already exist: {filename}\n")
-            print(f"Plot of error rates already exist: {filename}\n")
+            console.print("  Plot of error rates already exist.")
         return None
 
     # df_top_N = fileloader.get_top_max_fits(df, number_of_fits)
+
+    if cfg.verbose:
+        console.print("  Plotting, please wait.")
 
     seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
 
@@ -351,9 +336,7 @@ def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
 
 def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
 
-    legend_N_alignments, legend_names = make_custom_legend(
-        zs, ax, vmin, vmax, func, kw_cols
-    )
+    legend_N_alignments, legend_names = make_custom_legend(zs, ax, vmin, vmax, func, kw_cols)
 
     # Create a legend for the first line.
     ax.add_artist(
@@ -383,9 +366,7 @@ def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
     else:
         fontsize = 35
 
-    kw_leg_names = dict(
-        loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize
-    )
+    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize)
     plt.legend(handles=legend_names, **kw_leg_names)
 
 
@@ -474,14 +455,10 @@ def plot_fit_results_single_N_aligment(
             z = z[mask]
         zs = np.append(zs, z)
 
-        s = transform(
-            z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax)
-        )
+        s = transform(z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax))
         c = np.log10(z)
 
-        kw_cols[name] = dict(
-            cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None
-        )
+        kw_cols[name] = dict(cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
         ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
 
     # if not plotting anything at all, quit

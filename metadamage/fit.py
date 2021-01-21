@@ -19,6 +19,7 @@ from metadamage import fileloader, utils
 
 
 numpyro.enable_x64()
+console = utils.console
 
 
 #%%
@@ -257,16 +258,16 @@ def match_taxid_order_in_df_fit_results(df_fit_results, df):
     return df_fit_results.loc[pd.unique(df.taxid)]
 
 
-def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
+def fit_chunk(df, mcmc_kwargs):
     # print(f"fit_chunk: {current_process()=} \n", flush=True)
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
 
     it = df.groupby("taxid", sort=False, observed=True)
-    if do_tqdm:
-        desc = utils.string_pad_left_and_right("MCMC", left=8)
-        it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2)  #
+    # if do_tqdm:
+    # desc = utils.string_pad_left_and_right("MCMC", left=8)
+    # it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2)  #
 
     d_fits = {}
     for taxid, group in it:
@@ -276,9 +277,7 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
         fit_mcmc(mcmc_PMD, data)
         fit_mcmc(mcmc_null, data)
 
-        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
-            mcmc_PMD, data, func=jnp.median
-        )
+        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(mcmc_PMD, data, func=jnp.median)
         fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
         fit_result["N_alignments"] = group.N_alignments.iloc[0]
 
@@ -301,24 +300,24 @@ def fit_chunk(df, mcmc_kwargs, do_tqdm=True):
     return d_fits, df_fit_results
 
 
-def compute_fits(df, cfg, mcmc_kwargs, do_tqdm=True):
+def compute_fits(df, cfg, mcmc_kwargs):
 
     if cfg.num_cores == 1:
-        return fit_chunk(df, mcmc_kwargs, do_tqdm=do_tqdm)
+        return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm
 
     N_chunks = cfg.num_cores  # for now
     taxid_chunks = np.array_split(df.taxid.unique(), N_chunks)
     chunks = [df.loc[df.taxid.isin(chunk)] for chunk in taxid_chunks]
 
-    if do_tqdm:
-        dos = [i == 0 for i in range(N_chunks)]
-    else:
-        dos = [False for i in range(N_chunks)]
+    # if do_tqdm:
+    # dos = [i == 0 for i in range(N_chunks)]
+    # else:
+    dos = [False for i in range(N_chunks)]
 
     utils.avoid_fontconfig_warning()
 
     it = zip(chunks, dos)
-    generator = (delayed(fit_chunk)(chunk, mcmc_kwargs, do_tqdm=do) for chunk, do in it)
+    generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk, do in it)
     results = Parallel(n_jobs=cfg.num_cores)(generator)
 
     df_fit_results = pd.concat([res[1] for res in results])
@@ -364,10 +363,15 @@ def get_fits(df, cfg):
 
     # if file d_fits exists, use this
     if utils.file_exists(d_filename["d_fits"], cfg.force_fits):
+        if cfg.verbose:
+            console.print("  Loading fits from file.")
         return _load_fits(cfg)
 
     # if cfg.verbose:
     #     tqdm.write(f"Generating fits and saving to file: {d_filename['d_fits']}.")
+
+    if cfg.verbose:
+        console.print("  Running MCMC (fitting), please wait.")
 
     df_top_N = fileloader.get_top_max_fits(df, cfg.number_of_fits)
 

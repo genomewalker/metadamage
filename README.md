@@ -115,8 +115,8 @@ git clone https://github.com/pyro-ppl/numpyro.git
 pip install -e .[dev]  # contains additional dependencies for NumPyro development -->
 
 
-<!-- poetry add git+https://github.com/ChristianMichelsen/metadamage.git -->
-<!-- poetry add git+https://github.com/ChristianMichelsen/metadamage.git#develop -->
+<!-- poetry add git+https://github.com/christianmichelsen/metadamage.git -->
+<!-- poetry add git+https://github.com/christianmichelsen/metadamage.git#develop -->
 <!-- poetry add ./my-package/ -->
 
 
@@ -129,6 +129,7 @@ Make sure you have a decent Python version (>=3.8) installed:
 pyenv install 3.8.7
 pyenv virtualenv 3.8.7 metadamage38
 pyenv activate metadamage38
+pyenv local metadamage38 # in dir
 
 create a new dir:
 

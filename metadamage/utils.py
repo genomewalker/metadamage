@@ -85,8 +85,8 @@ class Config:
             self.number_of_fits = min(self.max_fits, N_all_taxids)
         else:  # use all TaxIDs available
             self.number_of_fits = N_all_taxids
-        if self.verbose:
-            print(f"Setting number_of_fits to {self.number_of_fits}")
+        # if self.verbose:
+        # print(f"Setting number_of_fits to {self.number_of_fits}")
 
     @property
     def do_make_fits(self):
@@ -443,3 +443,25 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
     df_plot_sorted = pd.concat([df_plot.query(f"taxid == {taxid}") for taxid in taxids_top])
 
     return df_plot_sorted
+
+
+#%%
+
+#%%
+
+from rich.console import Console
+
+console = Console()
+
+
+def is_df_accepted(df):
+
+    if len(df) == 0:
+        console.print(
+            "  Length of dataframe was 0. Stopping any further operations on this file.\n"
+            "  This might be due to a quite restrictive cut at the moment\n"
+            "  requiring that both C and G are present in the read.\n"
+        )
+        return False
+
+    return True

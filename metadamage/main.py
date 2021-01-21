@@ -19,58 +19,116 @@ numpyro.enable_x64()
 
 #%%
 
+from rich.progress import Progress, track
+import time
+
+# Third Party
+from rich.panel import Panel
+from rich.progress import Progress
+
+
+class MyProgress(Progress):
+    def get_renderables(self):
+        yield Panel(self.make_tasks_table(self.tasks))
+
+
+# Standard Library
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+import os.path
+import sys
+from typing import Iterable
+from urllib.request import urlopen
+
+# Third Party
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
+
+# console = Console()
+
 
 def main(filenames, cfg):
 
-    console = Console()
+    console = utils.console
 
     if cfg.verbose:
+        console.print("\n")
+        console.rule("[bold red]Initialization")
         console.print(
-            f"\nRunning [bold green]metadamage[/bold green]",
-            f"on {len(filenames)} file(s)",
-            f"using the following configuration: \n",
+            f"\nRunning [bold green underline]metadamage[/bold green underline] "
+            f"on {len(filenames)} file(s) using the following configuration: \n"
         )
         console.print(cfg)
+        console.print("")
 
-    console.rule("[bold red]Chapter 2")
+    console.rule("[bold red]Main")
+    console.print("")
 
     all_fit_results = {}
     N_files = len(filenames)
 
-    for i_filename, filename in enumerate(filenames):
-        name = utils.extract_name(filename)
+    progress_overall = MyProgress(
+        "[bold green][progress.description]{task.description}:",
+        BarColumn(bar_width=None, complete_style="green"),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        # TextColumn("[bold blue]\n{task.fields[name]}", justify="left"),
+        "• Remaining:",
+        TimeRemainingColumn(),
+        "• Elapsed:",
+        TimeElapsedColumn(),
+        console=console,
+    )
 
-        print(f"Now running file {i_filename}/{N_files}: {name}: ")
+    # progress_name = Progress(TextColumn("[bold blue]{task.fields[name]}"))
+    # progress = MyProgress(console=console)
+    # with MyProgress(console=console) as progress:
 
-        if not utils.file_is_valid(filename):
-            print(f"Got error here: {name}")
-            continue
+    with progress_overall:
 
-        cfg.filename = filename
-        cfg.name = name
+        task = progress_overall.add_task(f"Overall progress", total=N_files, name="")
 
-        df = fileloader.load_dataframe(cfg)
-        if len(df) == 0:
-            print(
-                "Length of dataframe was 0. Stopping any further operations on this file. "
-                "This might be due to a quite restrictive cut at the moment "
-                "requiring that both C and G are present in the read.\n"
-            )
-            continue
+        for filename in filenames:
 
-        if cfg.do_make_fits:
-            cfg.set_number_of_fits(df)
-            d_fits, df_results = fit.get_fits(df, cfg)
-            all_fit_results[cfg.name] = df_results
+            name = utils.extract_name(filename)
 
-            if cfg.do_make_plots:
-                plot.set_style()
-                plot.plot_error_rates(cfg, df, d_fits, df_results)
+            if cfg.verbose:
+                console.print(f"Working on file: {name}")
 
-    if len(all_fit_results) >= 1:
-        plot.set_style()
-        N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
-        plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
+            if not utils.file_is_valid(filename):
+                console.print(f"Got error here: {name}")
+                continue
+
+            cfg.filename = filename
+            cfg.name = name
+
+            df = fileloader.load_dataframe(cfg)
+
+            if not utils.is_df_accepted(df):
+                continue
+
+            if cfg.do_make_fits:
+                cfg.set_number_of_fits(df)
+                d_fits, df_results = fit.get_fits(df, cfg)
+                all_fit_results[cfg.name] = df_results
+
+                if cfg.do_make_plots:
+                    plot.set_style()
+                    plot.plot_error_rates(cfg, df, d_fits, df_results)
+
+            progress_overall.advance(task)
+
+    # if len(all_fit_results) >= 1:
+    #     plot.set_style()
+    #     N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
+    #     plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
 
 if utils.is_ipython():
@@ -113,3 +171,27 @@ if utils.is_ipython():
     if False:
         # if True:
         main(filenames, cfg)
+
+
+#%%
+
+
+# from rich.console import Console
+# from rich.columns import Columns
+# from rich.live import Live
+# from rich.progress import Progress
+# from rich.table import Table
+
+
+# def make_table() -> None:
+#     # console = Console()
+#     table = Table(show_header=True, header_style="bold magenta")
+#     table.add_column("col 1")
+#     table.add_column("col 2")
+#     table_centered = Columns((table,), align="center", expand=True)
+
+#     with Live(table_centered, console=console, refresh_per_second=10,
+#                 vertical_overflow="ellipsis"
+#     ):
+#         for i in range(3):
+#             table.add_row(f"row {i}", "something")
