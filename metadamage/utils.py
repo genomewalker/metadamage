@@ -454,13 +454,13 @@ from rich.console import Console
 console = Console()
 
 
-def is_df_accepted(df):
+def is_df_accepted(df, cfg):
 
     if len(df) == 0:
         console.print(
-            "  Length of dataframe was 0. Stopping any further operations on this file.\n"
-            "  This might be due to a quite restrictive cut at the moment\n"
-            "  requiring that both C and G are present in the read.\n"
+            f"[red]{cfg.name}[/red]: Length of dataframe was 0. Stopping any further operations on this file.\n"
+            "This might be due to a quite restrictive cut at the moment\n"
+            "requiring that both C and G are present in the read.\n"
         )
         return False
 
@@ -486,8 +486,9 @@ progress_bar_overall = (
     SpinnerColumn(),
     BarColumn(bar_width=None, complete_style="green"),
     "[progress.percentage]{task.percentage:>3.0f}%",
-    "• Remaining:",
-    TimeRemainingColumn(),
+    "• [progress.percentage]{task.completed} / {task.total}",
+    # "• Remaining:",
+    # TimeRemainingColumn(),
     "• Elapsed:",
     TimeElapsedColumn(),
 )
@@ -501,6 +502,7 @@ progress_bar_status = (
     "[progress.percentage]{task.percentage:>3.0f}%",
     "• Elapsed:",
     TimeElapsedColumn(),
+    "• [progress.percentage]{task.completed} / {task.total}",
 )
 
 

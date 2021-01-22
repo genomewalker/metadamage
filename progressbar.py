@@ -351,11 +351,9 @@ if False:
 
 #%%
 
-
 # def do_work(n):
 #     time.sleep(1)
 #     return n
-
 
 # if __name__ == "__main__" and False:
 
@@ -752,3 +750,20 @@ if __name__ == "__main__":
     # # Wait for the asynchrounous reader threads to finish
     # results = [r.get() for r in readers]
     # print(results)
+
+
+#%%
+
+
+def worker(filenames):
+
+    # this is a very slow initialization
+    init = very_slow_initialization()
+
+    # loop over files
+    for filename in filenames:
+
+        # quite fast function once the initialization is done
+        fast_function(filename, init)
+
+

@@ -336,13 +336,12 @@ def compute_fits(df, cfg, mcmc_kwargs):
         "task_status_fitting",
         progress_type="status",
         status="Fitting ",
-        total=1,
+        total=cfg.number_of_fits,
         # start=False,
     )
     generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk in chunks)
     results = Parallel(n_jobs=cfg.num_cores)(generator)
-    # progress.start_task(task_id_status_fitting)
-    progress.advance(task_id_status_fitting)
+    progress.advance(task_id_status_fitting, advance=cfg.number_of_fits)
 
     df_fit_results = pd.concat([res[1] for res in results])
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)

@@ -380,6 +380,8 @@ def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
     else:
         fontsize = 35
 
+    # print(f"Using this fontsize: {fontsize}, since {len(name)}")
+
     kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize)
     plt.legend(handles=legend_names, **kw_leg_names)
 
