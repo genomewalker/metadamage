@@ -100,43 +100,43 @@ def main(filenames, cfg):
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
 
-# if utils.is_ipython():
+if utils.is_ipython():
 
-#     print("Doing iPython plot")
+    print("Doing iPython plot")
 
-#     filenames = [
-#         "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
-#         # "./data/input/data_ancient.txt",
-#         # "./data/input/data_control.txt",
-#     ]
+    filenames = [
+        "./data/input/mikkel_data/Lok-75-Sample-2b-Ext-A22-Lib22A-Index2.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        # "./data/input/data_ancient.txt",
+        # "./data/input/data_control.txt",
+    ]
 
-#     reload(utils)
+    reload(utils)
 
-#     cfg = utils.Config(
-#         max_fits=100,
-#         max_plots=10,
-#         max_cores=-1,
-#         max_position=15,
-#         min_damage=None,
-#         min_sigma=None,
-#         min_alignments=None,
-#         sort_by=utils.SortBy.alignments,
-#         verbose=True,
-#         force_reload_files=False,
-#         force_plots=False,
-#         force_fits=False,
-#         version="0.0.0",
-#     )
+    cfg = utils.Config(
+        max_fits=100,
+        max_plots=10,
+        max_cores=-1,
+        max_position=15,
+        min_damage=None,
+        min_sigma=None,
+        min_alignments=None,
+        sort_by=utils.SortBy.alignments,
+        verbose=True,
+        force_reload_files=False,
+        force_plots=False,
+        force_fits=False,
+        version="0.0.0",
+    )
 
-#     # Standard Library
-#     import os
-#     from pathlib import Path
+    # Standard Library
+    import os
+    from pathlib import Path
 
-#     path = Path().cwd().parent
-#     os.chdir(path)
+    path = Path().cwd().parent
+    os.chdir(path)
 
-#     filenames = list(Path("./data/input/").rglob("mikkel_data/*taxid.counts.txt"))
+    filenames = list(Path("./data/input/").rglob("mikkel_data/*taxid.counts.txt"))
 
-#     if False:
-#         # if True:
-#         main(filenames, cfg)
+    if False:
+        # if True:
+        main(filenames, cfg)

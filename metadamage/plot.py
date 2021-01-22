@@ -353,10 +353,31 @@ def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
     return (handle, label), _get_legend_handles_names(kw_cols)
 
 
+def name_to_fontsize(name):
+    if len(name) > 60:
+        fontsize = 14
+    elif len(name) > 50:
+        fontsize = 16
+    elif len(name) > 40:
+        fontsize = 19
+    elif len(name) > 30:
+        fontsize = 23
+    elif len(name) > 20:
+        fontsize = 29
+    else:
+        fontsize = 35
+    return fontsize
+
+
 def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
 
     legend_N_alignments, legend_names = make_custom_legend(
-        zs, ax, vmin, vmax, func, kw_cols
+        zs,
+        ax,
+        vmin,
+        vmax,
+        func,
+        kw_cols,
     )
 
     # Create a legend for the first line.
@@ -372,25 +393,13 @@ def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
     )
 
     # Create another legend for the second line.
-    name = list(kw_cols.keys())[0]
+    name = max(list(kw_cols.keys()))
 
-    if len(name) > 60:
-        fontsize = 14
-    elif len(name) > 50:
-        fontsize = 16
-    elif len(name) > 40:
-        fontsize = 19
-    elif len(name) > 30:
-        fontsize = 23
-    elif len(name) > 20:
-        fontsize = 29
-    else:
-        fontsize = 35
-
-    # print(f"Using this fontsize: {fontsize}, since {len(name)}")
-
+    fontsize = name_to_fontsize(name)
     kw_leg_names = dict(
-        loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize
+        loc="upper left",
+        bbox_to_anchor=(-0.03, 0.999),
+        fontsize=fontsize,
     )
     plt.legend(handles=legend_names, **kw_leg_names)
 
@@ -416,6 +425,7 @@ cmaps_list = [
     "Purples",
     "Oranges",
 ]
+
 
 # xlim = (-3, 18)
 # ylim = (0, 1)
@@ -443,8 +453,8 @@ def find_fit_results_limits(all_fit_results):
         if max(D_max) > D_max_max:
             D_max_max = max(D_max)
 
-    n_sigma_lim = (n_sigma_min - 0.2, n_sigma_max + 0.2)
-    D_max_lim = (max(D_max_min, 0), min(D_max_max + 0.1, 1))
+    n_sigma_lim = (n_sigma_min - 0.5, n_sigma_max + 0.5)
+    D_max_lim = (max(D_max_min, 0), min(D_max_max + 0.2, 1))
     return n_sigma_lim, D_max_lim
 
 
