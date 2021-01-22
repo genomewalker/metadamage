@@ -16,6 +16,7 @@ from tqdm.auto import tqdm
 # First Party
 from metadamage import fileloader, fit, utils
 
+
 console = utils.console
 
 
@@ -31,7 +32,9 @@ def set_style(style_path=None, fig_dpi=50):
     try:
         plt.style.use(style_path)
     except OSError:
-        tqdm.write(f"Could not find Matplotlib style file. Aesthetics might not be optimal.")
+        tqdm.write(
+            f"Could not find Matplotlib style file. Aesthetics might not be optimal."
+        )
     set_rc_params(fig_dpi=fig_dpi)
 
 
@@ -139,7 +142,9 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
         # https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.errorbar.html
         kw = dict(fmt="none", color="C2", capsize=6, capthick=1.5)
         label = r"Fit (68\% HDPI)"
-        ax_forward.errorbar(z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw)
+        ax_forward.errorbar(
+            z[z > 0], y_median[z > 0], hpdi[:, z > 0], label=label, **kw
+        )
         ax_reverse.errorbar(z[z < 0], y_median[z < 0], hpdi[:, z < 0], **kw)
 
         s = fit_results_to_string(fit_result)
@@ -350,7 +355,9 @@ def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
 
 def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
 
-    legend_N_alignments, legend_names = make_custom_legend(zs, ax, vmin, vmax, func, kw_cols)
+    legend_N_alignments, legend_names = make_custom_legend(
+        zs, ax, vmin, vmax, func, kw_cols
+    )
 
     # Create a legend for the first line.
     ax.add_artist(
@@ -382,7 +389,9 @@ def set_custom_legends(zs, ax, vmin, vmax, func, kw_cols):
 
     # print(f"Using this fontsize: {fontsize}, since {len(name)}")
 
-    kw_leg_names = dict(loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize)
+    kw_leg_names = dict(
+        loc="upper left", bbox_to_anchor=(-0.03, 0.999), fontsize=fontsize
+    )
     plt.legend(handles=legend_names, **kw_leg_names)
 
 
@@ -471,10 +480,14 @@ def plot_fit_results_single_N_aligment(
             z = z[mask]
         zs = np.append(zs, z)
 
-        s = transform(z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax))
+        s = transform(
+            z, vmin=vmin, vmax=vmax, func=func, xmin=func(zmin), xmax=func(zmax)
+        )
         c = np.log10(z)
 
-        kw_cols[name] = dict(cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None)
+        kw_cols[name] = dict(
+            cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None
+        )
         ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
 
     # if not plotting anything at all, quit

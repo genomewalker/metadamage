@@ -1,25 +1,38 @@
+# Scientific Library
+import numpy as np
+
 # Standard Library
-from multiprocessing import Pool
+from collections import defaultdict
+import copy
+from dataclasses import dataclass, field
+import multiprocessing
+from multiprocessing import current_process, Manager, Pool, Process, Queue
+import os
+import random
 import time
+from time import perf_counter
+from typing import List, Optional
 
 # Third Party
-from rich.progress import Progress, track
-
-#%%
-
-import time
-
+from about_time.human import duration_human
+from joblib import delayed, Parallel
 from rich.live import Live
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    track,
+    TransferSpeedColumn,
+)
 from rich.table import Table
 
 
-from dataclasses import dataclass, field
-from collections import defaultdict
-from typing import List
-import copy
-from typing import List, Optional
-from time import perf_counter
-from about_time.human import duration_human
+#%%
 
 
 @dataclass
@@ -125,20 +138,6 @@ if False:
 #%%
 
 
-# Third Party
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TaskID,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-    SpinnerColumn,
-)
-
-
 progress_bar_outer = (
     "[bold green][progress.description]{task.description}:",
     BarColumn(bar_width=None, complete_style="green"),
@@ -212,9 +211,11 @@ if False:
 # table.columns[1]._cells
 
 if False:
+    # Standard Library
     import random
     import time
 
+    # Third Party
     from rich.live import Live
     from rich.table import Table
 
@@ -228,7 +229,9 @@ if False:
         for row in range(random.randint(2, 6)):
             value = random.random() * 100
             table.add_row(
-                f"{row}", f"{value:3.2f}", "[red]ERROR" if value < 50 else "[green]SUCCESS"
+                f"{row}",
+                f"{value:3.2f}",
+                "[red]ERROR" if value < 50 else "[green]SUCCESS",
             )
         return table
 
@@ -344,10 +347,14 @@ if False:
                 for url in urls:
                     filename = url.split("/")[-1]
                     dest_path = os.path.join(dest_dir, filename)
-                    task_id = progress.add_task("download", filename=filename, start=False)
+                    task_id = progress.add_task(
+                        "download", filename=filename, start=False
+                    )
                     pool.submit(copy_url, task_id, url, dest_path)
 
-    download(["https://releases.ubuntu.com/20.04/ubuntu-20.04.1-desktop-amd64.iso"], "./")
+    download(
+        ["https://releases.ubuntu.com/20.04/ubuntu-20.04.1-desktop-amd64.iso"], "./"
+    )
 
 #%%
 
@@ -365,11 +372,6 @@ if False:
 #             for result in results:
 #                 progress.print(result)
 #                 progress.advance(task_id)
-
-
-from joblib import delayed, Parallel
-from rich.progress import Progress
-import time
 
 
 # def do_work_working(job_id, task_id):
@@ -407,10 +409,6 @@ import time
 #         results = Parallel(n_jobs=4)(generator)
 
 
-from joblib import Parallel, delayed
-from multiprocessing import Manager
-
-
 def do_work(job_id, q):
     # print(f"child job_id: {job_id}")
     for i in range(100):
@@ -435,11 +433,6 @@ def do_work(job_id, q):
 #         progress.advance(task_id)
 
 
-from multiprocessing import Process, Manager
-from joblib import Parallel, delayed
-import os
-from multiprocessing import Process, current_process
-
 # process_name = current_process().name
 # print(f"Process Name: {process_name}")
 
@@ -456,7 +449,9 @@ from multiprocessing import Process, current_process
 
 
 def worker(i, ns):
-    print(f"worker. PID = {os.getpid()} got i={i}, ns={ns}, name={current_process().name}")
+    print(
+        f"worker. PID = {os.getpid()} got i={i}, ns={ns}, name={current_process().name}"
+    )
     time.sleep(5 + i)
     if i == 0:
         ns.status = 0
@@ -468,7 +463,9 @@ def worker(i, ns):
 
 
 def sqrt(i):
-    print(f"worker. PID = {os.getpid()} got i={i}, ns={ns}, name={current_process().name}")
+    print(
+        f"worker. PID = {os.getpid()} got i={i}, ns={ns}, name={current_process().name}"
+    )
     time.sleep(3)
     return i ** 2
 
@@ -571,10 +568,6 @@ def sqrt(i):
 
 #%%
 
-import multiprocessing
-import time
-import numpy as np
-
 
 class Consumer(multiprocessing.Process):
     def __init__(self, task_queue, result_queue):
@@ -646,9 +639,6 @@ class Task(object):
 #         num_jobs -= 1
 
 
-from multiprocessing import Process, Queue
-
-
 def writer(i, q):
     print(current_process().name)
     # wait = int(np.random.uniform(100_000_000, 200_000_000))
@@ -692,9 +682,6 @@ def writer(i, q):
 
 #%%
 
-from multiprocessing import Process, Queue, Pool, Manager
-import random
-
 
 def writer(i, q):
     # Imitate CPU-bound work happening in writer
@@ -720,9 +707,6 @@ def writer(i, q):
 #     time.sleep(3)
 #     print(f"I am reader {i}: {message}, {current_process().name}")
 #     return f"reader {i}"
-
-
-from multiprocessing import Process, Queue
 
 
 if __name__ == "__main__":
@@ -765,5 +749,3 @@ def worker(filenames):
 
         # quite fast function once the initialization is done
         fast_function(filename, init)
-
-

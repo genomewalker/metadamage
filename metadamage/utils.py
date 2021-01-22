@@ -21,6 +21,15 @@ import dill
 from joblib import Parallel
 from psutil import cpu_count
 from rich.console import Console
+from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 from tqdm.auto import tqdm
 
 
@@ -302,7 +311,9 @@ def human_format(num, digits=3, mode="eng"):
     else:
         raise AssertionError(f"'mode' has to be 'eng' or 'scientific', not {mode}.")
 
-    return "{}{}".format("{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude])
+    return "{}{}".format(
+        "{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude]
+    )
 
 
 # def group_contains_nans(group):
@@ -440,7 +451,9 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
     df_plot = df.query("taxid in @taxids_top")
     # the actual dataframe, unrelated to the fits, now sorted
     # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
-    df_plot_sorted = pd.concat([df_plot.query(f"taxid == {taxid}") for taxid in taxids_top])
+    df_plot_sorted = pd.concat(
+        [df_plot.query(f"taxid == {taxid}") for taxid in taxids_top]
+    )
 
     return df_plot_sorted
 
@@ -449,7 +462,6 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
 
 #%%
 
-from rich.console import Console
 
 console = Console()
 
@@ -466,20 +478,6 @@ def is_df_accepted(df, cfg):
 
     return True
 
-
-# Third Party
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TaskID,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-    SpinnerColumn,
-)
-from rich.panel import Panel
 
 progress_bar_overall = (
     "[bold green]{task.description}:",

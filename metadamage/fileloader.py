@@ -133,13 +133,23 @@ def delayed_list_unknown_length(lst):
 
 
 def extract_top_max_fits_dask(df, max_fits):
-    top_max_fits = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(max_fits).index
+    top_max_fits = (
+        df.groupby("taxid", observed=True)["N_alignments"]
+        .sum()
+        .nlargest(max_fits)
+        .index
+    )
     df_top_N = df[df["taxid"].isin(delayed_list(top_max_fits, max_fits))]
     return df_top_N
 
 
 def extract_top_max_fits(df, max_fits):
-    top_max_fits = df.groupby("taxid", observed=True)["N_alignments"].sum().nlargest(max_fits).index
+    top_max_fits = (
+        df.groupby("taxid", observed=True)["N_alignments"]
+        .sum()
+        .nlargest(max_fits)
+        .index
+    )
     df_top_N = df[df["taxid"].isin(top_max_fits)]
     return df_top_N
 
@@ -158,7 +168,9 @@ def keep_only_base_columns(df, base_cols_to_keep):
     columns_to_keep = []
     columns = df.columns
     base_columns = get_base_columns(df)
-    base_cols_to_discard = [base for base in base_columns if base not in base_cols_to_keep]
+    base_cols_to_discard = [
+        base for base in base_columns if base not in base_cols_to_keep
+    ]
     for col in columns:
         if col not in base_cols_to_discard:
             columns_to_keep.append(col)

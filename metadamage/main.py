@@ -3,12 +3,31 @@ import numpy as np
 import pandas as pd
 
 # Standard Library
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from importlib import reload
+import os.path
 from pprint import pformat, pprint
+import sys
+import time
+from typing import Iterable
+from urllib.request import urlopen
 
 # Third Party
 import numpyro
 from rich.console import Console
+from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    track,
+    TransferSpeedColumn,
+)
 from tqdm.auto import tqdm
 
 # First Party
@@ -18,41 +37,6 @@ from metadamage import fileloader, fit, plot, utils
 numpyro.enable_x64()
 
 #%%
-
-from rich.progress import Progress, track
-import time
-
-# Third Party
-from rich.panel import Panel
-from rich.progress import Progress
-
-
-# class MyProgress(Progress):
-#     def get_renderables(self):
-#         yield Panel(self.make_tasks_table(self.tasks))
-
-
-# Standard Library
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
-import os.path
-import sys
-from typing import Iterable
-from urllib.request import urlopen
-
-# Third Party
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TaskID,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-)
-
-# console = Console()
 
 
 def main(filenames, cfg):

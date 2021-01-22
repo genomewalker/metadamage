@@ -1,10 +1,12 @@
 """Lite simulation of the top linux command."""
 
+# Standard Library
+from dataclasses import dataclass
 import datetime
 import random
 import time
-from dataclasses import dataclass
 
+# Third Party
 from rich import box
 from rich.console import Console
 from rich.live import Live

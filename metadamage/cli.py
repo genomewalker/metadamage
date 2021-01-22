@@ -1,7 +1,7 @@
 # Standard Library
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 # Third Party
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
@@ -45,14 +45,13 @@ class ColorfulApp(typer.Typer):
     def __init__(self, *args, cls=CustomHelpColorsGroup, **kwargs) -> None:
         super().__init__(*args, cls=cls, **kwargs)
 
-    def command(self, *args, cls=CustomHelpColorsCommand, **kwargs) -> typer.Typer.command:
+    def command(
+        self, *args, cls=CustomHelpColorsCommand, **kwargs
+    ) -> typer.Typer.command:
         return super().command(*args, cls=cls, **kwargs)
 
 
 app = ColorfulApp()
-
-
-from typing import Literal
 
 
 @app.command()
@@ -77,7 +76,9 @@ def cli(
     force_fits: bool = typer.Option(False, "--force-fits"),
     force_plots: bool = typer.Option(False, "--force-plots"),
     # version
-    version: Optional[bool] = typer.Option(None, "--version", callback=version_callback),
+    version: Optional[bool] = typer.Option(
+        None, "--version", callback=version_callback
+    ),
 ):
     """Metagenomics Ancient Damage: metadamage
 
