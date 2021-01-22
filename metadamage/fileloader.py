@@ -228,15 +228,15 @@ def load_dataframe(cfg):
     filename_parquet = f"./data/parquet/{cfg.name}.parquet"
 
     if utils.file_exists(filename_parquet, cfg.force_reload_files):
-        if cfg.verbose:
-            # tqdm.write("Loading DataFrame from parquet-file.")
-            console.print("  Loading DataFrame from parquet-file.")
+        # if cfg.verbose:
+        #     # tqdm.write("Loading DataFrame from parquet-file.")
+        #     console.print("  Loading DataFrame from parquet-file.")
         df = pd.read_parquet(filename_parquet)
         return df
 
-    if cfg.verbose:
-        # tqdm.write("Creating DataFrame, please wait.")
-        console.print("  Creating DataFrame, please wait.")
+    # if cfg.verbose:
+    #     # tqdm.write("Creating DataFrame, please wait.")
+    #     console.print("  Creating DataFrame, please wait.")
 
     try:
         df = _load_dataframe_dask(cfg.filename)

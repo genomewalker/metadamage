@@ -208,15 +208,29 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     # i_plots_counter = 0
 
+    progress = utils.progress
+
+    task_id_status_plotting = progress.add_task(
+        "task_status_plotting",
+        progress_type="status",
+        status="Plotting",
+        total=len(groupby),
+    )
+
+    # progress.advance(task_id_status_plotting)
+
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf:
         # with tqdm(groupby, desc=desc, leave=False, dynamic_ncols=True, total=N_plots) as it:
         # for taxid, group in it:
-        for taxid, group in tqdm(groupby, desc=desc):
+        # for taxid, group in tqdm(groupby, desc=desc):
+        for taxid, group in groupby:
             # it.set_postfix(taxid=taxid)
             # if utils.fit_satisfies_thresholds(cfg, d_fits[taxid]):
             fig = plot_single_group(group, cfg, d_fits)
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
+            progress.advance(task_id_status_plotting)
+
             # i_plots_counter += 1
         # else:
         #     if cfg.verbose:
@@ -248,15 +262,15 @@ def plot_error_rates(cfg, df, d_fits, df_results):
 
     filename = f"./figures/error_rates__{cfg.name}__sort_by__{cfg.sort_by}__number_of_plots__{number_of_plots}.pdf"
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_plots):
-        if cfg.verbose:
-            # tqdm.write(f"Plot of error rates already exist: {filename}\n")
-            console.print("  Plot of error rates already exist.")
+        # if cfg.verbose:
+        #     # tqdm.write(f"Plot of error rates already exist: {filename}\n")
+        #     console.print("  Plot of error rates already exist.")
         return None
 
     # df_top_N = fileloader.get_top_max_fits(df, number_of_fits)
 
-    if cfg.verbose:
-        console.print("  Plotting, please wait.")
+    # if cfg.verbose:
+    #     console.print("  Plotting, please wait.")
 
     seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
 
@@ -502,14 +516,14 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     filename = f"./figures/all_fit_results__number_of_fits__{cfg.number_of_fits}.pdf"
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
-        if cfg.verbose:
-            # tqdm.write(f"\nPlot of fit results already exist: {filename}")  # flush=True
-            print(f"\nPlot of fit results already exist: {filename}")  # flush=True
+        # if cfg.verbose:
+        #     # tqdm.write(f"\nPlot of fit results already exist: {filename}")  # flush=True
+        #     print(f"\nPlot of fit results already exist: {filename}")  # flush=True
         return None
 
-    if cfg.verbose:
-        # tqdm.write(f"\n\nPlotting fit results.")
-        print(f"\n\nPlotting fit results.")
+    # if cfg.verbose:
+    #     # tqdm.write(f"\n\nPlotting fit results.")
+    #     print(f"\n\nPlotting fit results.")
 
     if len(all_fit_results) > len(cmaps_list):
         if cfg.verbose:

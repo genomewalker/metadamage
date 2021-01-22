@@ -258,19 +258,30 @@ def match_taxid_order_in_df_fit_results(df_fit_results, df):
     return df_fit_results.loc[pd.unique(df.taxid)]
 
 
-def fit_chunk(df, mcmc_kwargs):
+def fit_chunk(df, mcmc_kwargs):  # do_progress_bar=False
     # print(f"fit_chunk: {current_process()=} \n", flush=True)
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
 
-    it = df.groupby("taxid", sort=False, observed=True)
+    groupby = df.groupby("taxid", sort=False, observed=True)
     # if do_tqdm:
     # desc = utils.string_pad_left_and_right("MCMC", left=8)
     # it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2)  #
 
+    # if do_progress_bar:
+    #     progress = utils.progress
+    #     task_id_status_fitting = progress.add_task(
+    #         "task_status_fitting",
+    #         progress_type="status",
+    #         status="Fitting ",
+    #         total=len(groupby),
+    #     )
+
+    # progress.advance(task_id_status_fitting)
+
     d_fits = {}
-    for taxid, group in it:
+    for taxid, group in groupby:
 
         data = group_to_numpyro_data(group)
 
@@ -286,6 +297,9 @@ def fit_chunk(df, mcmc_kwargs):
             "hpdi": y_hpdi_PMD,
             "fit_result": fit_result,
         }
+
+        # if do_progress_bar:
+        #     progress.advance(task_id_status_fitting)
 
         # if False:
         #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
@@ -309,16 +323,26 @@ def compute_fits(df, cfg, mcmc_kwargs):
     taxid_chunks = np.array_split(df.taxid.unique(), N_chunks)
     chunks = [df.loc[df.taxid.isin(chunk)] for chunk in taxid_chunks]
 
-    # if do_tqdm:
+    # if do_progress_bar:
     # dos = [i == 0 for i in range(N_chunks)]
-    # else:
-    dos = [False for i in range(N_chunks)]
-
     utils.avoid_fontconfig_warning()
 
-    it = zip(chunks, dos)
-    generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk, do in it)
+    # else:
+    # dos = [False for i in range(N_chunks)]
+    # it = zip(chunks, dos)
+
+    progress = utils.progress
+    task_id_status_fitting = progress.add_task(
+        "task_status_fitting",
+        progress_type="status",
+        status="Fitting ",
+        total=1,
+        # start=False,
+    )
+    generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk in chunks)
     results = Parallel(n_jobs=cfg.num_cores)(generator)
+    # progress.start_task(task_id_status_fitting)
+    progress.advance(task_id_status_fitting)
 
     df_fit_results = pd.concat([res[1] for res in results])
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
@@ -363,15 +387,15 @@ def get_fits(df, cfg):
 
     # if file d_fits exists, use this
     if utils.file_exists(d_filename["d_fits"], cfg.force_fits):
-        if cfg.verbose:
-            console.print("  Loading fits from file.")
+        # if cfg.verbose:
+        #     console.print("  Loading fits from file.")
         return _load_fits(cfg)
 
     # if cfg.verbose:
     #     tqdm.write(f"Generating fits and saving to file: {d_filename['d_fits']}.")
 
-    if cfg.verbose:
-        console.print("  Running MCMC (fitting), please wait.")
+    # if cfg.verbose:
+    #     console.print("  Running MCMC (fitting), please wait.")
 
     df_top_N = fileloader.get_top_max_fits(df, cfg.number_of_fits)
 

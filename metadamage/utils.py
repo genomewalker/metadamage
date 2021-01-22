@@ -465,3 +465,57 @@ def is_df_accepted(df):
         return False
 
     return True
+
+
+# Third Party
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+    SpinnerColumn,
+)
+from rich.panel import Panel
+
+progress_bar_overall = (
+    "[bold green]{task.description}:",
+    SpinnerColumn(),
+    BarColumn(bar_width=None, complete_style="green"),
+    "[progress.percentage]{task.percentage:>3.0f}%",
+    "• Remaining:",
+    TimeRemainingColumn(),
+    "• Elapsed:",
+    TimeElapsedColumn(),
+)
+
+progress_bar_name = (TextColumn(" " * 4 + "[blue]{task.fields[name]}"),)
+
+
+progress_bar_status = (
+    TextColumn(" " * 8 + "{task.fields[status]}:"),
+    BarColumn(bar_width=20, complete_style="green"),
+    "[progress.percentage]{task.percentage:>3.0f}%",
+    "• Elapsed:",
+    TimeElapsedColumn(),
+)
+
+
+class MyProgress(Progress):
+    def get_renderables(self):
+        for task in self.tasks:
+            if task.fields.get("progress_type") == "overall":
+                self.columns = progress_bar_overall
+                yield Panel(self.make_tasks_table([task]))
+            if task.fields.get("progress_type") == "name":
+                self.columns = progress_bar_name
+                yield self.make_tasks_table([task])
+            if task.fields.get("progress_type") == "status":
+                self.columns = progress_bar_status
+                yield self.make_tasks_table([task])
+
+
+progress = MyProgress(console=console)

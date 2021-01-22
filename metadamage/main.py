@@ -27,9 +27,9 @@ from rich.panel import Panel
 from rich.progress import Progress
 
 
-class MyProgress(Progress):
-    def get_renderables(self):
-        yield Panel(self.make_tasks_table(self.tasks))
+# class MyProgress(Progress):
+#     def get_renderables(self):
+#         yield Panel(self.make_tasks_table(self.tasks))
 
 
 # Standard Library
@@ -58,6 +58,7 @@ from rich.progress import (
 def main(filenames, cfg):
 
     console = utils.console
+    progress = utils.progress
 
     if cfg.verbose:
         console.print("\n")
@@ -75,32 +76,40 @@ def main(filenames, cfg):
     all_fit_results = {}
     N_files = len(filenames)
 
-    progress_overall = MyProgress(
-        "[bold green][progress.description]{task.description}:",
-        BarColumn(bar_width=None, complete_style="green"),
-        "[progress.percentage]{task.percentage:>3.0f}%",
-        # TextColumn("[bold blue]\n{task.fields[name]}", justify="left"),
-        "• Remaining:",
-        TimeRemainingColumn(),
-        "• Elapsed:",
-        TimeElapsedColumn(),
-        console=console,
-    )
+    with progress:
 
-    # progress_name = Progress(TextColumn("[bold blue]{task.fields[name]}"))
-    # progress = MyProgress(console=console)
-    # with MyProgress(console=console) as progress:
-
-    with progress_overall:
-
-        task = progress_overall.add_task(f"Overall progress", total=N_files, name="")
+        task_id_overall = progress.add_task(
+            f"Overall progress", total=N_files, progress_type="overall"
+        )
 
         for filename in filenames:
 
             name = utils.extract_name(filename)
 
-            if cfg.verbose:
-                console.print(f"Working on file: {name}")
+            # task_id_name = progress.add_task("task_name", progress_type="name", name=name)
+            progress.add_task("task_name", progress_type="name", name=name)
+
+            # task_id_status_fitting = progress.add_task(
+            #     "task_status_fitting",
+            #     progress_type="status",
+            #     status="Fitting ",
+            #     total=1000,
+            # )
+
+            # for _ in range(1000):
+            #     time.sleep(0.005)
+            #     progress.advance(task_id_status_fitting)
+
+            # task_id_status_plotting = progress.add_task(
+            #     "task_status_plotting",
+            #     progress_type="status",
+            #     status="Plotting",
+            #     total=1000,
+            # )
+
+            # for _ in range(1000):
+            #     time.sleep(0.005)
+            #     progress.advance(task_id_status_plotting)
 
             if not utils.file_is_valid(filename):
                 console.print(f"Got error here: {name}")
@@ -123,7 +132,7 @@ def main(filenames, cfg):
                     plot.set_style()
                     plot.plot_error_rates(cfg, df, d_fits, df_results)
 
-            progress_overall.advance(task)
+            progress.advance(task_id_overall)
 
     # if len(all_fit_results) >= 1:
     #     plot.set_style()
