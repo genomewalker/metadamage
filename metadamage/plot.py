@@ -496,7 +496,10 @@ def plot_fit_results_single_N_aligment(
         c = np.log10(z)
 
         kw_cols[name] = dict(
-            cmap=cmaps[name], vmin=c.min() / 10, vmax=c.max() * 1.25, ec=None
+            cmap=cmaps[name],
+            vmin=c.min() / 10,
+            vmax=c.max() * 1.25,
+            ec=None,
         )
         ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
 
