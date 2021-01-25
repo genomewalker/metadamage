@@ -191,6 +191,10 @@ def cut_NANs_away(df):
     return df_nans_removed
 
 
+def replace_nans_with_zeroes(df):
+    return df.fillna(0)
+
+
 def get_top_max_fits(df, number_of_fits):
     if number_of_fits is not None and number_of_fits > 0:
         return df.pipe(extract_top_max_fits, number_of_fits)
@@ -225,7 +229,8 @@ def _load_dataframe_dask(filename):
             # .pipe(keep_only_base_columns, [])
             # turns dask dataframe into pandas dataframe
             .compute()
-            .pipe(cut_NANs_away)  # remove any taxids containing nans
+            # .pipe(cut_NANs_away)  # remove any taxids containing nans
+            .pipe(replace_nans_with_zeroes)  # remove any taxids containing nans
             .reset_index(drop=True)
             .pipe(sort_by_alignments)
         )

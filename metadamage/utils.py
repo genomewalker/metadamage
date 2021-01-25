@@ -469,3 +469,21 @@ def is_df_accepted(df, cfg):
         return False
 
     return True
+
+
+#%%
+
+
+def initial_print(filenames, cfg):
+
+    console.print("\n")
+    console.rule("[bold red]Initialization")
+    console.print(
+        f"\nRunning [bold green underline]metadamage[/bold green underline] "
+        f"on {len(filenames)} file(s) using the following configuration: \n"
+    )
+    console.print(cfg)
+    console.print("")
+
+    console.rule("[bold red]Main")
+    console.print("")

@@ -42,18 +42,7 @@ numpyro.enable_x64()
 
 def main(filenames, cfg):
 
-    if cfg.verbose:
-        console.print("\n")
-        console.rule("[bold red]Initialization")
-        console.print(
-            f"\nRunning [bold green underline]metadamage[/bold green underline] "
-            f"on {len(filenames)} file(s) using the following configuration: \n"
-        )
-        console.print(cfg)
-        console.print("")
-
-    console.rule("[bold red]Main")
-    console.print("")
+    utils.initial_print(filenames, cfg)
 
     all_fit_results = {}
     N_files = len(filenames)
@@ -61,7 +50,9 @@ def main(filenames, cfg):
     with progress:
 
         task_id_overall = progress.add_task(
-            f"Overall progress", total=N_files, progress_type="overall"
+            f"Overall progress",
+            total=N_files,
+            progress_type="overall",
         )
 
         for filename in filenames:
@@ -103,7 +94,7 @@ if utils.is_ipython():
     print("Doing iPython plot")
 
     filenames = [
-        "./data/input/mikkel_data/Lok-75-Sample-2b-Ext-A22-Lib22A-Index2.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
         # "./data/input/data_ancient.txt",
         # "./data/input/data_control.txt",
     ]

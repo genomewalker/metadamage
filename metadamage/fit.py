@@ -24,8 +24,6 @@ from metadamage.progressbar import console, progress
 
 
 numpyro.enable_x64()
-console = utils.console
-
 
 #%%
 
