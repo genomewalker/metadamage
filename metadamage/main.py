@@ -94,13 +94,10 @@ def main(filenames, cfg):
 
             progress.advance(task_id_overall)
 
-        # progress.advance(task_id_overall)
-
     if len(all_fit_results) >= 1:
         plot.set_style()
         N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
-
 
 if utils.is_ipython():
 
