@@ -15,9 +15,10 @@ from tqdm.auto import tqdm
 
 # First Party
 from metadamage import fileloader, fit, utils
+from metadamage.progressbar import console, progress
 
 
-console = utils.console
+# console = utils.console
 
 
 def set_rc_params(fig_dpi=300):
@@ -204,8 +205,6 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     groupby = df_top_N.groupby("taxid", sort=False, observed=True)
-
-    progress = utils.progress
 
     task_id_status_plotting = progress.add_task(
         "task_status_plotting",

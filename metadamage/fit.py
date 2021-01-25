@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# Standard Library
+from multiprocessing import current_process, Manager, Pool, Process, Queue
+import os
+
 # Third Party
 import jax
 import jax.numpy as jnp
@@ -16,6 +20,7 @@ from tqdm.auto import tqdm
 
 # First Party
 from metadamage import fileloader, utils
+from metadamage.progressbar import console, progress
 
 
 numpyro.enable_x64()
@@ -258,14 +263,13 @@ def match_taxid_order_in_df_fit_results(df_fit_results, df):
     return df_fit_results.loc[pd.unique(df.taxid)]
 
 
-def fit_chunk(df, mcmc_kwargs):  # do_progress_bar=False
+def fit_chunk(df, mcmc_kwargs):
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     groupby = df.groupby("taxid", sort=False, observed=True)
     d_fits = {}
 
-    progress = utils.progress
-    with progress:  # console=console
+    with progress:
         task_fit = progress.add_task(
             "task_status_fitting",
             progress_type="status",
@@ -297,10 +301,6 @@ def fit_chunk(df, mcmc_kwargs):  # do_progress_bar=False
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
     return d_fits, df_fit_results
-
-
-from multiprocessing import current_process, Manager, Pool, Process, Queue
-import os
 
 
 def worker(queue_in, queue_out, mcmc_kwargs):
@@ -338,29 +338,29 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
     the_pool = Pool(cfg.num_cores, worker, (queue_in, queue_out, mcmc_kwargs))
 
     groupby = df.groupby("taxid", sort=False, observed=True)
+    N_groupby = len(groupby)
 
     d_fits = {}
 
-    progress = utils.progress
-    with progress:  # console=console
+    with progress:
         task_fit = progress.add_task(
             "task_status_fitting",
             progress_type="status",
             status="Fitting ",
             name="Fits: ",
-            total=len(groupby),
+            total=N_groupby,
         )
 
         for taxid, group in groupby:
             queue_in.put((taxid, group))
 
         # Get and print results
-        for _ in range(len(groupby)):
+        for _ in range(N_groupby):
             taxid, d_fit = queue_out.get()
             d_fits[taxid] = d_fit
             progress.advance(task_fit)
 
-    for i, (taxid, group) in enumerate(groupby):
+    for _ in range(N_groupby):
         queue_in.put(None)
 
     # prevent adding anything more to the queue and wait for queue to empty
@@ -382,40 +382,6 @@ def compute_fits(df, cfg, mcmc_kwargs):
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
     return d_fits, df_fit_results
-
-
-# def compute_fits_old(df, cfg, mcmc_kwargs):
-
-#     if cfg.num_cores == 1:
-#         return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm
-
-#     N_chunks = cfg.num_cores  # for now
-#     taxid_chunks = np.array_split(df.taxid.unique(), N_chunks)
-#     chunks = [df.loc[df.taxid.isin(chunk)] for chunk in taxid_chunks]
-
-#     utils.avoid_fontconfig_warning()
-
-#     progress = utils.progress
-#     task_id_status_fitting = progress.add_task(
-#         "task_status_fitting",
-#         progress_type="status",
-#         status="Fitting ",
-#         total=cfg.number_of_fits,
-#     )
-#     generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk in chunks)
-#     results = Parallel(n_jobs=cfg.num_cores)(generator)
-#     progress.advance(task_id_status_fitting, advance=cfg.number_of_fits)
-
-#     df_fit_results = pd.concat([res[1] for res in results])
-#     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
-
-#     d_fits = {}
-#     for result in results:
-#         d_fits = {**d_fits, **result[0]}
-#     return d_fits, df_fit_results
-
-
-#%%
 
 
 #%%

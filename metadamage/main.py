@@ -32,6 +32,7 @@ from tqdm.auto import tqdm
 
 # First Party
 from metadamage import fileloader, fit, plot, utils
+from metadamage.progressbar import console, progress
 
 
 numpyro.enable_x64()
@@ -40,9 +41,6 @@ numpyro.enable_x64()
 
 
 def main(filenames, cfg):
-
-    console = utils.console
-    progress = utils.progress
 
     if cfg.verbose:
         console.print("\n")
@@ -98,6 +96,7 @@ def main(filenames, cfg):
         plot.set_style()
         N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
+
 
 if utils.is_ipython():
 

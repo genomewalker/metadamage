@@ -11,9 +11,8 @@ from tqdm.auto import tqdm
 
 # First Party
 from metadamage import utils
+from metadamage.progressbar import console, progress
 
-
-console = utils.console
 
 set_ACTG = set(["A", "C", "G", "T"])
 

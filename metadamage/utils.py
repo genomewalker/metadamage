@@ -20,20 +20,15 @@ from click_help_colors import HelpColorsCommand, HelpColorsGroup
 import dill
 from joblib import Parallel
 from psutil import cpu_count
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-)
-from tqdm.auto import tqdm
+
+# First Party
+from metadamage.progressbar import console, progress
 
 
 # def __post_init__
+
+#%%
+
 
 #%%
 
@@ -383,23 +378,23 @@ def set_minimum_tpr(cut, thresholds, fpr, tpr):
 #%%
 
 
-class ProgressParallel(Parallel):
-    # https://stackoverflow.com/a/61900501
+# class ProgressParallel(Parallel):
+#     # https://stackoverflow.com/a/61900501
 
-    def __init__(self, use_tqdm=True, total=None, *args, **kwargs):
-        self._use_tqdm = use_tqdm
-        self._total = total
-        super().__init__(*args, **kwargs)
+#     def __init__(self, use_tqdm=True, total=None, *args, **kwargs):
+#         self._use_tqdm = use_tqdm
+#         self._total = total
+#         super().__init__(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
-        with tqdm(disable=not self._use_tqdm, total=self._total) as self._pbar:
-            return Parallel.__call__(self, *args, **kwargs)
+#     def __call__(self, *args, **kwargs):
+#         with tqdm(disable=not self._use_tqdm, total=self._total) as self._pbar:
+#             return Parallel.__call__(self, *args, **kwargs)
 
-    def print_progress(self):
-        if self._total is None:
-            self._pbar.total = self.n_dispatched_tasks
-        self._pbar.n = self.n_completed_tasks
-        self._pbar.refresh()
+#     def print_progress(self):
+#         if self._total is None:
+#             self._pbar.total = self.n_dispatched_tasks
+#         self._pbar.n = self.n_completed_tasks
+#         self._pbar.refresh()
 
 
 #%%
@@ -463,9 +458,6 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
 #%%
 
 
-console = Console()
-
-
 def is_df_accepted(df, cfg):
 
     if len(df) == 0:
@@ -477,45 +469,3 @@ def is_df_accepted(df, cfg):
         return False
 
     return True
-
-
-progress_bar_overall = (
-    "[bold green]{task.description}:",
-    SpinnerColumn(),
-    BarColumn(bar_width=None, complete_style="green"),
-    "[progress.percentage]{task.percentage:>3.0f}%",
-    "• Files: [progress.percentage]{task.completed} / {task.total}",
-    # "• Remaining:",
-    # TimeRemainingColumn(),
-    "• Time Elapsed:",
-    TimeElapsedColumn(),
-)
-
-progress_bar_name = (TextColumn(" " * 4 + "[blue]{task.fields[name]}"),)
-
-
-progress_bar_status = (
-    TextColumn(" " * 8 + "{task.fields[status]}:"),
-    BarColumn(bar_width=20, complete_style="green"),
-    "[progress.percentage]{task.percentage:>3.0f}%",
-    "• Time Elapsed:",
-    TimeElapsedColumn(),
-    "• {task.fields[name]} [progress.percentage]{task.completed:>4} / {task.total:>4}",
-)
-
-
-class MyProgress(Progress):
-    def get_renderables(self):
-        for task in self.tasks:
-            if task.fields.get("progress_type") == "overall":
-                self.columns = progress_bar_overall
-                yield Panel(self.make_tasks_table([task]))
-            if task.fields.get("progress_type") == "name":
-                self.columns = progress_bar_name
-                yield self.make_tasks_table([task])
-            if task.fields.get("progress_type") == "status":
-                self.columns = progress_bar_status
-                yield self.make_tasks_table([task])
-
-
-progress = MyProgress(console=console)
