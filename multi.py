@@ -1,14 +1,14 @@
 import multiprocessing
 from multiprocessing import current_process, Manager, Pool, Process, Queue
 import time
-import random
+from random import randint
 import os
 from rich.progress import Progress
 from tqdm import tqdm
 
 
 def simulate_cpu_intensive_process():
-    delay = random.randint(1, 2)
+    delay = randint(1, 2)
     time_start = time.perf_counter()
     x = 0
     while time.perf_counter() - time_start < delay:
@@ -359,7 +359,7 @@ def test_new(df):
         for _ in range(len(groupby)):
             results.append(queue_out.get())
             progress.advance(task_id)
-        print("Finished getting results", results)
+        print("Finished getting results")
 
     for i, (taxid, group) in enumerate(groupby):
         queue_in.put(None)
@@ -374,6 +374,7 @@ def test_new(df):
     the_pool.close()
     the_pool.join()
     print("Finished")
+    return results
 
 
 if __name__ == "__main__":
@@ -390,5 +391,53 @@ if __name__ == "__main__":
 
     print("\n\nRunning multiprocessing.Queue", flush=True)
     with about_time() as at2:
-        test_new(df)
+        results_new = test_new(df)
     print(at2.duration_human)
+
+
+#%%
+
+
+def worker(queue_in, queue_out):
+    init = very_slow_initialisation()
+    while True:
+        filename = queue_in.get(block=True)
+        if filename is None:
+            break
+        result = fast_function(filename, init)
+        queue_out.put((filename, result))
+
+
+def main(df):
+
+    queue_in = Queue()
+    queue_out = Queue()
+    the_pool = Pool(NUM_CORES, worker, (queue_in, queue_out))
+
+    filenames = get_filenames()
+    N = len(filenames)
+
+    with Progress() as progress:  # console=console
+        task_id = progress.add_task("Task", total=N)
+
+        for filename in filenames:
+            queue_in.put(filename)
+
+        # Get and print results
+        results = []
+        for _ in range(N):
+            results.append(queue_out.get())
+            progress.advance(task_id)
+
+    for _ in range((N):
+        queue_in.put(None)
+
+    # prevent adding anything more to the queue and wait for queue to empty
+    queue_in.close()
+    queue_in.join_thread()
+
+    # prevent adding anything more to the process pool and wait for all processes to finish
+    the_pool.close()
+    the_pool.join()
+
+    return results

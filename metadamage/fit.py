@@ -259,99 +259,166 @@ def match_taxid_order_in_df_fit_results(df_fit_results, df):
 
 
 def fit_chunk(df, mcmc_kwargs):  # do_progress_bar=False
-    # print(f"fit_chunk: {current_process()=} \n", flush=True)
-
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
-
     groupby = df.groupby("taxid", sort=False, observed=True)
-    # if do_tqdm:
-    # desc = utils.string_pad_left_and_right("MCMC", left=8)
-    # it = tqdm(it, desc=desc, leave=False, dynamic_ncols=True, position=2)  #
-
-    # if do_progress_bar:
-    #     progress = utils.progress
-    #     task_id_status_fitting = progress.add_task(
-    #         "task_status_fitting",
-    #         progress_type="status",
-    #         status="Fitting ",
-    #         total=len(groupby),
-    #     )
-
-    # progress.advance(task_id_status_fitting)
-
     d_fits = {}
-    for taxid, group in groupby:
 
-        data = group_to_numpyro_data(group)
-
-        fit_mcmc(mcmc_PMD, data)
-        fit_mcmc(mcmc_null, data)
-
-        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
-            mcmc_PMD, data, func=jnp.median
+    progress = utils.progress
+    with progress:  # console=console
+        task_fit = progress.add_task(
+            "task_status_fitting",
+            progress_type="status",
+            status="Fitting ",
+            total=len(groupby),
         )
-        fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
-        fit_result["N_alignments"] = group.N_alignments.iloc[0]
 
-        d_fits[taxid] = {
-            "median": y_median_PMD,
-            "hpdi": y_hpdi_PMD,
-            "fit_result": fit_result,
-        }
-
-        # if do_progress_bar:
-        #     progress.advance(task_id_status_fitting)
-
-        # if False:
-        #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
-        #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
-        #     use_last_state_as_warmup_state(mcmc_PMD)
-        #     use_last_state_as_warmup_state(mcmc_null)
-
+        for taxid, group in groupby:
+            data = group_to_numpyro_data(group)
+            fit_mcmc(mcmc_PMD, data)
+            fit_mcmc(mcmc_null, data)
+            y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
+                mcmc_PMD, data, func=jnp.median
+            )
+            fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
+            fit_result["N_alignments"] = group.N_alignments.iloc[0]
+            d_fits[taxid] = {
+                "median": y_median_PMD,
+                "hpdi": y_hpdi_PMD,
+                "fit_result": fit_result,
+            }
+            progress.advance(task_fit)
+            # if False:
+            #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
+            #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
+            #     use_last_state_as_warmup_state(mcmc_PMD)
+            #     use_last_state_as_warmup_state(mcmc_null)
     fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
-
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
     return d_fits, df_fit_results
 
 
-def compute_fits(df, cfg, mcmc_kwargs):
+from multiprocessing import current_process, Manager, Pool, Process, Queue
+import os
 
-    if cfg.num_cores == 1:
-        return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm
 
-    N_chunks = cfg.num_cores  # for now
-    taxid_chunks = np.array_split(df.taxid.unique(), N_chunks)
-    chunks = [df.loc[df.taxid.isin(chunk)] for chunk in taxid_chunks]
+def worker(queue_in, queue_out, mcmc_kwargs):
+    # print("  worker", os.getpid(), current_process().name)
+    mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
+    mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
+    while True:
+        # block=True means make a blocking call to wait for items in queue
+        taxid_group = queue_in.get(block=True)
+        if taxid_group is None:
+            break
+        taxid, group = taxid_group
+        data = group_to_numpyro_data(group)
+        fit_mcmc(mcmc_PMD, data)
+        fit_mcmc(mcmc_null, data)
+        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
+            mcmc_PMD, data, func=jnp.median
+        )
+        fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
+        fit_result["N_alignments"] = group.N_alignments.iloc[0]
+        d_fit = {"median": y_median_PMD, "hpdi": y_hpdi_PMD, "fit_result": fit_result}
+        # if False:
+        #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
+        #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
+        #     use_last_state_as_warmup_state(mcmc_PMD)
+        #     use_last_state_as_warmup_state(mcmc_null)
+        queue_out.put((taxid, d_fit))
 
-    # if do_progress_bar:
-    # dos = [i == 0 for i in range(N_chunks)]
-    utils.avoid_fontconfig_warning()
 
-    # else:
-    # dos = [False for i in range(N_chunks)]
-    # it = zip(chunks, dos)
+def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
+    # print("main", os.getpid(), current_process().name)
 
-    progress = utils.progress
-    task_id_status_fitting = progress.add_task(
-        "task_status_fitting",
-        progress_type="status",
-        status="Fitting ",
-        total=cfg.number_of_fits,
-        # start=False,
-    )
-    generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk in chunks)
-    results = Parallel(n_jobs=cfg.num_cores)(generator)
-    progress.advance(task_id_status_fitting, advance=cfg.number_of_fits)
+    queue_in = Queue()
+    queue_out = Queue()
+    the_pool = Pool(cfg.num_cores, worker, (queue_in, queue_out, mcmc_kwargs))
 
-    df_fit_results = pd.concat([res[1] for res in results])
-    df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
+    groupby = df.groupby("taxid", sort=False, observed=True)
 
     d_fits = {}
-    for result in results:
-        d_fits = {**d_fits, **result[0]}
+
+    progress = utils.progress
+    with progress:  # console=console
+        task_fit = progress.add_task(
+            "task_status_fitting",
+            progress_type="status",
+            status="Fitting ",
+            name="Fits: ",
+            total=len(groupby),
+        )
+
+        for taxid, group in groupby:
+            queue_in.put((taxid, group))
+
+        # Get and print results
+        for _ in range(len(groupby)):
+            taxid, d_fit = queue_out.get()
+            d_fits[taxid] = d_fit
+            progress.advance(task_fit)
+
+    for i, (taxid, group) in enumerate(groupby):
+        queue_in.put(None)
+
+    # prevent adding anything more to the queue and wait for queue to empty
+    queue_in.close()
+    queue_in.join_thread()
+
+    # prevent adding anything more to the process pool and wait for all processes to finish
+    the_pool.close()
+    the_pool.join()
+    return d_fits
+
+
+def compute_fits(df, cfg, mcmc_kwargs):
+    if cfg.num_cores == 1:
+        return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm # TODO
+    # utils.avoid_fontconfig_warning()
+    d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)
+    fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
+    df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
+    df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
     return d_fits, df_fit_results
+
+
+# def compute_fits_old(df, cfg, mcmc_kwargs):
+
+#     if cfg.num_cores == 1:
+#         return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm
+
+#     N_chunks = cfg.num_cores  # for now
+#     taxid_chunks = np.array_split(df.taxid.unique(), N_chunks)
+#     chunks = [df.loc[df.taxid.isin(chunk)] for chunk in taxid_chunks]
+
+#     utils.avoid_fontconfig_warning()
+
+#     progress = utils.progress
+#     task_id_status_fitting = progress.add_task(
+#         "task_status_fitting",
+#         progress_type="status",
+#         status="Fitting ",
+#         total=cfg.number_of_fits,
+#     )
+#     generator = (delayed(fit_chunk)(chunk, mcmc_kwargs) for chunk in chunks)
+#     results = Parallel(n_jobs=cfg.num_cores)(generator)
+#     progress.advance(task_id_status_fitting, advance=cfg.number_of_fits)
+
+#     df_fit_results = pd.concat([res[1] for res in results])
+#     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
+
+#     d_fits = {}
+#     for result in results:
+#         d_fits = {**d_fits, **result[0]}
+#     return d_fits, df_fit_results
+
+
+#%%
+
+
+#%%
 
 
 def save_df_fit_results(df_fit_results, filename):

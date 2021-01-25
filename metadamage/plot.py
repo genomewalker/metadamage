@@ -204,14 +204,6 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     groupby = df_top_N.groupby("taxid", sort=False, observed=True)
-    # desc = f"Plotting {utils.human_format(groupby.ngroups)} TaxIDs in seriel"
-    desc = utils.string_pad_left_and_right("TaxIDs", left=8)
-
-    # N_plots = len(groupby)
-    # if cfg.max_plots is not None and cfg.max_plots < N_plots:
-    # N_plots = cfg.max_plots
-
-    # i_plots_counter = 0
 
     progress = utils.progress
 
@@ -219,29 +211,16 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
         "task_status_plotting",
         progress_type="status",
         status="Plotting",
+        name="Plots:",
         total=len(groupby),
     )
 
-    # progress.advance(task_id_status_plotting)
-
     utils.init_parent_folder(filename)
-    with PdfPages(filename) as pdf:
-        # with tqdm(groupby, desc=desc, leave=False, dynamic_ncols=True, total=N_plots) as it:
-        # for taxid, group in it:
-        # for taxid, group in tqdm(groupby, desc=desc):
+    with PdfPages(filename) as pdf, progress:
         for taxid, group in groupby:
-            # it.set_postfix(taxid=taxid)
-            # if utils.fit_satisfies_thresholds(cfg, d_fits[taxid]):
             fig = plot_single_group(group, cfg, d_fits)
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
             progress.advance(task_id_status_plotting)
-
-            # i_plots_counter += 1
-        # else:
-        #     if cfg.verbose:
-        #         print(f"TaxID {taxid} did not satisfy the thresholds ")
-        # if i_plots_counter >= N_plots:
-        # break
 
         d = pdf.infodict()
         d["Title"] = "Error Rate Distributions"

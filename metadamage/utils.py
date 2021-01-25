@@ -484,10 +484,10 @@ progress_bar_overall = (
     SpinnerColumn(),
     BarColumn(bar_width=None, complete_style="green"),
     "[progress.percentage]{task.percentage:>3.0f}%",
-    "• [progress.percentage]{task.completed} / {task.total}",
+    "• Files: [progress.percentage]{task.completed} / {task.total}",
     # "• Remaining:",
     # TimeRemainingColumn(),
-    "• Elapsed:",
+    "• Time Elapsed:",
     TimeElapsedColumn(),
 )
 
@@ -498,9 +498,9 @@ progress_bar_status = (
     TextColumn(" " * 8 + "{task.fields[status]}:"),
     BarColumn(bar_width=20, complete_style="green"),
     "[progress.percentage]{task.percentage:>3.0f}%",
-    "• Elapsed:",
+    "• Time Elapsed:",
     TimeElapsedColumn(),
-    "• [progress.percentage]{task.completed} / {task.total}",
+    "• {task.fields[name]} [progress.percentage]{task.completed:>4} / {task.total:>4}",
 )
 
 

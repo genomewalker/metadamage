@@ -67,6 +67,7 @@ def main(filenames, cfg):
         )
 
         for filename in filenames:
+
             name = utils.extract_name(filename)
             progress.add_task("task_name", progress_type="name", name=name)
 
@@ -92,7 +93,8 @@ def main(filenames, cfg):
                     plot.plot_error_rates(cfg, df, d_fits, df_results)
 
             progress.advance(task_id_overall)
-        progress.advance(task_id_overall)
+
+        # progress.advance(task_id_overall)
 
     if len(all_fit_results) >= 1:
         plot.set_style()
