@@ -216,7 +216,6 @@ def seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf, progress:
-
         for taxid, group in groupby:
             fig = plot_single_group(group, cfg, d_fits)
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)

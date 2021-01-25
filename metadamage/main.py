@@ -82,6 +82,7 @@ def main(filenames, cfg):
                     # plot.set_style()
                     plot.plot_error_rates(cfg, df, d_fits, df_results)
 
+            progress.refresh()
             progress.advance(task_id_overall)
 
     if len(all_fit_results) >= 1:
