@@ -1,9 +1,9 @@
 # Scientific Library
-from collections import defaultdict
 import numpy as np
 import pandas as pd
 
 # Standard Library
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload

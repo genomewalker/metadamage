@@ -7,8 +7,11 @@ from matplotlib.ticker import EngFormatter, FormatStrFormatter, MultipleLocator
 import numpy as np
 
 # Standard Library
+from collections import defaultdict
 import datetime
+import itertools
 from pathlib import Path
+import re
 
 # Third Party
 from tqdm.auto import tqdm
@@ -454,12 +457,6 @@ def find_fit_results_limits(all_fit_results):
     n_sigma_lim = (n_sigma_min - 0.5, n_sigma_max + 0.5)
     D_max_lim = (max(D_max_min, 0), min(D_max_max + 0.2, 1))
     return n_sigma_lim, D_max_lim
-
-
-import itertools
-
-from collections import defaultdict
-import re
 
 
 def split_name_into_first_part(name):
