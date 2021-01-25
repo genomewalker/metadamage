@@ -415,6 +415,8 @@ def _load_fits(cfg):
 
 def get_fits(df, cfg):
 
+    cfg.set_number_of_fits(df)
+
     d_filename = _get_fit_filenames(cfg)
 
     # if file d_fits exists, use this

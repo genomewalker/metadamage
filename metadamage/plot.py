@@ -202,9 +202,9 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 #%%
 
 
-def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
+def seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
 
-    groupby = df_top_N.groupby("taxid", sort=False, observed=True)
+    groupby = df_plot_sorted.groupby("taxid", sort=False, observed=True)
 
     task_id_status_plotting = progress.add_task(
         "task_status_plotting",
@@ -216,6 +216,7 @@ def seriel_saving_of_error_rates(cfg, df_top_N, filename, d_fits):
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf, progress:
+
         for taxid, group in groupby:
             fig = plot_single_group(group, cfg, d_fits)
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
@@ -255,6 +256,8 @@ def plot_error_rates(cfg, df, d_fits, df_results):
     # if cfg.verbose:
     #     console.print("  Plotting, please wait.")
 
+    set_style()
+
     seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
 
 
@@ -286,15 +289,40 @@ class ExpFormatter(EngFormatter):
 
 def _get_legend_handles_names(kw_cols, use_monospace_font=True):
     # get legend for the names
+
+    # plot all legend entries if less than 10 files
+    if len(kw_cols) < 10:
+        legend_names = []
+        for name, kw_col in kw_cols.items():
+            cmap = mpl.cm.get_cmap(kw_col["cmap"])
+            marker = kw_col["marker"]
+            kw = dict(marker=marker, color="w", markersize=20, alpha=0.8)
+            label = name.replace("_", r"\_")
+            if use_monospace_font:
+                label = r"\texttt{" + label + r"}"
+            circle = Line2D([0], [0], label=label, markerfacecolor=cmap(0.75), **kw)
+            legend_names.append(circle)
+        return legend_names
+
+    # else plot only the first of each group
+
     legend_names = []
+    names_already_plotted = set()
     for name, kw_col in kw_cols.items():
-        cmap = mpl.cm.get_cmap(kw_col["cmap"])
-        kw = dict(marker="o", color="w", markersize=20, alpha=0.8)
-        label = name.replace("_", r"\_")
-        if use_monospace_font:
-            label = r"\texttt{" + label + r"}"
-        circle = Line2D([0], [0], label=label, markerfacecolor=cmap(0.75), **kw)
-        legend_names.append(circle)
+        part = split_name_into_first_part(name)
+
+        # exclude if subgroup is already plotted
+        if not part in names_already_plotted:
+            cmap = mpl.cm.get_cmap(kw_col["cmap"])
+            marker = kw_col["marker"]
+            kw = dict(marker=marker, color="w", markersize=20, alpha=0.8)
+            label = f"{part}..."
+            if use_monospace_font:
+                label = r"\texttt{" + label + r"}"
+            circle = Line2D([0], [0], label=label, markerfacecolor=cmap(0.75), **kw)
+            legend_names.append(circle)
+            names_already_plotted.add(part)
+
     return legend_names
 
 
@@ -328,7 +356,9 @@ def make_custom_legend(zs, ax, vmin, vmax, func, kw_cols):
         handle[i].set_markersize(size)
         handle[i].set_markeredgewidth(0)
 
-    return (handle, label), _get_legend_handles_names(kw_cols)
+    legend_names = _get_legend_handles_names(kw_cols)
+
+    return (handle, label), legend_names
 
 
 def name_to_fontsize(name):
@@ -396,15 +426,6 @@ def get_z_min_max(all_fit_results):
     return zmin, zmax
 
 
-cmaps_list = [
-    "Blues",
-    "Reds",
-    "Greens",
-    "Purples",
-    "Oranges",
-]
-
-
 # xlim = (-3, 18)
 # ylim = (0, 1)
 
@@ -436,11 +457,81 @@ def find_fit_results_limits(all_fit_results):
     return n_sigma_lim, D_max_lim
 
 
+import itertools
+
+from collections import defaultdict
+import re
+
+
+def split_name_into_first_part(name):
+    return re.findall(r"\w+", name)[0]
+
+
+def get_groups(all_fit_results):
+    """ Split """
+    filenames = list(all_fit_results.keys())
+    groups = defaultdict(list)
+    for filename in filenames:
+        # get first part of filename (split in non-alphanumerics)
+        part = split_name_into_first_part(filename)
+        groups[part].append(filename)
+
+    return list(groups.values())
+
+
+def get_cmaps_and_colors(all_fit_results):
+
+    cmaps = [
+        "Blues",
+        "Reds",
+        "Greens",
+        "Purples",
+        "Oranges",
+        "Greys",
+        "YlOrBr",
+        "YlOrRd",
+        "OrRd",
+        "PuRd",
+        "RdPu",
+        "BuPu",
+        "GnBu",
+        "PuBu",
+        "YlGnBu",
+        "PuBuGn",
+        "BuGn",
+        "YlGn",
+    ]
+
+    markers = ["o", "s", "*", "D", "P", "X", "v", "^", "<", ">"]
+    # markers_cmaps = list(itertools.product(cmaps, markers))
+
+    # if len(all_fit_results.keys()) > len(markers_cmaps):
+    #     print(
+    #         f"'all_fit_results' contains too many figures "
+    #         f"({len(all_fit_results.keys())}) to be plotted at the same time! "
+    #         f"Only plotting the first {len(markers_cmaps)} fits."
+    #     )
+    #     kw_it = enumerate(all_fit_results.items())
+    #     all_fit_results = {
+    #         key: val for i, (key, val) in kw_it if i < len(markers_cmaps)
+    #     }
+
+    groups = get_groups(all_fit_results)
+
+    kw = {}
+    for i_group, group in enumerate(groups):
+        for j_name, name in enumerate(group):
+            # cmap, marker = markers_cmaps[i]
+            kw[name] = {"marker": markers[j_name], "cmap": cmaps[i_group]}
+    return kw
+
+
 def plot_fit_results_single_N_aligment(
     all_fit_results, cfg, N_alignments_min=0, n_sigma_lim=(-3, 20), D_max_lim=(0, 1)
 ):
 
-    cmaps = {name: cmap for name, cmap in zip(all_fit_results.keys(), cmaps_list)}
+    # cmaps = {name: cmap for name, cmap in zip(all_fit_results.keys(), cmaps_list)}
+    kw_marker_colors = get_cmaps_and_colors(all_fit_results)
 
     zmin, zmax = get_z_min_max(all_fit_results)
     vmin, vmax, func = 10, 600, np.sqrt
@@ -474,10 +565,10 @@ def plot_fit_results_single_N_aligment(
         c = np.log10(z)
 
         kw_cols[name] = dict(
-            cmap=cmaps[name],
             vmin=c.min() / 10,
             vmax=c.max() * 1.25,
             ec=None,
+            **kw_marker_colors[name],
         )
         ax.scatter(x, y, s=s, c=c, **kw_cols[name], alpha=0.5)
 
@@ -527,15 +618,11 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
         #     print(f"\nPlot of fit results already exist: {filename}")  # flush=True
         return None
 
+    set_style()
+
     # if cfg.verbose:
     #     # tqdm.write(f"\n\nPlotting fit results.")
     #     print(f"\n\nPlotting fit results.")
-
-    if len(all_fit_results) > len(cmaps_list):
-        if cfg.verbose:
-            print(f"Only plotting the first {len(cmaps_list)} fits")
-        kw_it = enumerate(all_fit_results.items())
-        all_fit_results = {key: val for i, (key, val) in kw_it if i < len(cmaps_list)}
 
     n_sigma_lim, D_max_lim = find_fit_results_limits(all_fit_results)
 

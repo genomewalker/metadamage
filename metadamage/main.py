@@ -1,4 +1,5 @@
 # Scientific Library
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 
@@ -73,18 +74,18 @@ def main(filenames, cfg):
                 continue
 
             if cfg.do_make_fits:
-                cfg.set_number_of_fits(df)
+                # cfg.set_number_of_fits(df)
                 d_fits, df_results = fit.get_fits(df, cfg)
                 all_fit_results[cfg.name] = df_results
 
                 if cfg.do_make_plots:
-                    plot.set_style()
+                    # plot.set_style()
                     plot.plot_error_rates(cfg, df, d_fits, df_results)
 
             progress.advance(task_id_overall)
 
     if len(all_fit_results) >= 1:
-        plot.set_style()
+        # plot.set_style()
         N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
@@ -124,7 +125,7 @@ if utils.is_ipython():
     path = Path().cwd().parent
     os.chdir(path)
 
-    filenames = list(Path("./data/input/").rglob("mikkel_data/*taxid.counts.txt"))
+    filenames = sorted(Path("./data/input/").rglob("mikkel_data/all/*taxid.counts.txt"))
 
     if False:
         # if True:

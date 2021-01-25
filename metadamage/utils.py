@@ -68,14 +68,14 @@ class Config:
         if self.max_cores > available_cores:
             self.num_cores = available_cores - 1
             if self.verbose:
-                print(
+                console.print(
                     f"'max_cores' is set to a value larger than the maximum available",
                     f"so clipping to {self.num_cores} (available-1) cores",
                 )
         elif self.max_cores < 0:
             self.num_cores = available_cores - abs(self.max_cores)
             if self.verbose:
-                print(
+                console.print(
                     f"'max-cores' is set to a negative value",
                     f"so using {self.num_cores} (available-max_cores) cores",
                 )
@@ -170,7 +170,7 @@ def delete_folder(path):
     try:
         shutil.rmtree(path)
     except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
+        console.print("Error: %s - %s." % (e.filename, e.strerror))
 
 
 def clean_up_after_dask():
