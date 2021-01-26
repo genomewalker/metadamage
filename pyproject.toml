@@ -68,7 +68,7 @@ build = "poetry build"
 _publish = "poetry publish"
 git_push_with_tags = "git push --follow-tags"
 release = ["test", "isort", "format", "clean", "build", "_publish", 'git_push_with_tags']
-
+publish = ['release']
 
 [tool.black]
 line-length = 88

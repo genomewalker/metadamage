@@ -1,6 +1,12 @@
 # Metadamage - Ancient Damage Estimation for Metagenomics
 
-![PyPI](https://img.shields.io/pypi/v/metadamage) ![PyPI - License](https://img.shields.io/pypi/l/metadamage)
+[![PyPI](https://img.shields.io/pypi/v/metadamage)](https://pypi.org/project/metadamage) ![PyPI - License](https://img.shields.io/pypi/l/metadamage)
+
+
+<!-- [![PyPI - License](https://img.shields.io/pypi/l/metadamage)](https://pypi.org/project/metadamage/) -->
+
+
+<!-- [![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/) -->
 
 Personal recommendations for this project:
 
