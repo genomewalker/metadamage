@@ -2,12 +2,6 @@
 
 [![PyPI](https://img.shields.io/pypi/v/metadamage)](https://pypi.org/project/metadamage) ![PyPI - License](https://img.shields.io/pypi/l/metadamage)
 
-
-<!-- [![PyPI - License](https://img.shields.io/pypi/l/metadamage)](https://pypi.org/project/metadamage/) -->
-
-
-<!-- [![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/) -->
-
 Personal recommendations for this project:
 
 - Python Version: [Pyenv](https://github.com/pyenv/pyenv)
@@ -17,7 +11,7 @@ Personal recommendations for this project:
 Requires a decent Python version (>=3.8) installed. See more below for further installation hints.
 
 
-## Installation:
+## <a name="install"></a> Installation:
 
 With Poetry:
 ```console
@@ -28,7 +22,7 @@ or, if you prefer regular pip:
 $ pip install metadamage
 ```
 
-## Update:
+## <a name="update"></a> Update:
 
 With Poetry:
 ```console
@@ -39,8 +33,7 @@ or, if you prefer regular pip:
 $ pip install metadamage --upgrade
 ```
 
-
-## Metadamage CLI
+## <a name="cli"></a> Metadamage CLI:
 
 For help on the CLI interface, `metadamage` provides a `help` function:
 
@@ -58,7 +51,7 @@ $ metadamage --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt
 $ metadamage --verbose --max-fits 10 --max-cores 2 ./data/input/*.txt
 ```
 
-## Metadamage CLI Options
+## <a name="options"></a> Metadamage CLI Options:
 
 The `metadamage` CLI has the following options.
 
@@ -90,10 +83,62 @@ The `metadamage` CLI has the following options.
 <!-- [tex-image-link-generator](https://tex-image-link-generator.herokuapp.com/) -->
 <!-- https://gist.github.com/a-rodin/fef3f543412d6e1ec5b6cf55bf197d7b -->
 
+## <a name="setup"></a> Setup Local Python Environment:
+
+Make sure you have a local Python environment. Personally, I recommend using Pyenv for installing Python versions and Pyenv-Virtualenv for easy managing of virtuel environments. See e.g. [this](https://github.com/pyenv/pyenv-installer#pyenv-installer) for easy installation of both.
+
+Make sure you have a decent Python version (>=3.8) installed:
+```console
+$ pyenv install 3.8.7
+```
+
+Now we set up a virtual environment, such that changes you do in this environment does not affect your other Python projects:
+```console
+$ pyenv virtualenv 3.8.7 metadamage38
+$ pyenv activate metadamage38
+```
+
+We now use Poetry to setup a new project which uses metadamage. Follow the interactive guide:
+```console
+$ poetry new metadamage-folder
+$ cd metadamage-folder
+```
+
+Instead of activating the environment manually after every new login, we can tell `pyenv` to remember it for us:
+```console
+$ pyenv local metadamage38
+```
+
+We now have a working local, virtual Python environment where the packages are managed by Poetry, so we can now add metadamamage to our project:
+```console
+$ poetry add metadamage
+```
+
+At this point you should log out of your terminal and log in again for reloading everything. Now if you just write:
+
+```console
+$ metadamage
+```
+
+you should see the following:
+
+```console
+$ metadamage
+Usage: metadamage [OPTIONS] FILENAMES...
+Try 'metadamage --help' for help.
+
+Error: Missing argument 'FILENAMES...'.
+```
+
+which shows that it is working and installed. You can now use `metadamage --help` for more help (together with the variable explanations [above](#options)
+<!-- [above](#metadamage-cli-options) -->
+).
 
 
 
-<!-- poe release -->
+
+
+and we can even [link](#head1234) to it so:
 
 
 <!--
@@ -121,30 +166,8 @@ $ conda activate metadamage
 ``` -->
 
 <!--
-git clone https://github.com/pyro-ppl/numpyro.git
-# install jax/jaxlib first for CUDA support
-pip install -e .[dev]  # contains additional dependencies for NumPyro development -->
-
 
 <!-- poetry add git+https://github.com/christianmichelsen/metadamage.git -->
 <!-- poetry add git+https://github.com/christianmichelsen/metadamage.git#develop -->
 <!-- poetry add ./my-package/ -->
 
-
-
-<!--
-Make sure you have a local Python environment. Personally, I recommend using Pyenv for installing Python versions and Pyenv-Virtualenv for easy managing of virtuel environments. See e.g. [this](https://github.com/pyenv/pyenv-installer#pyenv-installer) for easy installation of both.
-
-Make sure you have a decent Python version (>=3.8) installed:
-
-pyenv install 3.8.7
-pyenv virtualenv 3.8.7 metadamage38
-pyenv activate metadamage38
-pyenv local metadamage38 # in dir
-
-create a new dir:
-
-mkdir metadamage
-cd metadamage
-
-pyenv local metadamage38 -->
