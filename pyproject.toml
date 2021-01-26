@@ -52,10 +52,10 @@ requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks]
-test   = "pytest ."                                # simple command based task
+test   = "pytest ."
 isort = "isort ."
 format = "black ."
-black = "black ."
+black = ["format"]
 clean = """
 # Multiline commands including comments work too. Unescaped whitespace is ignored.
 rm -rf .coverage
@@ -66,13 +66,19 @@ rm -rf .coverage
 """
 build = "poetry build"
 _publish = "poetry publish"
+
 _git_add_all = "git add ."
 _git_commit = "git commit -m 'release'"
 _git_push_with_tags = "git push --follow-tags"
 git_release = ["_git_add_all", "_git_commit", "_git_push_with_tags"]
-release = ["test", "isort", "format", "clean", "build", "_publish", "git_release"]
-publish = ['release']
+
 # poe release
+release = ["test", "isort", "black", "clean", "build", "_publish", "git_release"]
+publish = ['release']
+
+
+
+
 
 [tool.black]
 line-length = 88
