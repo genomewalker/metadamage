@@ -69,6 +69,7 @@ def main(filenames, cfg):
             cfg.name = name
 
             df = fileloader.load_dataframe(cfg)
+            # group = utils.get_specific_taxid(df, taxid=102722)
 
             if not utils.is_df_accepted(df, cfg):
                 continue
@@ -96,7 +97,8 @@ if utils.is_ipython():
     print("Doing iPython plot")
 
     filenames = [
-        "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        "./data/input/KapK-198A-Ext-55-Lib-55-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        # "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
         # "./data/input/data_ancient.txt",
         # "./data/input/data_control.txt",
     ]
@@ -126,7 +128,7 @@ if utils.is_ipython():
     path = Path().cwd().parent
     os.chdir(path)
 
-    filenames = sorted(Path("./data/input/").rglob("mikkel_data/all/*taxid.counts.txt"))
+    # filenames = sorted(Path("./data/input/").rglob("mikkel_data/all/*taxid.counts.txt"))
 
     if False:
         # if True:

@@ -272,6 +272,7 @@ def fit_chunk(df, mcmc_kwargs):
             "task_status_fitting",
             progress_type="status",
             status="Fitting ",
+            name="Fits: ",
             total=len(groupby),
         )
 
@@ -331,12 +332,14 @@ def worker(queue_in, queue_out, mcmc_kwargs):
 def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
     # print("main", os.getpid(), current_process().name)
 
-    queue_in = Queue()
-    queue_out = Queue()
-    the_pool = Pool(cfg.num_cores, worker, (queue_in, queue_out, mcmc_kwargs))
-
     groupby = df.groupby("taxid", sort=False, observed=True)
     N_groupby = len(groupby)
+
+    num_cores = cfg.num_cores if cfg.num_cores < N_groupby else N_groupby
+
+    queue_in = Queue()
+    queue_out = Queue()
+    the_pool = Pool(num_cores, worker, (queue_in, queue_out, mcmc_kwargs))
 
     d_fits = {}
 
@@ -372,8 +375,12 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
 
 
 def compute_fits(df, cfg, mcmc_kwargs):
-    if cfg.num_cores == 1:
+
+    groupby = df.groupby("taxid", sort=False, observed=True)
+
+    if cfg.num_cores == 1 or len(groupby) < 10:
         return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm # TODO
+
     # utils.avoid_fontconfig_warning()
     d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)
     fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}

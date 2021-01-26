@@ -207,6 +207,10 @@ def init_parent_folder(filename):
     filename.parent.mkdir(parents=True, exist_ok=True)
 
 
+def get_specific_taxid(df, taxid):
+    return df.query("taxid == @taxid")
+
+
 def load_dill(filename):
     with open(filename, "rb") as file:
         return dill.load(file)
