@@ -97,10 +97,11 @@ if utils.is_ipython():
     print("Doing iPython plot")
 
     filenames = [
-        "./data/input/KapK-198A-Ext-55-Lib-55-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
+        # "./data/input/KapK-198A-Ext-55-Lib-55-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
         # "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
         # "./data/input/data_ancient.txt",
         # "./data/input/data_control.txt",
+        "./data/input/ugly/KapK_small.UglyPrint"
     ]
 
     reload(utils)
