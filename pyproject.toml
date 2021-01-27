@@ -66,11 +66,7 @@ rm -rf .coverage
 """
 build = "poetry build"
 _publish = "poetry publish"
-
-# _git_add_all = "git add ."
-# _git_commit = "git commit -m 'release'"
 _git_push_with_tags = "git push --follow-tags"
-# git_release = ["_git_add_all", "_git_commit", "_git_push_with_tags"]
 git_release = ["_git_push_with_tags"]
 
 # poe release
