@@ -258,20 +258,14 @@ def plot_error_rates(cfg, df, d_fits, df_results):
         cfg,
         df,
         df_results,
-        number_of_plots,
     )
 
     # f"[red]{cfg.name}[/red]: Length of dataframe was 0. Stopping any further operations on this file.\n"
     # f"This might be due to a quite restrictive cut at the moment\n"
     # f"requiring that both C and G are present in the read.\n"
 
-    filename = (
-        f"./figures/error_rates__{cfg.name}__"
-        f"sort_by__{cfg.sort_by}__"
-        f"number_of_plots__{number_of_plots}__"
-        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
-        f".pdf"
-    )
+    filename = cfg.filename_plot_error_rates
+
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_plots):
         # if cfg.verbose:
         #     # tqdm.write(f"Plot of error rates already exist: {filename}\n")
@@ -617,12 +611,7 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     if not 0 in N_alignments_mins:
         N_alignments_mins = [0] + N_alignments_mins
 
-    filename = (
-        f"./figures/all_fit_results__"
-        f"number_of_fits__{cfg.number_of_fits}__"
-        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
-        ".pdf"
-    )
+    filename = cfg.filename_plot_fit_results
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
         # if cfg.verbose:

@@ -321,11 +321,7 @@ def _load_dataframe_dask(cfg):
 
 def load_dataframe(cfg):
 
-    filename_parquet = (
-        f"./data/parquet/{cfg.name}__"
-        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
-        ".parquet"
-    )
+    filename_parquet = cfg.filename_parquet
 
     if utils.file_exists(filename_parquet, cfg.force_reload_files):
         # if cfg.verbose:

@@ -119,6 +119,56 @@ class Config:
             return True
         return False
 
+    # FILENAMES BASED ON CFG
+
+    def _get_substitution_bases_name(self):
+        if (
+            self.substitution_bases_forward == "CT"
+            and self.substitution_bases_reverse == "GA"
+        ):
+            return ""
+        else:
+            return (
+                f"__{self.substitution_bases_forward}"
+                f"__{self.substitution_bases_reverse}"
+            )
+
+    @property
+    def filename_parquet(self):
+        return (
+            f"./data/parquet/{self.name}"
+            + self._get_substitution_bases_name()
+            + ".parquet"
+        )
+
+    @property
+    def filename_fit_results(self):
+        return (
+            f"./data/fits/{self.name}"
+            f"__number_of_fits__{self.number_of_fits}"
+            + self._get_substitution_bases_name()
+            + ".csv"
+        )
+
+    @property
+    def filename_plot_error_rates(self):
+        return (
+            f"./figures/error_rates__{self.name}"
+            f"__sort_by__{self.sort_by}"
+            f"__number_of_plots__{self.number_of_plots}"
+            + self._get_substitution_bases_name()
+            + f".pdf"
+        )
+
+    @property
+    def filename_plot_fit_results(self):
+        return (
+            f"./figures/all_fit_results"
+            f"__number_of_fits__{self.number_of_fits}"
+            + self._get_substitution_bases_name()
+            + ".pdf"
+        )
+
 
 class SortBy(str, Enum):
     alignments = "alignments"
@@ -394,7 +444,7 @@ def get_num_cores(cfg):
 #%%
 
 
-def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
+def get_sorted_and_cutted_df(cfg, df, df_results):
 
     min_damage = cfg.min_damage if cfg.min_damage else -np.inf
     min_sigma = cfg.min_sigma if cfg.min_sigma else -np.inf
@@ -420,11 +470,9 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
     df_results_cutted_ordered = df_results_cutted.sort_values(sort_by, ascending=False)
 
     taxids = df_results_cutted_ordered.index
-    if number_of_plots is None:
-        number_of_plots = cfg.number_of_plots
 
     # get the number_of_plots in the top
-    taxids_top = taxids[:number_of_plots]
+    taxids_top = taxids[: cfg.number_of_plots]
 
     # the actual dataframe, unrelated to the fits
     df_plot = df.query("taxid in @taxids_top")
@@ -471,3 +519,9 @@ def initial_print(filenames, cfg):
 
     console.rule("[bold red]Main")
     console.print("")
+
+
+#%%
+
+# filename: Optional[str] = None
+# %%
