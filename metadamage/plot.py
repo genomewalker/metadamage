@@ -78,13 +78,22 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     colors = ["C0", "C1", "C2", "C3", "C4"]
 
     if cfg.max_position is None:
-        max_position = group.pos.max()
+        max_position = group.position.max()
     else:
         max_position = cfg.max_position
 
     group_direction = {}
     group_direction["forward"] = utils.get_forward(group)
     group_direction["reverse"] = utils.get_reverse(group)
+
+    forward_fraction_name = f"f_{cfg.substitution_bases_forward}"
+    forward_fraction_label = (
+        f"{cfg.substitution_bases_forward[0]}→{cfg.substitution_bases_forward[1]}"
+    )
+    reverse_fraction_name = f"f_{cfg.substitution_bases_reverse}"
+    reverse_fraction_label = (
+        f"{cfg.substitution_bases_reverse[0]}→{cfg.substitution_bases_reverse[1]}"
+    )
 
     fig, axes = plt.subplots(
         ncols=2,
@@ -96,30 +105,30 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     for direction, ax in zip(["reverse", "forward"], axes):
 
         ax.plot(
-            group_direction[direction]["pos"],
-            group_direction[direction]["f_C2T"],
+            group_direction[direction]["position"],
+            group_direction[direction][forward_fraction_name],
             ".",
             color=colors[0],
-            label="C→T",
+            label=forward_fraction_label,
             alpha=1 if direction == "forward" else 0.3,
         )
         ax.plot(
-            group_direction[direction]["pos"],
-            group_direction[direction]["f_G2A"],
+            group_direction[direction]["position"],
+            group_direction[direction][reverse_fraction_name],
             ".",
             color=colors[1],
-            label="G→A",
+            label=reverse_fraction_label,
             alpha=1 if direction == "reverse" else 0.3,
         )
 
-        ax.plot(
-            group_direction[direction]["pos"],
-            group_direction[direction]["f_other"],
-            ".",
-            color=colors[3],
-            label="Other substitutions",
-            alpha=0.3,
-        )
+        # ax.plot(
+        #     group_direction[direction]["pos"],
+        #     group_direction[direction]["f_other"],
+        #     ".",
+        #     color=colors[3],
+        #     label="Other substitutions",
+        #     alpha=0.3,
+        # )
 
     ax_reverse, ax_forward = axes
 
@@ -133,7 +142,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
         d_fit = d_fits[taxid]
 
-        z = group.pos.values
+        z = group.position.values
 
         y_median = d_fit["median"]
         y_hpdi = d_fit["hpdi"]
@@ -172,7 +181,12 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     # ax_reverse.grid(True, alpha=0.4)
     # ax_forward.grid(True, alpha=0.4)
 
-    ymax_tail = 5 * group.query("abs(pos) > 7")[["f_C2T", "f_G2A"]].max().max()
+    ymax_tail = 5 * (
+        group.query("abs(position) > 7")
+        .loc[:, [forward_fraction_name, reverse_fraction_name]]
+        .max()
+        .max()
+    )
     ymax_overall = max(ax_forward.get_ylim()[1], ax_reverse.get_ylim()[1])
     if (ymax_tail > ymax_overall) and (ymax_tail <= 1):
         ymax = ymax_tail
@@ -237,7 +251,7 @@ def plot_error_rates(cfg, df, d_fits, df_results):
     'AT' = 'A2T' = 'A.T' = 'A->T' ...
     """
 
-    number_of_plots = utils.get_number_of_plots(cfg)
+    number_of_plots = cfg.number_of_plots
 
     df_plot_sorted = utils.get_sorted_and_cutted_df(
         cfg,
@@ -499,21 +513,7 @@ def get_cmaps_and_colors(all_fit_results):
     ]
 
     markers = ["o", "s", "*", "D", "P", "X", "v", "^", "<", ">"]
-    # markers_cmaps = list(itertools.product(cmaps, markers))
-
-    # if len(all_fit_results.keys()) > len(markers_cmaps):
-    #     print(
-    #         f"'all_fit_results' contains too many figures "
-    #         f"({len(all_fit_results.keys())}) to be plotted at the same time! "
-    #         f"Only plotting the first {len(markers_cmaps)} fits."
-    #     )
-    #     kw_it = enumerate(all_fit_results.items())
-    #     all_fit_results = {
-    #         key: val for i, (key, val) in kw_it if i < len(markers_cmaps)
-    #     }
-
     groups = get_groups(all_fit_results)
-
     kw = {}
     for i_group, group in enumerate(groups):
         for j_name, name in enumerate(group):

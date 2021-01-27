@@ -14,21 +14,69 @@ from metadamage import utils
 from metadamage.progressbar import console, progress
 
 
-set_ACTG = set(["A", "C", "G", "T"])
+ACTG = ["A", "C", "G", "T"]
+
+ref_obs_bases = []
+for ref in ACTG:
+    for obs in ACTG:
+        ref_obs_bases.append(f"{ref}{obs}")
+
+# columns_name_mapping = {
+#     "#taxid": "taxid",
+#     "Nalignments": "N_alignments",
+#     "Direction": "direction",
+#     "Pos": "position",
+# }
 
 
-columns_name_mapping = {
-    "#taxid": "taxid",
-    "Nalignments": "N_alignments",
-    "Direction": "direction",
-    "Pos": "pos",
-}
+# fmt: off
+# fmt: on
+
+columns = [
+    "taxid",
+    "name",
+    "rank",
+    "N_alignments",
+    "strand",
+    "position",
+    *ref_obs_bases,
+]
+
+
+#%%
+
+
+def clean_up_after_dask():
+    utils.delete_folder("./dask-worker-space")
+
+
+# def is_reverse_strand(strand):
+#     matches = ["reverse", "3", "-"]
+#     if any(match in strand.lower() for match in matches):
+#         return True
+#     else:
+#         return False
+
+
+# def is_forward_strand(strand):
+#     return not is_reverse_strand(strand)
+
+
+def get_subsitution_bases_to_keep(cfg):
+    # ["C", "CT", "G", "GA"]
+    forward = cfg.substitution_bases_forward
+    reverse = cfg.substitution_bases_reverse
+    bases_to_keep = [forward[0], forward, reverse[0], reverse]
+    return bases_to_keep
+
+
+#%%
 
 
 def get_base_columns(df):
     base_columns = []
     for column in df.columns:
-        if len(column) == 2 and column[0] in set_ACTG and column[1] in set_ACTG:
+        if len(column) == 2 and column[0] in ACTG and column[1] in ACTG:
             base_columns.append(column)
     return base_columns
 
@@ -73,39 +121,40 @@ def compute_error_rates(df, ref, obs):
 
 def add_error_rates(df, ref, obs, include_uncertainties=False):
     f, sf = compute_error_rates(df, ref, obs)
-    df[f"f_{ref}2{obs}"] = f
+    df[f"f_{ref}{obs}"] = f
     if include_uncertainties:
-        df[f"sf_{ref}2{obs}"] = sf
+        df[f"sf_{ref}{obs}"] = sf
     return df
 
 
-def add_error_rates_other(df, include_uncertainties=False):
-    others = ["AC", "AG", "AT", "CA", "CG", "GC", "GT", "TA", "TC", "TG"]
-    N_A = df[get_reference_columns(df, ref="A")].sum(axis=1)
-    N_C = df[get_reference_columns(df, ref="C")].sum(axis=1)
-    N_G = df[get_reference_columns(df, ref="G")].sum(axis=1)
-    N_T = df[get_reference_columns(df, ref="T")].sum(axis=1)
-    numerator = df[others].sum(axis=1)
-    denominator = 3 * N_A + 2 * N_C + 2 * N_G + 3 * N_T
-    f, sf = compute_fraction_and_uncertainty(numerator, denominator)
-    df[f"f_other"] = f
-    if include_uncertainties:
-        df[f"sf_other"] = sf
-    return df
+# def add_error_rates_other(df, include_uncertainties=False):
+#     others = ["AC", "AG", "AT", "CA", "CG", "GC", "GT", "TA", "TC", "TG"]
+
+#     N_A = df[get_reference_columns(df, ref="A")].sum(axis=1)
+#     N_C = df[get_reference_columns(df, ref="C")].sum(axis=1)
+#     N_G = df[get_reference_columns(df, ref="G")].sum(axis=1)
+#     N_T = df[get_reference_columns(df, ref="T")].sum(axis=1)
+#     numerator = df[others].sum(axis=1)
+#     denominator = 3 * N_A + 2 * N_C + 2 * N_G + 3 * N_T
+#     f, sf = compute_fraction_and_uncertainty(numerator, denominator)
+#     df[f"f_other"] = f
+#     if include_uncertainties:
+#         df[f"sf_other"] = sf
+#     return df
 
 
 def make_position_1_indexed(df):
     "Make the position, z, one-indexed (opposed to zero-indexed)"
-    df["pos"] += 1
+    df["position"] += 1
     return df
 
 
 def make_reverse_position_negative(df):
-    pos = df["pos"]
+    pos = df["position"]
     is_reverse = ~utils.is_forward(df)
     pos_reverse = pos[~utils.is_forward(df)]
     # pos_reverse *= -1
-    df["pos"] = df["pos"].mask(is_reverse, -pos_reverse)
+    df["position"] = df["position"].mask(is_reverse, -pos_reverse)
     return df
 
 
@@ -163,12 +212,13 @@ def remove_base_columns(df):
     return df[columns_to_keep]
 
 
-def keep_only_base_columns(df, base_cols_to_keep):
+def keep_only_base_columns(df, cfg):
+    base_columns_to_keep = get_subsitution_bases_to_keep(cfg)
     columns_to_keep = []
     columns = df.columns
     base_columns = get_base_columns(df)
     base_cols_to_discard = [
-        base for base in base_columns if base not in base_cols_to_keep
+        base for base in base_columns if base not in base_columns_to_keep
     ]
     for col in columns:
         if col not in base_cols_to_discard:
@@ -177,18 +227,18 @@ def keep_only_base_columns(df, base_cols_to_keep):
 
 
 def sort_by_alignments(df_top_N):
-    pos = df_top_N["pos"]
+    pos = df_top_N["position"]
     df_top_N["order"] = pos.mask(pos > 0, 1 / pos)
-    return df_top_N.sort_values(by=["N_alignments", "order"], ascending=False).drop(
-        columns=["order"]
-    )
+    return df_top_N.sort_values(
+        by=["N_alignments", "taxid", "order"], ascending=False
+    ).drop(columns=["order"])
 
 
-def cut_NANs_away(df):
-    # we throw away rows with no C references or G references
-    bad_taxids = df.query("C == 0 | G == 0").taxid.unique()
-    df_nans_removed = df.query("taxid not in @bad_taxids")
-    return df_nans_removed
+# def cut_NANs_away(df):
+#     # we throw away rows with no C references or G references
+#     bad_taxids = df.query("C == 0 | G == 0").taxid.unique()
+#     df_nans_removed = df.query("taxid not in @bad_taxids")
+#     return df_nans_removed
 
 
 def replace_nans_with_zeroes(df):
@@ -202,40 +252,62 @@ def get_top_max_fits(df, number_of_fits):
         return df
 
 
-def _load_dataframe_dask(filename):
+def remove_taxids_with_no_alignments(df, cfg):
+    return df.query(f"N_alignments >= {cfg.min_alignments}")
+
+
+def _load_dataframe_dask(cfg):
+
+    filename = cfg.filename
 
     with Client(processes=False) as client:
 
         # REFERNCE_OBSERVERET: "AC" means reference = "A", observed = "C"
-        # In my terminology: A2C or A->C
+        # In others terminology: A2C or A->C
 
         # client = Client(processes=False)
 
         df = (
-            dd.read_csv(filename, sep="\t")
-            .rename(columns=columns_name_mapping)
+            # dd.read_csv(filename, sep="\t")
+            dd.read_csv(
+                filename,
+                sep=":|\t",
+                header=None,
+                engine="python",
+                names=columns,
+            )
+            # .rename(columns=columns_name_mapping)
             # compute error rates
-            .pipe(add_reference_counts, ref="C")
-            .pipe(add_reference_counts, ref="G")
-            .pipe(add_error_rates, ref="C", obs="T")
+            .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
+            .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+            .pipe(
+                add_error_rates,
+                ref=cfg.substitution_bases_forward[0],
+                obs=cfg.substitution_bases_forward[1],
+            )
             # .pipe(add_error_rates, ref="C", obs="C")
-            .pipe(add_error_rates, ref="G", obs="A")
+            .pipe(
+                add_error_rates,
+                ref=cfg.substitution_bases_reverse[0],
+                obs=cfg.substitution_bases_reverse[1],
+            )
             # .pipe(add_error_rates, ref="G", obs="G")
-            .pipe(add_error_rates_other)
+            # .pipe(add_error_rates_other)
             # add other information
             .pipe(make_position_1_indexed)
             .pipe(make_reverse_position_negative)
-            .pipe(keep_only_base_columns, ["C", "CT", "G", "GA"])
+            .pipe(keep_only_base_columns, cfg)
             # .pipe(keep_only_base_columns, [])
             # turns dask dataframe into pandas dataframe
+            .pipe(replace_nans_with_zeroes)  # remove any taxids containing nans
+            .pipe(remove_taxids_with_no_alignments, cfg)
             .compute()
             # .pipe(cut_NANs_away)  # remove any taxids containing nans
-            .pipe(replace_nans_with_zeroes)  # remove any taxids containing nans
             .reset_index(drop=True)
             .pipe(sort_by_alignments)
         )
     # client.shutdown()
-    utils.clean_up_after_dask()
+    clean_up_after_dask()
     return df
 
 
@@ -255,11 +327,16 @@ def load_dataframe(cfg):
     #     console.print("  Creating DataFrame, please wait.")
 
     try:
-        df = _load_dataframe_dask(cfg.filename)
+        df = _load_dataframe_dask(cfg)
     except FileNotFoundError as e:
         raise AssertionError(f"\n\nFile: {cfg.filename} not found. \n{e}")
 
-    categorical_cols = ["taxid", "direction"]  # not max_fits as it is numerical
+    categorical_cols = [
+        "taxid",
+        "name",
+        "rank",
+        "strand",
+    ]  # not max_fits as it is numerical
     for col in categorical_cols:
         df[col] = df[col].astype("category")
 
@@ -273,3 +350,14 @@ def load_dataframe(cfg):
 
 
 #%%
+
+if False:
+
+    filename = "./data/input/ugly/KapK_small.UglyPrint.txt"
+    columns = "taxid, navn, rank, N_alignments, strand, position, AA, AC, AG, AT, CA, CC, CG, CT, GA, GC, GG, GT, TA, TC, TG, TT".split(
+        ", "
+    )
+    df = pd.read_csv(filename, sep=":|\t", header=None, engine="python", names=columns)
+
+
+# %%

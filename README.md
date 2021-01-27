@@ -63,10 +63,12 @@ The `metadamage` CLI has the following options.
   - `--min-sigma`: Minimum threshold of sigma (![n_\sigma](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+n_%5Csigma)
 ) in the fit to be included in the plot. Default is None, i.e. to not make any cuts.
   - `--min-alignments`: Minimum number of alignments (![N_\mathrm{alignments}](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+N_%5Cmathrm%7Balignments%7D)
-) in the sequence to be included in the plot. Default is None, i.e. to not make any cuts.
+) in the sequence to be included in the plot. Default is 1.
 
 - Other:
   - `--sort-by`:     [`alignments`|`damage`|`sigma`]. Which order to sort the plots by when only plotting e.g. the top 10 plots. Default is `alignments` (which is also independent on the fit).
+  - `--substitution-bases-forward`:  Which substitution to check for damage in the forward region. Do not change this value except for control checks. Default is `CT`.
+  - `--substitution-bases-reverse`:  Which substitution to check for damage in the reverse region. Do not change this value except for control checks. Default is `GA`.
 
 - Boolean Flags
   - `--verbose`: Prints out more information during the execution.

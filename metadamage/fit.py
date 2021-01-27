@@ -238,15 +238,20 @@ def use_last_state_as_warmup_state(mcmc):
 #%%
 
 
-def group_to_numpyro_data(group):
+def group_to_numpyro_data(group, cfg):
 
-    z = np.array(group.iloc[:15]["pos"].values)
+    forward = cfg.substitution_bases_forward
+    forward_ref = forward[0]
+    reverse = cfg.substitution_bases_reverse
+    reverse_ref = reverse[0]
 
-    y_forward = np.array(group.iloc[:15]["CT"].values)
-    N_forward = np.array(group.iloc[:15]["C"].values)
+    z = np.array(group.iloc[:15]["position"].values)
 
-    y_reverse = np.array(group.iloc[-15:]["GA"].values)
-    N_reverse = np.array(group.iloc[-15:]["G"].values)
+    y_forward = np.array(group.iloc[:15][forward].values)
+    N_forward = np.array(group.iloc[:15][forward_ref].values)
+
+    y_reverse = np.array(group.iloc[-15:][reverse].values)
+    N_reverse = np.array(group.iloc[-15:][reverse_ref].values)
 
     data = {
         "z": np.concatenate([z, -z]),
@@ -261,7 +266,7 @@ def match_taxid_order_in_df_fit_results(df_fit_results, df):
     return df_fit_results.loc[pd.unique(df.taxid)]
 
 
-def fit_chunk(df, mcmc_kwargs):
+def fit_chunk(df, mcmc_kwargs, cfg):
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     groupby = df.groupby("taxid", sort=False, observed=True)
@@ -277,7 +282,7 @@ def fit_chunk(df, mcmc_kwargs):
         )
 
         for taxid, group in groupby:
-            data = group_to_numpyro_data(group)
+            data = group_to_numpyro_data(group, cfg)
             fit_mcmc(mcmc_PMD, data)
             fit_mcmc(mcmc_null, data)
             y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
@@ -302,7 +307,7 @@ def fit_chunk(df, mcmc_kwargs):
     return d_fits, df_fit_results
 
 
-def worker(queue_in, queue_out, mcmc_kwargs):
+def worker(queue_in, queue_out, mcmc_kwargs, cfg):
     # print("  worker", os.getpid(), current_process().name)
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
@@ -312,7 +317,7 @@ def worker(queue_in, queue_out, mcmc_kwargs):
         if taxid_group is None:
             break
         taxid, group = taxid_group
-        data = group_to_numpyro_data(group)
+        data = group_to_numpyro_data(group, cfg)
         fit_mcmc(mcmc_PMD, data)
         fit_mcmc(mcmc_null, data)
         y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
@@ -339,7 +344,7 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
 
     queue_in = Queue()
     queue_out = Queue()
-    the_pool = Pool(num_cores, worker, (queue_in, queue_out, mcmc_kwargs))
+    the_pool = Pool(num_cores, worker, (queue_in, queue_out, mcmc_kwargs, cfg))
 
     d_fits = {}
 
@@ -379,7 +384,7 @@ def compute_fits(df, cfg, mcmc_kwargs):
     groupby = df.groupby("taxid", sort=False, observed=True)
 
     if cfg.num_cores == 1 or len(groupby) < 10:
-        return fit_chunk(df, mcmc_kwargs)  # do_tqdm=do_tqdm # TODO
+        return fit_chunk(df, mcmc_kwargs, cfg)  # do_tqdm=do_tqdm # TODO
 
     # utils.avoid_fontconfig_warning()
     d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)

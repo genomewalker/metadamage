@@ -43,9 +43,11 @@ class Config:
     #
     min_damage: Optional[int]
     min_sigma: Optional[int]
-    min_alignments: Optional[int]
+    min_alignments: int
     #
     sort_by: str
+    substitution_bases_forward: str
+    substitution_bases_reverse: str
     #
     verbose: bool
     #
@@ -89,8 +91,21 @@ class Config:
             self.number_of_fits = min(self.max_fits, N_all_taxids)
         else:  # use all TaxIDs available
             self.number_of_fits = N_all_taxids
+        self.set_number_of_plots()
         # if self.verbose:
         # print(f"Setting number_of_fits to {self.number_of_fits}")
+
+    def set_number_of_plots(self):
+        if self.max_plots is None:
+            self.number_of_plots = self.number_of_fits
+        else:
+            self.number_of_plots = self.max_plots
+
+        # do not allow number of plots to be larger than number of fits
+        if (self.number_of_fits is not None) and (
+            self.number_of_plots > self.number_of_fits
+        ):
+            self.number_of_plots = self.number_of_fits
 
     @property
     def do_make_fits(self):
@@ -111,31 +126,22 @@ class SortBy(str, Enum):
     sigma = "sigma"
 
 
-# def fit_satisfies_thresholds(cfg, d_fit):
-#     fit_result = d_fit["fit_result"]
+class SubstitutionBases(str, Enum):
+    AC = "AC"
+    AG = "AG"
+    AT = "AT"
 
-#     def attribute_is_rejected(attribute, fit_name):
-#         """Helper function to determine if
-#         A) cfg.attribute exists and if A, then
-#         B) check if the cut threshold is violated
-#         Return true if both A) and B) and should thus be rejected
-#         """
-#         cut = getattr(cfg, attribute)
-#         if cut is not None and (fit_result[fit_name] < cut):
-#             return True
-#         else:
-#             return False
+    CA = "CA"
+    CG = "CG"
+    CT = "CT"
 
-#     if attribute_is_rejected(attribute="min_damage", fit_name="D_max"):
-#         return False
+    GA = "GA"
+    GC = "GC"
+    GT = "GT"
 
-#     if attribute_is_rejected(attribute="min_sigma", fit_name="n_sigma"):
-#         return False
-
-#     if attribute_is_rejected(attribute="min_alignments", fit_name="N_alignments"):
-#         return False
-
-#     return True
+    TA = "TA"
+    TC = "TC"
+    TG = "TG"
 
 
 #%%
@@ -173,12 +179,14 @@ def delete_folder(path):
         console.print("Error: %s - %s." % (e.filename, e.strerror))
 
 
-def clean_up_after_dask():
-    delete_folder("./dask-worker-space")
+def init_parent_folder(filename):
+    if isinstance(filename, str):
+        filename = Path(filename)
+    filename.parent.mkdir(parents=True, exist_ok=True)
 
 
 def is_forward(df):
-    return df["direction"] == "5'"
+    return df["strand"] == "5'"
 
 
 def get_forward(df):
@@ -187,24 +195,6 @@ def get_forward(df):
 
 def get_reverse(df):
     return df[~is_forward(df)]
-
-
-def is_reverse_direction(direction):
-    matches = ["reverse", "3", "-"]
-    if any(match in direction.lower() for match in matches):
-        return True
-    else:
-        return False
-
-
-def is_forward_direction(direction):
-    return not is_reverse_direction(direction)
-
-
-def init_parent_folder(filename):
-    if isinstance(filename, str):
-        filename = Path(filename)
-    filename.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_specific_taxid(df, taxid):
@@ -231,12 +221,12 @@ def avoid_fontconfig_warning():
     os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-def string_pad_left_and_right(s, left=0, right=0, char=" "):
-    N = len(s)
-    s = s.ljust(N + right, char)
-    N = len(s)
-    s = s.rjust(N + left, char)
-    return s
+# def string_pad_left_and_right(s, left=0, right=0, char=" "):
+#     N = len(s)
+#     s = s.ljust(N + right, char)
+#     N = len(s)
+#     s = s.rjust(N + left, char)
+#     return s
 
 
 # def compute_fraction_and_uncertainty(x, N):
@@ -367,16 +357,16 @@ def get_num_cores(cfg):
 #%%
 
 
-def set_max_fpr(cut, thresholds, fpr, tpr):
-    index = np.argmax(fpr > cut) - 1
-    out = {"threshold": thresholds[index], "FPR": fpr[index], "TPR": tpr[index]}
-    return out
+# def set_max_fpr(cut, thresholds, fpr, tpr):
+#     index = np.argmax(fpr > cut) - 1
+#     out = {"threshold": thresholds[index], "FPR": fpr[index], "TPR": tpr[index]}
+#     return out
 
 
-def set_minimum_tpr(cut, thresholds, fpr, tpr):
-    index = np.argmax(tpr > cut)
-    out = {"threshold": thresholds[index], "FPR": fpr[index], "TPR": tpr[index]}
-    return out
+# def set_minimum_tpr(cut, thresholds, fpr, tpr):
+#     index = np.argmax(tpr > cut)
+#     out = {"threshold": thresholds[index], "FPR": fpr[index], "TPR": tpr[index]}
+#     return out
 
 
 #%%
@@ -402,17 +392,6 @@ def set_minimum_tpr(cut, thresholds, fpr, tpr):
 
 
 #%%
-
-
-def get_number_of_plots(cfg):
-    if cfg.max_plots is None:
-        number_of_plots = cfg.number_of_fits
-    else:
-        number_of_plots = cfg.max_plots
-    # do not allow number of plots to be larger than number of fits
-    if (cfg.number_of_fits is not None) and (number_of_plots > cfg.number_of_fits):
-        number_of_plots = cfg.number_of_fits
-    return number_of_plots
 
 
 def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
@@ -442,7 +421,8 @@ def get_sorted_and_cutted_df(cfg, df, df_results, number_of_plots=None):
 
     taxids = df_results_cutted_ordered.index
     if number_of_plots is None:
-        number_of_plots = get_number_of_plots(cfg)
+        number_of_plots = cfg.number_of_plots
+
     # get the number_of_plots in the top
     taxids_top = taxids[:number_of_plots]
 

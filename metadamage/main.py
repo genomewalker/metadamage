@@ -69,7 +69,7 @@ def main(filenames, cfg):
             cfg.name = name
 
             df = fileloader.load_dataframe(cfg)
-            # group = utils.get_specific_taxid(df, taxid=102722)
+            group = utils.get_specific_taxid(df, taxid=1)
 
             if not utils.is_df_accepted(df, cfg):
                 continue
@@ -101,7 +101,7 @@ if utils.is_ipython():
         # "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
         # "./data/input/data_ancient.txt",
         # "./data/input/data_control.txt",
-        "./data/input/ugly/KapK_small.UglyPrint"
+        "./data/input/ugly/KapK_small.UglyPrint.txt"
     ]
 
     reload(utils)
@@ -113,8 +113,10 @@ if utils.is_ipython():
         max_position=15,
         min_damage=None,
         min_sigma=None,
-        min_alignments=None,
-        sort_by=utils.SortBy.alignments,
+        min_alignments=1,
+        sort_by=utils.SortBy.alignments.value,
+        substitution_bases_forward=utils.SubstitutionBases.CT.value,
+        substitution_bases_reverse=utils.SubstitutionBases.GA.value,
         verbose=True,
         force_reload_files=False,
         force_plots=False,

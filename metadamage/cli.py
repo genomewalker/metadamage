@@ -66,10 +66,16 @@ def cli(
     # minimum fit values (used for deciding what to plot)
     min_damage: Optional[float] = typer.Option(None, help="[default: None]"),
     min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
-    min_alignments: Optional[int] = typer.Option(None, help="[default: None]"),
+    min_alignments: int = 1,
     #
     sort_by: utils.SortBy = typer.Option(utils.SortBy.alignments, case_sensitive=False),
     # sort_by: Literal["alignments", "damage", "sigma"] = "alignments",
+    substitution_bases_forward: utils.SubstitutionBases = typer.Option(
+        utils.SubstitutionBases.CT
+    ),
+    substitution_bases_reverse: utils.SubstitutionBases = typer.Option(
+        utils.SubstitutionBases.GA
+    ),
     # boolean flags
     verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
@@ -106,7 +112,10 @@ def cli(
         "min_sigma": min_sigma,
         "min_alignments": min_alignments,
         #
-        "sort_by": sort_by,
+        # note: convert Enum to actual value
+        "sort_by": sort_by.value,
+        "substitution_bases_forward": substitution_bases_forward.value,
+        "substitution_bases_reverse": substitution_bases_reverse.value,
         #
         "verbose": verbose,
         #
