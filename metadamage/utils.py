@@ -447,8 +447,8 @@ def is_df_accepted(df, cfg):
     if len(df) == 0:
         console.print(
             f"[red]{cfg.name}[/red]: Length of dataframe was 0. Stopping any further operations on this file.\n"
-            "This might be due to a quite restrictive cut at the moment\n"
-            "requiring that both C and G are present in the read.\n"
+            f"This might be due to a quite restrictive cut at the moment\n"
+            f"requiring that both C and G are present in the read.\n"
         )
         return False
 

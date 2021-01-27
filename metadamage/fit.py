@@ -404,9 +404,12 @@ def save_df_fit_results(df_fit_results, filename):
 
 def _get_fit_filenames(cfg):
     d_filename = {}
-    d_filename[
-        "df_fit_results"
-    ] = f"./data/fits/{cfg.name}__number_of_fits__{cfg.number_of_fits}.csv"
+    d_filename["df_fit_results"] = (
+        f"./data/fits/{cfg.name}__"
+        f"number_of_fits__{cfg.number_of_fits}__"
+        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
+        ".csv"
+    )
     d_filename["d_fits"] = d_filename["df_fit_results"].replace(".csv", ".dill")
     return d_filename
 

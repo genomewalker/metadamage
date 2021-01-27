@@ -207,10 +207,11 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     )
     ax_forward.set_title("Forward ", loc="right", pad=10, fontdict=dict(fontsize=30))
 
-    fig.suptitle(
-        f"Error rate frequency as a function of position.\nTaxID: {taxid}\n",
-        fontsize=40,
-    )
+    name = group["name"].iloc[0]
+    rank = group["rank"].iloc[0]
+    title = f"Error rate frequency as a function of position.\nTax: {taxid}, {name}, {rank}\n"
+    title = title.replace("root, no rank", "root")
+    fig.suptitle(title, fontsize=40)
     fig.subplots_adjust(top=0.75)
 
     return fig
@@ -260,7 +261,17 @@ def plot_error_rates(cfg, df, d_fits, df_results):
         number_of_plots,
     )
 
-    filename = f"./figures/error_rates__{cfg.name}__sort_by__{cfg.sort_by}__number_of_plots__{number_of_plots}.pdf"
+    # f"[red]{cfg.name}[/red]: Length of dataframe was 0. Stopping any further operations on this file.\n"
+    # f"This might be due to a quite restrictive cut at the moment\n"
+    # f"requiring that both C and G are present in the read.\n"
+
+    filename = (
+        f"./figures/error_rates__{cfg.name}__"
+        f"sort_by__{cfg.sort_by}__"
+        f"number_of_plots__{number_of_plots}__"
+        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
+        f".pdf"
+    )
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_plots):
         # if cfg.verbose:
         #     # tqdm.write(f"Plot of error rates already exist: {filename}\n")
@@ -606,7 +617,12 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     if not 0 in N_alignments_mins:
         N_alignments_mins = [0] + N_alignments_mins
 
-    filename = f"./figures/all_fit_results__number_of_fits__{cfg.number_of_fits}.pdf"
+    filename = (
+        f"./figures/all_fit_results__"
+        f"number_of_fits__{cfg.number_of_fits}__"
+        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
+        ".pdf"
+    )
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
         # if cfg.verbose:

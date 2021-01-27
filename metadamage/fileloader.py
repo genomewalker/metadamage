@@ -256,11 +256,18 @@ def remove_taxids_with_no_alignments(df, cfg):
     return df.query(f"N_alignments >= {cfg.min_alignments}")
 
 
+def remove_quotes_from_string_columns(df):
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].str.replace('"', "")
+    return df
+
+
 def _load_dataframe_dask(cfg):
 
     filename = cfg.filename
 
-    with Client(processes=False) as client:
+    # with Client(processes=False) as client:
+    with Client(processes=False):
 
         # REFERNCE_OBSERVERET: "AC" means reference = "A", observed = "C"
         # In others terminology: A2C or A->C
@@ -301,6 +308,7 @@ def _load_dataframe_dask(cfg):
             # turns dask dataframe into pandas dataframe
             .pipe(replace_nans_with_zeroes)  # remove any taxids containing nans
             .pipe(remove_taxids_with_no_alignments, cfg)
+            .pipe(remove_quotes_from_string_columns)
             .compute()
             # .pipe(cut_NANs_away)  # remove any taxids containing nans
             .reset_index(drop=True)
@@ -313,7 +321,11 @@ def _load_dataframe_dask(cfg):
 
 def load_dataframe(cfg):
 
-    filename_parquet = f"./data/parquet/{cfg.name}.parquet"
+    filename_parquet = (
+        f"./data/parquet/{cfg.name}__"
+        f"{cfg.substitution_bases_forward}__{cfg.substitution_bases_reverse}"
+        ".parquet"
+    )
 
     if utils.file_exists(filename_parquet, cfg.force_reload_files):
         # if cfg.verbose:
