@@ -14,6 +14,9 @@ from metadamage import utils
 from metadamage.progressbar import console, progress
 
 
+from dask.distributed import Client, LocalCluster
+
+
 ACTG = ["A", "C", "G", "T"]
 
 ref_obs_bases = []
@@ -21,13 +24,8 @@ for ref in ACTG:
     for obs in ACTG:
         ref_obs_bases.append(f"{ref}{obs}")
 
-# columns_name_mapping = {
-#     "#taxid": "taxid",
-#     "Nalignments": "N_alignments",
-#     "Direction": "direction",
-#     "Pos": "position",
-# }
 
+import warnings
 
 # fmt: off
 # fmt: on
@@ -41,6 +39,43 @@ columns = [
     "position",
     *ref_obs_bases,
 ]
+
+
+def set_column_names(df, method="dask"):
+
+    df_names = (
+        df.iloc[:, 0]
+        # regex which finds : (colon) within quotes
+        .str.replace(r"(?<![\"]):(?![\"])", "", regex=True)
+        .str.replace('"', "")
+        .str.split(":", expand=True, n=3)
+    )
+    df_names = df_names.rename(columns=dict(zip(df_names.columns, columns[:4])))
+    df_bases = df.iloc[:, 1:]
+    df_bases = df_bases.rename(columns=dict(zip(df_bases.columns, columns[4:])))
+    if method == "dask":
+        df = dd.concat(
+            [df_names, df_bases],
+            axis="columns",
+            ignore_unknown_divisions=True,
+        )
+    else:
+        df = pd.concat([df_names, df_bases], axis="columns")
+    return df
+
+
+def convert_dtypes(df):
+    df = df.astype({"taxid": "int", "N_alignments": "int"})
+    return df
+
+
+# def strip_colons_from_file(filename):
+#     filename_out = filename.replace(".txt", ".tmp.txt")
+#     command = f"sed $'s/:/ \t/g' {filename} > {filename_out}"
+#     import os
+
+#     os.popen(command)
+#     return filename_out
 
 
 #%%
@@ -252,38 +287,45 @@ def get_top_max_fits(df, number_of_fits):
         return df
 
 
-def remove_taxids_with_no_alignments(df, cfg):
+def remove_taxids_with_too_few_alignments(df, cfg):
     return df.query(f"N_alignments >= {cfg.min_alignments}")
 
 
-def remove_quotes_from_string_columns(df):
-    for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].str.replace('"', "")
-    return df
+# def remove_quotes_from_string_columns(df):
+#     for col in df.select_dtypes(include=["object"]).columns:
+#         df[col] = df[col].str.replace('"', "")
+#     return df
 
 
-def _load_dataframe_dask(cfg):
+def compute_dataframe_with_dask(cfg, use_processes=True):
+
+    import logging
 
     filename = cfg.filename
 
-    # with Client(processes=False) as client:
-    with Client(processes=False):
+    if cfg.max_cores == 1:
+        use_processes = False
 
-        # REFERNCE_OBSERVERET: "AC" means reference = "A", observed = "C"
-        # In others terminology: A2C or A->C
-
-        # client = Client(processes=False)
+    # http://localhost:8787/status
+    with Client(
+        n_workers=cfg.max_cores,
+        processes=use_processes,
+        silence_logs=logging.ERROR,
+    ) as client:
 
         df = (
             # dd.read_csv(filename, sep="\t")
             dd.read_csv(
                 filename,
-                sep=":|\t",
+                sep="\t",
+                # sep=":|\t",
                 header=None,
-                engine="python",
-                names=columns,
+                # blocksize=50e6,  # chunksize 50mb
             )
             # .rename(columns=columns_name_mapping)
+            .pipe(set_column_names)
+            .pipe(convert_dtypes)
+            .pipe(remove_taxids_with_too_few_alignments, cfg)
             # compute error rates
             .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
             .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
@@ -292,30 +334,43 @@ def _load_dataframe_dask(cfg):
                 ref=cfg.substitution_bases_forward[0],
                 obs=cfg.substitution_bases_forward[1],
             )
-            # .pipe(add_error_rates, ref="C", obs="C")
             .pipe(
                 add_error_rates,
                 ref=cfg.substitution_bases_reverse[0],
                 obs=cfg.substitution_bases_reverse[1],
             )
-            # .pipe(add_error_rates, ref="G", obs="G")
             # .pipe(add_error_rates_other)
             # add other information
             .pipe(make_position_1_indexed)
             .pipe(make_reverse_position_negative)
             .pipe(keep_only_base_columns, cfg)
-            # .pipe(keep_only_base_columns, [])
+            .pipe(replace_nans_with_zeroes)
             # turns dask dataframe into pandas dataframe
-            .pipe(replace_nans_with_zeroes)  # remove any taxids containing nans
-            .pipe(remove_taxids_with_no_alignments, cfg)
-            .pipe(remove_quotes_from_string_columns)
             .compute()
             # .pipe(cut_NANs_away)  # remove any taxids containing nans
             .reset_index(drop=True)
             .pipe(sort_by_alignments)
         )
+
     # client.shutdown()
+    # cluster.close()
     clean_up_after_dask()
+
+    df2 = df.astype(
+        {
+            "taxid": "category",
+            "name": "category",
+            "rank": "category",
+            "strand": "category",
+        }
+    )
+
+    for col in df2.select_dtypes(include=["integer"]).columns:
+        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="integer")
+
+    for col in df2.select_dtypes(include=["float"]).columns:
+        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
+
     return df
 
 
@@ -325,47 +380,17 @@ def load_dataframe(cfg):
 
     if utils.file_exists(filename_parquet, cfg.force_reload_files):
         # if cfg.verbose:
-        #     # tqdm.write("Loading DataFrame from parquet-file.")
         #     console.print("  Loading DataFrame from parquet-file.")
         df = pd.read_parquet(filename_parquet)
         return df
 
     # if cfg.verbose:
-    #     # tqdm.write("Creating DataFrame, please wait.")
     #     console.print("  Creating DataFrame, please wait.")
-
-    try:
-        df = _load_dataframe_dask(cfg)
-    except FileNotFoundError as e:
-        raise AssertionError(f"\n\nFile: {cfg.filename} not found. \n{e}")
-
-    categorical_cols = [
-        "taxid",
-        "name",
-        "rank",
-        "strand",
-    ]  # not max_fits as it is numerical
-    for col in categorical_cols:
-        df[col] = df[col].astype("category")
+    df = compute_dataframe_with_dask(cfg, use_processes=True)
 
     # if cfg.verbose:
-    #     # tqdm.write("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
     #     console.print("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
     utils.init_parent_folder(filename_parquet)
     df.to_parquet(filename_parquet, engine="pyarrow")
 
     return df
-
-
-#%%
-
-if False:
-
-    filename = "./data/input/ugly/KapK_small.UglyPrint.txt"
-    columns = "taxid, navn, rank, N_alignments, strand, position, AA, AC, AG, AT, CA, CC, CG, CT, GA, GC, GG, GT, TA, TC, TG, TT".split(
-        ", "
-    )
-    df = pd.read_csv(filename, sep=":|\t", header=None, engine="python", names=columns)
-
-
-# %%
