@@ -2,6 +2,9 @@
 import numpy as np
 import pandas as pd
 
+# Standard Library
+import warnings
+
 # Third Party
 import dask
 import dask.dataframe as dd
@@ -14,9 +17,6 @@ from metadamage import utils
 from metadamage.progressbar import console, progress
 
 
-from dask.distributed import Client, LocalCluster
-
-
 ACTG = ["A", "C", "G", "T"]
 
 ref_obs_bases = []
@@ -24,8 +24,6 @@ for ref in ACTG:
     for obs in ACTG:
         ref_obs_bases.append(f"{ref}{obs}")
 
-
-import warnings
 
 # fmt: off
 # fmt: on
@@ -299,6 +297,7 @@ def remove_taxids_with_too_few_alignments(df, cfg):
 
 def compute_dataframe_with_dask(cfg, use_processes=True):
 
+    # Standard Library
     import logging
 
     filename = cfg.filename
