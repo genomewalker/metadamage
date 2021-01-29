@@ -525,3 +525,14 @@ def initial_print(filenames, cfg):
 
 # filename: Optional[str] = None
 # %%
+
+
+def normalize_header(cell):
+    import re
+
+    cell = re.sub(r'[-:;/\\,. \(\)#\[\]{}\$\^\n\r\xa0*><&!"\'+=%]', "_", cell)
+    cell = re.sub("__+", "_", cell)
+    cell = cell.strip("_")
+    cell = cell.upper()
+    cell = cell or "BLANK"
+    return cell
