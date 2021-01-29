@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from importlib.metadata import version
 import importlib.resources as importlib_resources
+import logging
 from pathlib import Path
 import shutil
 from typing import List, Optional, Union
@@ -29,8 +30,6 @@ from metadamage.progressbar import console, progress
 
 #%%
 
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -423,6 +422,7 @@ def initial_print(filenames, cfg):
 
 
 def normalize_header(cell):
+    # Standard Library
     import re
 
     cell = re.sub(r'[-:;/\\,. \(\)#\[\]{}\$\^\n\r\xa0*><&!"\'+=%]', "_", cell)

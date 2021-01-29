@@ -1,9 +1,14 @@
-import logging
-from rich.logging import RichHandler
-from pathlib import Path
+# Standard Library
 from datetime import datetime
-from metadamage.progressbar import console
+import logging
 from multiprocessing import current_process
+from pathlib import Path
+
+# Third Party
+from rich.logging import RichHandler
+
+# First Party
+from metadamage.progressbar import console
 
 
 class Log:

@@ -10,6 +10,7 @@ import numpy as np
 from collections import defaultdict
 import datetime
 import itertools
+import logging
 from pathlib import Path
 import re
 
@@ -23,8 +24,6 @@ from metadamage.progressbar import console, progress
 
 # console = utils.console
 
-
-import logging
 
 logger = logging.getLogger(__name__)
 

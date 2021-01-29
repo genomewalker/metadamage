@@ -10,8 +10,8 @@ import typer
 
 # First Party
 from metadamage import utils
-from metadamage.main import main
 from metadamage.__version__ import __version__
+from metadamage.main import main
 
 
 def version_callback(value: bool):

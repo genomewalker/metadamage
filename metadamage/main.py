@@ -7,6 +7,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
+import logging
 import os.path
 from pprint import pformat, pprint
 import sys
@@ -37,12 +38,9 @@ from metadamage.progressbar import console, progress
 
 
 numpyro.enable_x64()
+logger = logging.getLogger(__name__)
 
 #%%
-
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def main(filenames, cfg):

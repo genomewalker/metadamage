@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 # Standard Library
+import logging
 from multiprocessing import current_process, Manager, Pool, Process, Queue
 import os
 
@@ -24,12 +25,11 @@ from metadamage.progressbar import console, progress
 
 
 numpyro.enable_x64()
+logger = logging.getLogger(__name__)
 
 #%%
 
-import logging
 
-logger = logging.getLogger(__name__)
 
 
 #%%
