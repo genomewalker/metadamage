@@ -202,8 +202,10 @@ def find_style_file():
     with importlib_resources.path("metadamage", "style.mplstyle") as path:
         return path
 
+
 class AllFiledWereBad(Exception):
     pass
+
 
 def is_ipython():
     try:
