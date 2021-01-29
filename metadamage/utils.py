@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from importlib.metadata import version
 import importlib.resources as importlib_resources
+import logging
 from pathlib import Path
 import shutil
 from typing import List, Optional, Union
@@ -29,8 +30,6 @@ from metadamage.progressbar import console, progress
 
 #%%
 
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -75,14 +74,14 @@ class Config:
         if self.max_cores > available_cores:
             self.num_cores = available_cores - 1
             logger.info(
-                f"'max_cores' is set to a value larger than the maximum available",
-                f"so clipping to {self.num_cores} (available-1) cores",
+                f"'max_cores' is set to a value larger than the maximum available"
+                f"so clipping to {self.num_cores} (available-1) cores"
             )
         elif self.max_cores < 0:
             self.num_cores = available_cores - abs(self.max_cores)
             logger.info(
-                f"'max-cores' is set to a negative value",
-                f"so using {self.num_cores} (available-max_cores) cores",
+                f"'max-cores' is set to a negative value"
+                f"so using {self.num_cores} (available-max_cores) cores"
             )
         else:
             self.num_cores = self.max_cores
@@ -203,6 +202,8 @@ def find_style_file():
     with importlib_resources.path("metadamage", "style.mplstyle") as path:
         return path
 
+class AllFiledWereBad(Exception):
+    pass
 
 def is_ipython():
     try:
@@ -423,6 +424,7 @@ def initial_print(filenames, cfg):
 
 
 def normalize_header(cell):
+    # Standard Library
     import re
 
     cell = re.sub(r'[-:;/\\,. \(\)#\[\]{}\$\^\n\r\xa0*><&!"\'+=%]', "_", cell)

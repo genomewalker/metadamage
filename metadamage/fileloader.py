@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 # Standard Library
+import logging
 import warnings
 
 # Third Party
@@ -16,8 +17,6 @@ from tqdm.auto import tqdm
 from metadamage import utils
 from metadamage.progressbar import console, progress
 
-
-import logging
 
 logger = logging.getLogger(__name__)
 

@@ -26,9 +26,8 @@ __pycache__/
 # remove PyPI wheels
 /dist/
 
-# log file Code
-log.log
-
+# log files
+/logs/
 
 # remove docker-related folder
 /docker/
@@ -52,3 +51,4 @@ log.log
 # vim
 *.swp
 *.swo
+pyproject.toml

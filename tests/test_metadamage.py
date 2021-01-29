@@ -34,15 +34,19 @@ def test_extracting_name_from_path():
 
 
 def test_cli_bad_file():
+    # given
     runner = CliRunner()
-    # result = runner.invoke(main_cli(), ["Camila", "--city", "Berlin"])
+    # when
     result = runner.invoke(app, ["file_which_does_not_exist.txt"])
-    assert result.exit_code == 0
-    assert "Got error here" in result.stdout
+    # then
+    assert result.exit_code == 1
+    assert isinstance(result.exception, Exception)
 
 
 def test_cli_bad_files():
+    # given
     runner = CliRunner()
+    # when
     result = runner.invoke(
         app,
         [
@@ -50,12 +54,23 @@ def test_cli_bad_files():
             "another_file_which_does_not_exist.txt",
         ],
     )
-    assert result.exit_code == 0
-    assert result.stdout.count("Got error here") == 2
+    assert result.exit_code == 1
+    assert isinstance(result.exception, Exception)
 
 
 def test_cli_version():
+    # given
     runner = CliRunner()
+    # when
     result = runner.invoke(app, ["--version"])
+    # then
     assert result.exit_code == 0
     assert "version" in result.stdout
+
+
+# result.exc_info
+# result.exception
+# result.exit_code
+# result.output
+# result.output_bytes
+# result.runner

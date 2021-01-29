@@ -7,6 +7,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
+import logging
 import os.path
 from pprint import pformat, pprint
 import sys
@@ -37,12 +38,9 @@ from metadamage.progressbar import console, progress
 
 
 numpyro.enable_x64()
+logger = logging.getLogger(__name__)
 
 #%%
-
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def main(filenames, cfg):
@@ -51,6 +49,7 @@ def main(filenames, cfg):
 
     all_fit_results = {}
     N_files = len(filenames)
+    bad_files = 0
 
     with progress:
 
@@ -65,7 +64,8 @@ def main(filenames, cfg):
             name = utils.extract_name(filename)
 
             if not utils.file_is_valid(filename):
-                logger.warning(f"Got warning here : {name}")
+                logger.error(f"{name} is not a valid file. Skipping for now.")
+                bad_files += 1
                 continue
 
             progress.add_task("task_name", progress_type="name", name=name)
@@ -90,6 +90,10 @@ def main(filenames, cfg):
             progress.refresh()
             progress.advance(task_id_overall)
             logger.debug("End of loop\n")
+
+    # if all files were bad, raise error
+    if bad_files == N_files:
+        raise Exception("All files were bad!")
 
     if len(all_fit_results) >= 1:
         # plot.set_style()
