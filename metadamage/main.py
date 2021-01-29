@@ -62,14 +62,14 @@ def main(filenames, cfg):
             progress.add_task("task_name", progress_type="name", name=name)
 
             if not utils.file_is_valid(filename):
-                console.print(f"Got error here: {name}")
+                console.print(f"[bold red]Got error here: {name}")
                 continue
 
             cfg.filename = filename
             cfg.name = name
 
             df = fileloader.load_dataframe(cfg)
-            group = utils.get_specific_taxid(df, taxid=1)
+            # group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
 
             if not utils.is_df_accepted(df, cfg):
                 continue
@@ -97,11 +97,7 @@ if utils.is_ipython():
     print("Doing iPython plot")
 
     filenames = [
-        # "./data/input/KapK-198A-Ext-55-Lib-55-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
-        # "./data/input/mikkel_data/LB-Ext-64-Lib-64-Index1.col.sorted.sam.gz.family.bdamage.gz.taxid.counts.txt"
-        # "./data/input/data_ancient.txt",
-        # "./data/input/data_control.txt",
-        "./data/input/ugly/KapK_small.UglyPrint.txt"
+        # "./data/input/ugly/KapK_small.UglyPrint.txt"
     ]
 
     reload(utils)
@@ -131,7 +127,7 @@ if utils.is_ipython():
     path = Path().cwd().parent
     os.chdir(path)
 
-    # filenames = sorted(Path("./data/input/").rglob("mikkel_data/all/*taxid.counts.txt"))
+    filenames = sorted(Path("./data/input/").rglob("ugly/*UglyPrint.txt"))
 
     if False:
         # if True:

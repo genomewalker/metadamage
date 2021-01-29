@@ -39,32 +39,32 @@ columns = [
 ]
 
 
-def set_column_names(df, method="dask"):
+# def set_column_names(df, method="dask"):
 
-    df_names = (
-        df.iloc[:, 0]
-        # regex which finds : (colon) within quotes
-        .str.replace(r"(?<![\"]):(?![\"])", "", regex=True)
-        .str.replace('"', "")
-        .str.split(":", expand=True, n=3)
-    )
-    df_names = df_names.rename(columns=dict(zip(df_names.columns, columns[:4])))
-    df_bases = df.iloc[:, 1:]
-    df_bases = df_bases.rename(columns=dict(zip(df_bases.columns, columns[4:])))
-    if method == "dask":
-        df = dd.concat(
-            [df_names, df_bases],
-            axis="columns",
-            ignore_unknown_divisions=True,
-        )
-    else:
-        df = pd.concat([df_names, df_bases], axis="columns")
-    return df
+#     df_names = (
+#         df.iloc[:, 0]
+#         # regex which finds : (colon) within quotes
+#         .str.replace(r"(?<![\"]):(?![\"])", "", regex=True)
+#         .str.replace('"', "")
+#         .str.split(":", expand=True, n=3)
+#     )
+#     df_names = df_names.rename(columns=dict(zip(df_names.columns, columns[:4])))
+#     df_bases = df.iloc[:, 1:]
+#     df_bases = df_bases.rename(columns=dict(zip(df_bases.columns, columns[4:])))
+#     if method == "dask":
+#         df = dd.concat(
+#             [df_names, df_bases],
+#             axis="columns",
+#             ignore_unknown_divisions=True,
+#         )
+#     else:
+#         df = pd.concat([df_names, df_bases], axis="columns")
+#     return df
 
 
-def convert_dtypes(df):
-    df = df.astype({"taxid": "int", "N_alignments": "int"})
-    return df
+# def convert_dtypes(df):
+#     df = df.astype({"taxid": "int", "N_alignments": "int"})
+#     return df
 
 
 # def strip_colons_from_file(filename):
@@ -294,20 +294,21 @@ def remove_taxids_with_too_few_alignments(df, cfg):
 #         df[col] = df[col].str.replace('"', "")
 #     return df
 
+import logging
+
 
 def compute_dataframe_with_dask(cfg, use_processes=True):
 
     # Standard Library
-    import logging
 
     filename = cfg.filename
 
-    if cfg.max_cores == 1:
+    if cfg.num_cores == 1:
         use_processes = False
 
     # http://localhost:8787/status
     with Client(
-        n_workers=cfg.max_cores,
+        n_workers=cfg.num_cores,
         processes=use_processes,
         silence_logs=logging.ERROR,
     ) as client:
@@ -319,11 +320,12 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
                 sep="\t",
                 # sep=":|\t",
                 header=None,
+                names=columns,
                 # blocksize=50e6,  # chunksize 50mb
             )
             # .rename(columns=columns_name_mapping)
-            .pipe(set_column_names)
-            .pipe(convert_dtypes)
+            # .pipe(set_column_names)
+            # .pipe(convert_dtypes)
             .pipe(remove_taxids_with_too_few_alignments, cfg)
             # compute error rates
             .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
@@ -370,7 +372,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     for col in df2.select_dtypes(include=["float"]).columns:
         df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
 
-    return df
+    return df2
 
 
 def load_dataframe(cfg):

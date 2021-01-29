@@ -245,13 +245,13 @@ def group_to_numpyro_data(group, cfg):
     reverse = cfg.substitution_bases_reverse
     reverse_ref = reverse[0]
 
-    z = np.array(group.iloc[:15]["position"].values)
+    z = np.array(group.iloc[:15]["position"], dtype=np.int)
 
-    y_forward = np.array(group.iloc[:15][forward].values)
-    N_forward = np.array(group.iloc[:15][forward_ref].values)
+    y_forward = np.array(group.iloc[:15][forward], dtype=np.int)
+    N_forward = np.array(group.iloc[:15][forward_ref], dtype=np.int)
 
-    y_reverse = np.array(group.iloc[-15:][reverse].values)
-    N_reverse = np.array(group.iloc[-15:][reverse_ref].values)
+    y_reverse = np.array(group.iloc[-15:][reverse])
+    N_reverse = np.array(group.iloc[-15:][reverse_ref])
 
     data = {
         "z": np.concatenate([z, -z]),
@@ -285,8 +285,11 @@ def fit_chunk(df, mcmc_kwargs, cfg):
             data = group_to_numpyro_data(group, cfg)
             fit_mcmc(mcmc_PMD, data)
             fit_mcmc(mcmc_null, data)
+
             y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
-                mcmc_PMD, data, func=jnp.median
+                mcmc_PMD,
+                data,
+                func=jnp.median,
             )
             fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
             fit_result["N_alignments"] = group.N_alignments.iloc[0]

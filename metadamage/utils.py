@@ -248,6 +248,8 @@ def get_reverse(df):
 
 
 def get_specific_taxid(df, taxid):
+    if taxid == -1:
+        taxid = df.taxid.iloc[0]
     return df.query("taxid == @taxid")
 
 
