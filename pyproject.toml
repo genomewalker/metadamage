@@ -8,6 +8,7 @@ keywords = ['metadamage', 'metagenomics', 'ancient damage', 'DNA damage']
 repository = "https://github.com/ChristianMichelsen/metadamage"
 readme = "README.md"
 include = ["metadamage/style.mplstyle", 'pyproject.toml']
+exclude = ["logs/log*"]
 
 
 [tool.poetry.dependencies]
