@@ -26,6 +26,10 @@ __pycache__/
 # remove PyPI wheels
 /dist/
 
+# log file Code
+log.log
+
+
 # remove docker-related folder
 /docker/
 

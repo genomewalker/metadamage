@@ -1,0 +1,17 @@
+2021-01-29 16:51:29,773 | metadamage.utils | INFO | Running new file: EC-Ext-14-Lib-14-Index1
+2021-01-29 16:51:29,780 | metadamage.fileloader | INFO | Creating DataFrame, please wait.
+2021-01-29 16:51:37,754 | metadamage.fileloader | INFO | Saving DataFrame to file (in data/parquet/) for faster loading..
+2021-01-29 16:51:37,969 | metadamage.utils | INFO | Setting number_of_fits to 100
+2021-01-29 16:51:37,969 | metadamage.fit | INFO | Generating fits and saving to file.
+2021-01-29 16:52:44,084 | metadamage.plot | INFO | Plot of error rates already exist.
+2021-01-29 16:52:44,085 | metadamage.main | DEBUG | End of loop
+
+2021-01-29 16:52:44,085 | metadamage.utils | INFO | Running new file: KapK-198A-Ext-55-Lib-55-Index1
+2021-01-29 16:52:44,086 | metadamage.fileloader | INFO | Creating DataFrame, please wait.
+2021-01-29 16:52:54,001 | metadamage.fileloader | INFO | Saving DataFrame to file (in data/parquet/) for faster loading..
+2021-01-29 16:52:54,316 | metadamage.utils | INFO | Setting number_of_fits to 100
+2021-01-29 16:52:54,316 | metadamage.fit | INFO | Generating fits and saving to file.
+2021-01-29 16:53:59,105 | metadamage.plot | INFO | Plot of error rates already exist.
+2021-01-29 16:53:59,107 | metadamage.main | DEBUG | End of loop
+
+2021-01-29 16:53:59,111 | metadamage.plot | INFO | Plot of fit results already exist.

@@ -24,6 +24,11 @@ from metadamage.progressbar import console, progress
 # console = utils.console
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def set_rc_params(fig_dpi=300):
     plt.rcParams["figure.figsize"] = (16, 10)
     plt.rcParams["figure.dpi"] = fig_dpi
@@ -260,25 +265,14 @@ def plot_error_rates(cfg, df, d_fits, df_results):
         df_results,
     )
 
-    # f"[red]{cfg.name}[/red]: Length of dataframe was 0. Stopping any further operations on this file.\n"
-    # f"This might be due to a quite restrictive cut at the moment\n"
-    # f"requiring that both C and G are present in the read.\n"
-
     filename = cfg.filename_plot_error_rates
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=number_of_plots):
-        # if cfg.verbose:
-        #     # tqdm.write(f"Plot of error rates already exist: {filename}\n")
-        #     console.print("  Plot of error rates already exist.")
+        logger.info(f"Plot of error rates already exist.")
         return None
 
-    # df_top_N = fileloader.get_top_max_fits(df, number_of_fits)
-
-    # if cfg.verbose:
-    #     console.print("  Plotting, please wait.")
-
+    logger.info(f"Plotting, please wait.")
     set_style()
-
     seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
 
 
@@ -614,16 +608,12 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
     filename = cfg.filename_plot_fit_results
 
     if utils.is_pdf_valid(filename, cfg.force_plots, N_pages=len(N_alignments_mins)):
-        # if cfg.verbose:
-        #     # tqdm.write(f"\nPlot of fit results already exist: {filename}")  # flush=True
-        #     print(f"\nPlot of fit results already exist: {filename}")  # flush=True
+        logger.info(f"Plot of fit results already exist.")
         return None
 
     set_style()
 
-    # if cfg.verbose:
-    #     # tqdm.write(f"\n\nPlotting fit results.")
-    #     print(f"\n\nPlotting fit results.")
+    logger.info(f"Plotting fit results.")
 
     n_sigma_lim, D_max_lim = find_fit_results_limits(all_fit_results)
 

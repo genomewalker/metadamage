@@ -40,6 +40,10 @@ numpyro.enable_x64()
 
 #%%
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def main(filenames, cfg):
 
@@ -59,12 +63,12 @@ def main(filenames, cfg):
         for filename in filenames:
 
             name = utils.extract_name(filename)
-            progress.add_task("task_name", progress_type="name", name=name)
 
             if not utils.file_is_valid(filename):
-                console.print(f"[bold red]Got error here: {name}")
+                logger.warning(f"Got warning here : {name}")
                 continue
 
+            progress.add_task("task_name", progress_type="name", name=name)
             cfg.filename = filename
             cfg.name = name
 
@@ -85,6 +89,7 @@ def main(filenames, cfg):
 
             progress.refresh()
             progress.advance(task_id_overall)
+            logger.debug("End of loop\n")
 
     if len(all_fit_results) >= 1:
         # plot.set_style()
@@ -113,7 +118,6 @@ if utils.is_ipython():
         sort_by=utils.SortBy.alignments.value,
         substitution_bases_forward=utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=utils.SubstitutionBases.GA.value,
-        verbose=True,
         force_reload_files=False,
         force_plots=False,
         force_fits=False,

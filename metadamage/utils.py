@@ -30,6 +30,11 @@ from metadamage.progressbar import console, progress
 #%%
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 #%%
 
 
@@ -49,7 +54,7 @@ class Config:
     substitution_bases_forward: str
     substitution_bases_reverse: str
     #
-    verbose: bool
+    # verbose: bool
     #
     force_reload_files: bool
     force_fits: bool
@@ -69,18 +74,16 @@ class Config:
         available_cores = cpu_count(logical=True)
         if self.max_cores > available_cores:
             self.num_cores = available_cores - 1
-            if self.verbose:
-                console.print(
-                    f"'max_cores' is set to a value larger than the maximum available",
-                    f"so clipping to {self.num_cores} (available-1) cores",
-                )
+            logger.info(
+                f"'max_cores' is set to a value larger than the maximum available",
+                f"so clipping to {self.num_cores} (available-1) cores",
+            )
         elif self.max_cores < 0:
             self.num_cores = available_cores - abs(self.max_cores)
-            if self.verbose:
-                console.print(
-                    f"'max-cores' is set to a negative value",
-                    f"so using {self.num_cores} (available-max_cores) cores",
-                )
+            logger.info(
+                f"'max-cores' is set to a negative value",
+                f"so using {self.num_cores} (available-max_cores) cores",
+            )
         else:
             self.num_cores = self.max_cores
 
@@ -92,8 +95,7 @@ class Config:
         else:  # use all TaxIDs available
             self.number_of_fits = N_all_taxids
         self.set_number_of_plots()
-        # if self.verbose:
-        # print(f"Setting number_of_fits to {self.number_of_fits}")
+        logger.info(f"Setting number_of_fits to {self.number_of_fits}")
 
     def set_number_of_plots(self):
         if self.max_plots is None:
@@ -213,6 +215,7 @@ def extract_name(filename, max_length=60):
     name = Path(filename).stem.split(".")[0]
     if len(name) > max_length:
         name = name[:max_length] + "..."
+    logger.info(f"Running new file: {name}")
     return name
 
 
@@ -225,8 +228,8 @@ def file_is_valid(file):
 def delete_folder(path):
     try:
         shutil.rmtree(path)
-    except OSError as e:
-        console.print("Error: %s - %s." % (e.filename, e.strerror))
+    except OSError:
+        logger.exception(f"Could not delete folder, {path}")
 
 
 def init_parent_folder(filename):
@@ -273,71 +276,6 @@ def avoid_fontconfig_warning():
     os.environ["LC_ALL"] = "en_US.UTF-8"
 
 
-# def string_pad_left_and_right(s, left=0, right=0, char=" "):
-#     N = len(s)
-#     s = s.ljust(N + right, char)
-#     N = len(s)
-#     s = s.rjust(N + left, char)
-#     return s
-
-
-# def compute_fraction_and_uncertainty(x, N):
-#     f = x / N
-#     sf = np.sqrt(f * (1 - f) / N)
-#     return f, sf
-
-
-# def number_of_sigma_to_prob(Z):
-#     return sp_norm.sf(Z)
-
-
-# def prob_to_number_of_sigma(P):
-#     if P > 1:
-#         P /= 100
-#     return np.abs(sp_norm.isf(P))
-
-
-# def inverse_percentile(array, x, as_percent=True, return_uncertainty=False):
-#     x = (array < x).sum()
-#     N = len(array)
-#     f, sf = compute_fraction_and_uncertainty(x, N)
-#     if as_percent:
-#         f *= 100
-#         sf *= 100
-#     if return_uncertainty:
-#         return f, sf
-#     else:
-#         return f
-
-
-# def complementary_inverse_percentile(array, x, as_percent=True, return_uncertainty=False):
-
-#     if return_uncertainty:
-#         f, sf = inverse_percentile(
-#             array,
-#             x,
-#             as_percent=as_percent,
-#             return_uncertainty=True,
-#         )
-#         if as_percent:
-#             return 100 - f, sf
-#         else:
-#             return 1 - f, sf
-
-#     else:
-#         f = inverse_percentile(
-#             array,
-#             x,
-#             as_percent=as_percent,
-#             return_uncertainty=True,
-#         )
-
-#         if as_percent:
-#             return 100 - f
-#         else:
-#             return 1 - f
-
-
 def human_format(num, digits=3, mode="eng"):
     num = float(f"{num:.{digits}g}")
     magnitude = 0
@@ -355,13 +293,6 @@ def human_format(num, digits=3, mode="eng"):
     return "{}{}".format(
         "{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude]
     )
-
-
-# def group_contains_nans(group):
-#     if group["f_C2T"].isna().sum() > 0 or group["f_G2A"].isna().sum() > 0:
-#         return True
-#     else:
-#         return False
 
 
 def file_exists(filename, forced=False):
@@ -404,43 +335,6 @@ def get_num_cores(cfg):
         if num_cores < 1:
             num_cores = 1
     return num_cores
-
-
-#%%
-
-
-# def set_max_fpr(cut, thresholds, fpr, tpr):
-#     index = np.argmax(fpr > cut) - 1
-#     out = {"threshold": thresholds[index], "FPR": fpr[index], "TPR": tpr[index]}
-#     return out
-
-
-# def set_minimum_tpr(cut, thresholds, fpr, tpr):
-#     index = np.argmax(tpr > cut)
-#     out = {"threshold": thresholds[index], "FPR": fpr[index], "TPR": tpr[index]}
-#     return out
-
-
-#%%
-
-
-# class ProgressParallel(Parallel):
-#     # https://stackoverflow.com/a/61900501
-
-#     def __init__(self, use_tqdm=True, total=None, *args, **kwargs):
-#         self._use_tqdm = use_tqdm
-#         self._total = total
-#         super().__init__(*args, **kwargs)
-
-#     def __call__(self, *args, **kwargs):
-#         with tqdm(disable=not self._use_tqdm, total=self._total) as self._pbar:
-#             return Parallel.__call__(self, *args, **kwargs)
-
-#     def print_progress(self):
-#         if self._total is None:
-#             self._pbar.total = self.n_dispatched_tasks
-#         self._pbar.n = self.n_completed_tasks
-#         self._pbar.refresh()
 
 
 #%%
@@ -493,16 +387,15 @@ def get_sorted_and_cutted_df(cfg, df, df_results):
 
 
 def is_df_accepted(df, cfg):
+    if len(df) > 0:
+        return True
 
-    if len(df) == 0:
-        console.print(
-            f"[red]{cfg.name}[/red]: Length of dataframe was 0. Stopping any further operations on this file.\n"
-            f"This might be due to a quite restrictive cut at the moment\n"
-            f"requiring that both C and G are present in the read.\n"
-        )
-        return False
-
-    return True
+    logger.warning(
+        f"{cfg.name}: Length of dataframe was 0. Stopping any further operations on this file."
+        f"This might be due to a quite restrictive cut at the moment."
+        f"requiring that both C and G are present in the read."
+    )
+    return False
 
 
 #%%

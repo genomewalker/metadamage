@@ -1,1 +1,4 @@
-__version__ = "0.0.0"
+from metadamage.logs import Log
+
+# logs.setup(__name__)
+Log(__name__).setup()

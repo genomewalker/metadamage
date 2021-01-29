@@ -17,6 +17,12 @@ from metadamage import utils
 from metadamage.progressbar import console, progress
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+#%%
+
 ACTG = ["A", "C", "G", "T"]
 
 ref_obs_bases = []
@@ -39,60 +45,11 @@ columns = [
 ]
 
 
-# def set_column_names(df, method="dask"):
-
-#     df_names = (
-#         df.iloc[:, 0]
-#         # regex which finds : (colon) within quotes
-#         .str.replace(r"(?<![\"]):(?![\"])", "", regex=True)
-#         .str.replace('"', "")
-#         .str.split(":", expand=True, n=3)
-#     )
-#     df_names = df_names.rename(columns=dict(zip(df_names.columns, columns[:4])))
-#     df_bases = df.iloc[:, 1:]
-#     df_bases = df_bases.rename(columns=dict(zip(df_bases.columns, columns[4:])))
-#     if method == "dask":
-#         df = dd.concat(
-#             [df_names, df_bases],
-#             axis="columns",
-#             ignore_unknown_divisions=True,
-#         )
-#     else:
-#         df = pd.concat([df_names, df_bases], axis="columns")
-#     return df
-
-
-# def convert_dtypes(df):
-#     df = df.astype({"taxid": "int", "N_alignments": "int"})
-#     return df
-
-
-# def strip_colons_from_file(filename):
-#     filename_out = filename.replace(".txt", ".tmp.txt")
-#     command = f"sed $'s/:/ \t/g' {filename} > {filename_out}"
-#     import os
-
-#     os.popen(command)
-#     return filename_out
-
-
 #%%
 
 
 def clean_up_after_dask():
     utils.delete_folder("./dask-worker-space")
-
-
-# def is_reverse_strand(strand):
-#     matches = ["reverse", "3", "-"]
-#     if any(match in strand.lower() for match in matches):
-#         return True
-#     else:
-#         return False
-
-
-# def is_forward_strand(strand):
-#     return not is_reverse_strand(strand)
 
 
 def get_subsitution_bases_to_keep(cfg):
@@ -101,9 +58,6 @@ def get_subsitution_bases_to_keep(cfg):
     reverse = cfg.substitution_bases_reverse
     bases_to_keep = [forward[0], forward, reverse[0], reverse]
     return bases_to_keep
-
-
-#%%
 
 
 def get_base_columns(df):
@@ -289,14 +243,6 @@ def remove_taxids_with_too_few_alignments(df, cfg):
     return df.query(f"N_alignments >= {cfg.min_alignments}")
 
 
-# def remove_quotes_from_string_columns(df):
-#     for col in df.select_dtypes(include=["object"]).columns:
-#         df[col] = df[col].str.replace('"', "")
-#     return df
-
-import logging
-
-
 def compute_dataframe_with_dask(cfg, use_processes=True):
 
     # Standard Library
@@ -380,17 +326,14 @@ def load_dataframe(cfg):
     filename_parquet = cfg.filename_parquet
 
     if utils.file_exists(filename_parquet, cfg.force_reload_files):
-        # if cfg.verbose:
-        #     console.print("  Loading DataFrame from parquet-file.")
+        logger.info(f"Loading DataFrame from parquet-file.")
         df = pd.read_parquet(filename_parquet)
         return df
 
-    # if cfg.verbose:
-    #     console.print("  Creating DataFrame, please wait.")
+    logger.info(f"Creating DataFrame, please wait.")
     df = compute_dataframe_with_dask(cfg, use_processes=True)
 
-    # if cfg.verbose:
-    #     console.print("Saving DataFrame to file (in data/parquet/) for faster loading. \n")
+    logger.info(f"Saving DataFrame to file (in data/parquet/) for faster loading..")
     utils.init_parent_folder(filename_parquet)
     df.to_parquet(filename_parquet, engine="pyarrow")
 

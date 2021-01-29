@@ -27,6 +27,13 @@ numpyro.enable_x64()
 
 #%%
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+#%%
+
 
 def model_PMD(z, N, y=None, phi_prior=1 / 1000):
     z = jnp.abs(z)
@@ -311,7 +318,6 @@ def fit_chunk(df, mcmc_kwargs, cfg):
 
 
 def worker(queue_in, queue_out, mcmc_kwargs, cfg):
-    # print("  worker", os.getpid(), current_process().name)
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     while True:
@@ -338,15 +344,15 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
 
 
 def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
-    # print("main", os.getpid(), current_process().name)
 
     groupby = df.groupby("taxid", sort=False, observed=True)
     N_groupby = len(groupby)
 
     num_cores = cfg.num_cores if cfg.num_cores < N_groupby else N_groupby
 
-    queue_in = Queue()
-    queue_out = Queue()
+    manager = Manager()
+    queue_in = manager.Queue()
+    queue_out = manager.Queue()
     the_pool = Pool(num_cores, worker, (queue_in, queue_out, mcmc_kwargs, cfg))
 
     d_fits = {}
@@ -373,8 +379,8 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
         queue_in.put(None)
 
     # prevent adding anything more to the queue and wait for queue to empty
-    queue_in.close()
-    queue_in.join_thread()
+    # queue_in.close()
+    # queue_in.join_thread()
 
     # prevent adding anything more to the process pool and wait for all processes to finish
     the_pool.close()
@@ -415,9 +421,6 @@ def _get_fit_filenames(cfg):
 def _load_fits(cfg):
 
     d_filename = _get_fit_filenames(cfg)
-
-    # if cfg.verbose:
-    #     tqdm.write(f"Loading fits from pregenerated file, {d_filename['d_fits']}.\n") # flush=True
     d_fits, df_fit_results = utils.load_dill(d_filename["d_fits"])
 
     if not utils.file_exists(d_filename["df_fit_results"]):
@@ -434,15 +437,10 @@ def get_fits(df, cfg):
 
     # if file d_fits exists, use this
     if utils.file_exists(d_filename["d_fits"], cfg.force_fits):
-        # if cfg.verbose:
-        #     console.print("  Loading fits from file.")
+        logger.info(f"Loading fits from pregenerated file.")
         return _load_fits(cfg)
 
-    # if cfg.verbose:
-    #     tqdm.write(f"Generating fits and saving to file: {d_filename['d_fits']}.")
-
-    # if cfg.verbose:
-    #     console.print("  Running MCMC (fitting), please wait.")
+    logger.info(f"Generating fits and saving to file.")
 
     df_top_N = fileloader.get_top_max_fits(df, cfg.number_of_fits)
 

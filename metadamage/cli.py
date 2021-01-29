@@ -10,8 +10,8 @@ import typer
 
 # First Party
 from metadamage import utils
-from metadamage.__init__ import __version__
 from metadamage.main import main
+from metadamage.__version__ import __version__
 
 
 def version_callback(value: bool):
@@ -77,7 +77,6 @@ def cli(
         utils.SubstitutionBases.GA
     ),
     # boolean flags
-    verbose: bool = typer.Option(False, "--verbose"),
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
     force_fits: bool = typer.Option(False, "--force-fits"),
     force_plots: bool = typer.Option(False, "--force-plots"),
@@ -117,13 +116,11 @@ def cli(
         "substitution_bases_forward": substitution_bases_forward.value,
         "substitution_bases_reverse": substitution_bases_reverse.value,
         #
-        "verbose": verbose,
-        #
         "force_reload_files": force_reload_files,
         "force_fits": force_fits,
         "force_plots": force_plots,
         #
-        "version": __version__,
+        "version": "0.0.0",
     }
 
     cfg = utils.Config(**d_cfg)
