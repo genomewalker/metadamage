@@ -1,9 +1,0 @@
-2021-01-29 17:01:58,150 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
-2021-01-29 17:02:15,223 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
-2021-01-29 17:02:27,172 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
-2021-01-29 17:02:32,672 | metadamage.utils | INFO | Running new file: data_ancient
-2021-01-29 17:02:36,529 | metadamage.utils | INFO | Running new file: data_ancient
-2021-01-29 17:02:39,402 | metadamage.utils | INFO | Running new file: file_which_does_not_exist
-2021-01-29 17:02:39,402 | metadamage.main | WARNING | Got warning here : file_which_does_not_exist
-2021-01-29 17:02:52,081 | metadamage.utils | INFO | Running new file: file_which_does_not_exist
-2021-01-29 17:02:52,081 | metadamage.main | WARNING | Got warning here : file_which_does_not_exist

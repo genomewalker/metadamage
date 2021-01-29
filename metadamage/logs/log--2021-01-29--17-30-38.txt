@@ -1,4 +1,0 @@
-2021-01-29 17:30:39,677 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
-2021-01-29 17:30:52,426 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
-2021-01-29 17:30:59,405 | metadamage.utils | INFO | Running new file: file_which_does_not_exist
-2021-01-29 17:30:59,406 | metadamage.main | ERROR | file_which_does_not_exist is not a valid file. Skipping for now.
