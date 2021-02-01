@@ -60,9 +60,9 @@ def fit_results_to_string(fit_result):
     s += r"$n_\sigma = " + f"{fit_result['n_sigma']:.3f}" + r"$" + "\n"
 
     s += "\n"
-    dispersion = utils.human_format(fit_result["dispersion_mean"])
-    s += r"$\mathrm{dispersion} = " + f"{dispersion}" + r"$" + "\n"
-    s += r"$p_\mathrm{succes} = " + f"{fit_result['p_succes_mean']:.3f}" + r"$" + "\n"
+    concentration = utils.human_format(fit_result["concentration_mean"])
+    s += r"$\mathrm{concentration} = " + f"{concentration}" + r"$" + "\n"
+    s += r"$q = " + f"{fit_result['q_mean']:.3f}" + r"$" + "\n"
 
     s += "\n"
     N_alignments = utils.human_format(fit_result["N_alignments"])

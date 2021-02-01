@@ -36,27 +36,27 @@ logger = logging.getLogger(__name__)
 def model_PMD(z, N, y=None, phi_prior=1 / 1000):
     z = jnp.abs(z)
 
-    p = numpyro.sample("p", dist.Beta(2, 3))  # mean = 0.4, shape = 5
+    q = numpyro.sample("q", dist.Beta(2, 3))  # mean = 0.4, shape = 5
     A = numpyro.sample("A", dist.Beta(2, 3))  # mean = 0.4, shape = 5
     c = numpyro.sample("c", dist.Beta(1, 9))  # mean = 0.1, shape = 10
-    Dz = numpyro.deterministic("Dz", A * (1 - p) ** (z - 1) + c)
+    Dz = numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c)
     D_max = numpyro.deterministic("D_max", A + c)
 
-    phi = numpyro.sample("phi", dist.Exponential(phi_prior))
-    theta = numpyro.deterministic("theta", phi + 2)
+    delta = numpyro.sample("delta", dist.Exponential(phi_prior))
+    phi = numpyro.deterministic("phi", delta + 2)
 
-    alpha = numpyro.deterministic("alpha", Dz * theta)
-    beta = numpyro.deterministic("beta", (1 - Dz) * theta)
+    alpha = numpyro.deterministic("alpha", Dz * phi)
+    beta = numpyro.deterministic("beta", (1 - Dz) * phi)
 
     numpyro.sample("obs", dist.BetaBinomial(alpha, beta, N), obs=y)
 
 
 def model_null(z, N, y=None, phi_prior=1 / 1000):
-    p = numpyro.sample("p", dist.Beta(2, 3))  # mean = 0.4, shape = 5
-    D_max = numpyro.deterministic("D_max", p)
-    phi = numpyro.sample("phi", dist.Exponential(phi_prior))
-    theta = numpyro.deterministic("theta", phi + 2)
-    numpyro.sample("obs", dist.BetaBinomial(p * theta, (1 - p) * theta, N), obs=y)
+    q = numpyro.sample("q", dist.Beta(2, 3))  # mean = 0.4, shape = 5
+    D_max = numpyro.deterministic("D_max", q)
+    delta = numpyro.sample("delta", dist.Exponential(phi_prior))
+    phi = numpyro.deterministic("phi", delta + 2)
+    numpyro.sample("obs", dist.BetaBinomial(q * phi, (1 - q) * phi, N), obs=y)
 
 
 #%%
@@ -216,9 +216,9 @@ def compute_fit_results(mcmc_PMD, mcmc_null, data):
     # marginalized values:
 
     # probability of a single succes
-    d_results["p_succes_mean"] = get_mean_of_variable(mcmc_PMD, "p")
-    # dispersion or shape of beta/bino
-    d_results["dispersion_mean"] = get_mean_of_variable(mcmc_PMD, "theta")
+    d_results["q_mean"] = get_mean_of_variable(mcmc_PMD, "q")
+    # concentration or shape of beta/bino
+    d_results["concentration_mean"] = get_mean_of_variable(mcmc_PMD, "phi")
     # marginalized D_max
     d_results["D_max_marginalized_mean"] = get_mean_of_variable(mcmc_PMD, "D_max")
     return d_results
@@ -364,25 +364,66 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
             total=N_groupby,
         )
 
-        for taxid, group in groupby:
+        logger.debug(f"\n")
+
+        # for taxid, group in groupby:
+        for i, (taxid, group) in enumerate(groupby):
+            if i % (N_groupby // 3) == 0 or i == N_groupby - 1:
+                logger.debug(f"queue_in.put() i {i}")
+                s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
+                logger.debug(s)
             queue_in.put((taxid, group))
+        logger.debug(f"Did put {i+1} elements into queue_in out of {N_groupby}")
+
+        logger.debug(f"\n")
 
         # Get and print results
-        for _ in range(N_groupby):
+        # for _ in range(N_groupby):
+        for i in range(N_groupby):
+            if i % (N_groupby // 3) == 0:
+                logger.debug(f"queue_out.get() i {i}")
+                s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
+                logger.debug(s)
             taxid, d_fit = queue_out.get()
             d_fits[taxid] = d_fit
             progress.advance(task_fit)
+        logger.debug(f"Received {i+1} elements from queue_out out of {N_groupby}")
 
-    for _ in range(N_groupby):
+    logger.debug(f"\n")
+
+    # for _ in range(N_groupby):
+    for i in range(num_cores):
+        if i % (N_groupby // 3) == 0:
+            logger.debug(f"queue_in.put(None) i {i}")
+            s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
+            logger.debug(s)
         queue_in.put(None)
 
     # prevent adding anything more to the queue and wait for queue to empty
     # queue_in.close()
     # queue_in.join_thread()
 
+    # # join the queue until we're finished processing results
+    # queue_out.join()
+    # # not closing the Queues caused me untold heartache and suffering
+    # queue_in.close()
+    # queue_out.close()
+
+    logger.debug(f"\n")
+    logger.debug(f"Done?")
+    s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
+    logger.debug(s)
+
     # prevent adding anything more to the process pool and wait for all processes to finish
     the_pool.close()
     the_pool.join()
+
+    logger.debug(f"\n")
+    logger.debug(f"after close() and join()")
+    s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
+    logger.debug(s)
+    logger.debug(f"\n")
+
     return d_fits
 
 
