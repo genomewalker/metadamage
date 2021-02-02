@@ -29,6 +29,12 @@ __pycache__/
 # log files
 /logs/
 
+# log files
+/profiling/
+
+# presentations files
+/presentations/
+
 # remove docker-related folder
 /docker/
 

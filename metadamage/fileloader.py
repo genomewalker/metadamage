@@ -296,6 +296,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
             # .pipe(cut_NANs_away)  # remove any taxids containing nans
             .reset_index(drop=True)
             .pipe(sort_by_alignments)
+            .reset_index(drop=True)
         )
 
     # client.shutdown()

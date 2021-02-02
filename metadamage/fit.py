@@ -255,8 +255,8 @@ def group_to_numpyro_data(group, cfg):
     y_forward = np.array(group.iloc[:15][forward], dtype=np.int)
     N_forward = np.array(group.iloc[:15][forward_ref], dtype=np.int)
 
-    y_reverse = np.array(group.iloc[-15:][reverse])
-    N_reverse = np.array(group.iloc[-15:][reverse_ref])
+    y_reverse = np.array(group.iloc[-15:][reverse], dtype=np.int)
+    N_reverse = np.array(group.iloc[-15:][reverse_ref], dtype=np.int)
 
     data = {
         "z": np.concatenate([z, -z]),
@@ -497,3 +497,70 @@ def get_fits(df, cfg):
     utils.save_dill(d_filename["d_fits"], [d_fits, df_fit_results])
 
     return d_fits, df_fit_results
+
+
+#%%
+
+
+# import arviz as az
+
+# # mcmc = mcmc_PMD
+# # model = model_PMD
+
+# data_no_y = filter_out_y(data)
+
+# def get_InferenceData(mcmc, model):
+
+#     posterior_samples = mcmc.get_samples()
+#     posterior_predictive = Predictive(model, posterior_samples)(Key(1), **data_no_y)
+#     prior = Predictive(model, num_samples=500)(Key(2), **data_no_y)
+
+#     numpyro_data = az.from_numpyro(
+#         mcmc,
+#         prior=prior,
+#         posterior_predictive=posterior_predictive,
+#         # coords={"school": np.arange(eight_school_data["J"])},
+#         # dims={"theta": ["school"]},
+#     )
+
+#     return numpyro_data
+
+# data_PMD = get_InferenceData(mcmc_PMD, model_PMD)
+# data_null = get_InferenceData(mcmc_null, model_null)
+
+# # az.plot_bpv(data_PMD, kind="p_value")
+# # az.plot_bpv(data_null, kind="p_value")
+
+# var_names = ["A", "D_max", "q", "c", "phi"]
+# # az.plot_density([data_PMD, data_null], var_names=var_names)
+
+# az.plot_dist_comparison(data_PMD, var_names=var_names)
+
+# # az.plot_elpd({"PMD model": data_PMD, "null model": data_null})
+
+# # az.plot_ess(data_PMD, kind="local", var_names=var_names)
+
+# # az.plot_forest(
+# #     data_PMD,
+# #     kind="ridgeplot",
+# #     # var_names=var_names[:-1],
+# #     combined=True,
+# #     ridgeplot_overlap=3,
+# #     colors="white",
+# #     figsize=(9, 7),
+# # )
+
+# # az.plot_loo_pit(idata=data_PMD, y="obs")
+# # az.plot_loo_pit(idata=data_PMD, y="obs", ecdf=True)
+
+# az.plot_posterior(data_PMD, var_names=var_names)
+
+# # az.plot_ppc(data_PMD)
+
+# az.plot_trace(data_PMD, var_names=var_names)
+
+# model_compare = az.compare({"PMD": data_PMD, "Null": data_null}, ic="waic", scale='deviance')
+
+# model_compare[['rank', 'waic', 'd_waic', 'dse']]
+
+# az.plot_compare(model_compare, insample_dev=False)
