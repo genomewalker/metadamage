@@ -73,7 +73,7 @@ def main(filenames, cfg):
             cfg.name = name
 
             df = fileloader.load_dataframe(cfg)
-            # group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
+            group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
 
             if not utils.is_df_accepted(df, cfg):
                 continue
@@ -112,8 +112,8 @@ if utils.is_ipython():
     reload(utils)
 
     cfg = utils.Config(
-        max_fits=100,
-        max_plots=10,
+        max_fits=1000,
+        max_plots=100,
         max_cores=-1,
         max_position=15,
         min_damage=None,
@@ -136,6 +136,7 @@ if utils.is_ipython():
     os.chdir(path)
 
     filenames = sorted(Path("./data/input/").rglob("ugly/*UglyPrint.txt"))
+    filename = filenames[-1]
 
     if False:
         # if True:

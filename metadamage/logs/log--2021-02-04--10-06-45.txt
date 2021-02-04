@@ -1,0 +1,23 @@
+2021-02-04 10:06:47,024 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
+2021-02-04 10:08:34,354 | metadamage.utils | INFO | Running new file: SJArg-1-Nit
+2021-02-04 10:08:38,328 | metadamage.utils | INFO | Running new file: SJArg-1-Nit
+2021-02-04 10:08:40,412 | metadamage.fileloader | INFO | Loading DataFrame from parquet-file.
+2021-02-04 11:30:00,848 | metadamage.utils | INFO | Setting number_of_fits to 100
+2021-02-04 11:30:00,852 | metadamage.fit | INFO | Generating fits and saving to file.
+2021-02-04 11:30:04,619 | metadamage.fit | DEBUG | 
+
+2021-02-04 11:30:04,623 | metadamage.fit | DEBUG | queue_in.put() i 0
+2021-02-04 11:30:04,625 | metadamage.fit | DEBUG | queue_in.qsize() = 0 queue_in.empty() = True
+2021-02-04 11:30:04,905 | metadamage.fit | DEBUG | queue_in.put() i 33
+2021-02-04 11:30:04,905 | metadamage.fit | DEBUG | queue_in.qsize() = 33 queue_in.empty() = False
+2021-02-04 11:30:05,189 | metadamage.fit | DEBUG | queue_in.put() i 66
+2021-02-04 11:30:05,190 | metadamage.fit | DEBUG | queue_in.qsize() = 66 queue_in.empty() = False
+2021-02-04 11:30:05,442 | metadamage.fit | DEBUG | queue_in.put() i 99
+2021-02-04 11:30:05,442 | metadamage.fit | DEBUG | queue_in.qsize() = 99 queue_in.empty() = False
+2021-02-04 11:30:05,451 | metadamage.fit | DEBUG | Did put 100 elements into queue_in out of 100
+2021-02-04 11:30:05,451 | metadamage.fit | DEBUG | 
+
+2021-02-04 11:30:05,451 | metadamage.fit | DEBUG | queue_out.get() i 0
+2021-02-04 11:30:05,452 | metadamage.fit | DEBUG | queue_in.qsize() = 100 queue_in.empty() = False
+2021-02-04 11:31:11,073 | metadamage.utils | INFO | Setting number_of_fits to 100
+2021-02-04 11:31:57,485 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores

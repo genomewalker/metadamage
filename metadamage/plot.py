@@ -13,8 +13,12 @@ import itertools
 import logging
 from pathlib import Path
 import re
+import subprocess
 
 # Third Party
+from PyPDF2 import PdfFileMerger, PdfFileReader
+from joblib import delayed, Parallel
+from tqdm import tqdm
 from tqdm.auto import tqdm
 
 # First Party
@@ -166,16 +170,22 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
         s = fit_results_to_string(fit_result)
         ax_reverse.text(
-            0.05,
-            0.90,
+            0.03,
+            0.95,
             s,
             transform=ax_reverse.transAxes,
             horizontalalignment="left",
             verticalalignment="top",
-            fontsize=30,
+            fontsize=24,
         )
 
-    ax_forward.legend(loc="upper right", fontsize=30)
+    ax_forward.legend(
+        loc="upper right",
+        fontsize=24,
+        ncol=3,
+        handletextpad=-0.3,
+        columnspacing=0.25,
+    )
 
     ax_reverse.yaxis.tick_right()
     ax_reverse.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
@@ -211,12 +221,12 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     )
     ax_forward.set_title("Forward ", loc="right", pad=10, fontdict=dict(fontsize=30))
 
-    name = group["name"].iloc[0]
-    rank = group["rank"].iloc[0]
-    title = f"Error rate frequency as a function of position.\nTax: {taxid}, {name}, {rank}\n"
+    name = group["name"].iloc[0].replace(r"_", r"\_")
+    rank = group["rank"].iloc[0].replace(r"_", r"\_")
+    title = f"Error rate frequency as a function of position.\nTaxon: {taxid}, {name}, {rank}\n"
     title = title.replace("root, no rank", "root")
-    fig.suptitle(title, fontsize=40)
-    fig.subplots_adjust(top=0.75)
+    fig.suptitle(title, fontsize=34)
+    fig.subplots_adjust(top=0.8)
 
     return fig
 
@@ -259,10 +269,12 @@ def plot_error_rates(cfg, df, d_fits, df_results):
     number_of_plots = cfg.number_of_plots
 
     df_plot_sorted = utils.get_sorted_and_cutted_df(
-        cfg,
         df,
         df_results,
+        cfg,
     )
+    if df_plot_sorted is None:
+        return None
 
     filename = cfg.filename_plot_error_rates
 
@@ -272,7 +284,13 @@ def plot_error_rates(cfg, df, d_fits, df_results):
 
     logger.info(f"Plotting, please wait.")
     set_style()
+
     seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
+
+    # from about_time import about_time
+    # with about_time() as at1:  # <-- use it like a context manager!
+    #     parallel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits)
+    # print(f"total: {at1.duration_human}")
 
 
 #%%
@@ -639,3 +657,96 @@ def plot_fit_results(all_fit_results, cfg, N_alignments_mins=[-1]):
 
 
 # %%
+
+
+class ProgressParallel(Parallel):
+    # https://stackoverflow.com/a/61900501
+
+    def __init__(self, use_tqdm=True, total=None, *args, **kwargs):
+        self._use_tqdm = use_tqdm
+        self._total = total
+        super().__init__(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        with tqdm(disable=not self._use_tqdm, total=self._total) as self._pbar:
+            return Parallel.__call__(self, *args, **kwargs)
+
+    def print_progress(self):
+        if self._total is None:
+            self._pbar.total = self.n_dispatched_tasks
+        self._pbar.n = self.n_completed_tasks
+        self._pbar.refresh()
+
+
+def filename_to_tmp_file(filename):
+    return filename.replace("figures/", "figures/tmp/").replace(".pdf", "")
+
+
+# useful function for parallel saving of files
+def _plot_and_save_single_group_worker(i, group, filename, cfg, d_fits):
+
+    set_style()  # set style in child process
+
+    # try:
+    fig = plot_single_group(group, cfg, d_fits)
+    filename = filename_to_tmp_file(filename) + f"__{i:06d}.pdf"
+    utils.init_parent_folder(filename)
+    fig.savefig(filename)
+    return None
+
+    # except Exception as e:
+    #     raise e
+    # taxid = group.taxid.iloc[0]
+    # return taxid
+
+
+# plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
+
+
+def parallel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
+
+    groupby = df_plot_sorted.groupby("taxid", sort=False, observed=True)
+
+    # for i, (name, group) in enumerate(groupby):
+    #     break
+
+    kwargs = dict(cfg=cfg, d_fits=d_fits)
+    generator = (
+        delayed(_plot_and_save_single_group_worker)(i, group, filename, **kwargs)
+        for i, (name, group) in enumerate(groupby)
+    )
+
+    total = groupby.ngroups
+    print(
+        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {cfg.num_cores} cores:",
+        flush=True,
+    )
+    res = ProgressParallel(use_tqdm=True, total=total, n_jobs=cfg.num_cores)(generator)
+    # errors = set([error for error in res if error])
+
+    # if len(errors) >= 1:
+    #     print(f"Got errors at TaxIDs: {errors}")
+
+    # Call the PdfFileMerger
+    mergedObject = PdfFileMerger()
+
+    # Loop through all of them and append their pages
+    pdfs = sorted(Path(".").rglob(f"{filename_to_tmp_file(filename)}*.pdf"))
+    for pdf in pdfs:
+        mergedObject.append(PdfFileReader(str(pdf), "rb"))
+
+    # Write all the files into a file which is named as shown below
+    filename_tmp = filename.replace(".pdf", "_tmp.pdf")
+
+    mergedObject.write(filename_tmp)
+
+    # delete temporary files
+    for pdf in pdfs:
+        pdf.unlink()
+
+    # make the combined pdf smaller by compression using the following command:
+    # ps2pdf filename_big filename_small
+    process = subprocess.run(["ps2pdf", filename_tmp, filename])
+    Path(filename_tmp).unlink()
+
+    Path("./figures/tmp").rmdir()

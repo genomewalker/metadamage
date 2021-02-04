@@ -1,0 +1,5 @@
+2021-02-04 12:22:53,731 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
+2021-02-04 12:23:00,461 | metadamage.utils | INFO | Running new file: SJArg-1-Nit
+2021-02-04 12:23:04,624 | metadamage.fileloader | INFO | Loading DataFrame from parquet-file.
+2021-02-04 12:23:09,075 | metadamage.utils | INFO | Setting number_of_fits to 1000
+2021-02-04 12:23:09,076 | metadamage.fit | INFO | Loading fits from pregenerated file.

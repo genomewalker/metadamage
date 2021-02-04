@@ -343,7 +343,7 @@ def get_num_cores(cfg):
 #%%
 
 
-def get_sorted_and_cutted_df(cfg, df, df_results):
+def get_sorted_and_cutted_df(df, df_results, cfg):
 
     min_damage = cfg.min_damage if cfg.min_damage else -np.inf
     min_sigma = cfg.min_sigma if cfg.min_sigma else -np.inf
@@ -357,6 +357,12 @@ def get_sorted_and_cutted_df(cfg, df, df_results):
 
     # cut away fits and TaxIDs which does not satisfy cut criteria
     df_results_cutted = df_results.query(query)
+    if len(df_results_cutted) == 0:
+        logger.warning(
+            f"{cfg.name} did not have any fits that matched the requirements. "
+            f"Skipping for now"
+        )
+        return None
 
     d_sort_by = {
         "alignments": "N_alignments",
