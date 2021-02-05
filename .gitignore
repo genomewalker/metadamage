@@ -28,6 +28,7 @@ __pycache__/
 
 # log files
 /logs/
+/logs/*.txt
 
 # log files
 /profiling/

@@ -1,0 +1,1 @@
+2021-02-05 13:09:23,100 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores

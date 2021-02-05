@@ -66,7 +66,7 @@ def cli(
     # minimum fit values (used for deciding what to plot)
     min_damage: Optional[float] = typer.Option(None, help="[default: None]"),
     min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
-    min_alignments: int = 1,
+    min_alignments: int = 10,
     #
     sort_by: utils.SortBy = typer.Option(utils.SortBy.alignments, case_sensitive=False),
     # sort_by: Literal["alignments", "damage", "sigma"] = "alignments",

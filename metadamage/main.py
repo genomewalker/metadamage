@@ -73,7 +73,7 @@ def main(filenames, cfg):
             cfg.name = name
 
             df = fileloader.load_dataframe(cfg)
-            group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
+            # group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
 
             if not utils.is_df_accepted(df, cfg):
                 continue
@@ -143,8 +143,8 @@ if utils.is_ipython():
         main(filenames, cfg)
 
         # filename_parquet = cfg.filename_parquet
-        filename_parquet = "./data/parquet/KapK-198A-Ext-55-Lib-55-Index1.parquet"
+        filename_parquet = "./data/parquet/n_sigma_test.parquet"
 
         df = pd.read_parquet(filename_parquet)
-        taxid = 33090
+        taxid = 48701
         group = utils.get_specific_taxid(df, taxid)  # get very first group
