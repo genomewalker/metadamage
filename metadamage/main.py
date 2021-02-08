@@ -146,5 +146,5 @@ if utils.is_ipython():
         filename_parquet = "./data/parquet/n_sigma_test.parquet"
 
         df = pd.read_parquet(filename_parquet)
-        taxid = 48701
+        taxid = 115547
         group = utils.get_specific_taxid(df, taxid)  # get very first group
