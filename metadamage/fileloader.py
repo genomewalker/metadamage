@@ -256,7 +256,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
         n_workers=cfg.num_cores,
         processes=use_processes,
         silence_logs=logging.ERROR,
-    ) as client:
+    ):
 
         df = (
             # dd.read_csv(filename, sep="\t")
@@ -289,7 +289,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
             # add other information
             .pipe(make_position_1_indexed)
             .pipe(make_reverse_position_negative)
-            .pipe(keep_only_base_columns, cfg)
+            # .pipe(keep_only_base_columns, cfg)
             .pipe(replace_nans_with_zeroes)
             # turns dask dataframe into pandas dataframe
             .compute()

@@ -637,16 +637,3 @@ def get_fits(df, cfg):
 # model_compare[['rank', 'waic', 'd_waic', 'dse']]
 
 # az.plot_compare(model_compare, insample_dev=False)
-
-
-# mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
-# mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
-# mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
-
-# data = group_to_numpyro_data(group, cfg)
-
-# fit_mcmc(mcmc_PMD, data)
-# fit_mcmc(mcmc_null, data)
-
-# d_results_PMD = get_lppd_and_waic(mcmc_PMD, data)
-# d_results_null = get_lppd_and_waic(mcmc_null, data)
