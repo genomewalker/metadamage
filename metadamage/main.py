@@ -135,7 +135,7 @@ if utils.is_ipython():
     path = Path().cwd().parent
     os.chdir(path)
 
-    filenames = sorted(Path("./data/input/").rglob("ugly/*UglyPrint.txt"))
+    filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
     filename = filenames[-1]
 
     if False:
@@ -147,4 +147,36 @@ if utils.is_ipython():
 
         df = pd.read_parquet(filename_parquet)
         taxid = 115547
+        taxid = 3745
         group = utils.get_specific_taxid(df, taxid)  # get very first group
+
+
+#%%
+
+# cols = [col for col in group.columns if len(col) == 2 and col[0] != col[1]]
+
+# f_ij = group[cols].copy()
+
+# f_ij.loc[:, "CT"].iloc[:15] = np.nan
+# f_ij.loc[:, "GA"].iloc[15:] = np.nan
+# f_ij.plot(figsize=(16, 10))
+
+# f_mean = f_ij.mean(axis=0)
+# x = f_ij / f_mean
+# x.plot(figsize=(16, 10))
+
+# np.nanstd(x.values)
+
+
+# # values = x.values.flatten()
+# # values = values[~np.isnan(values)]
+
+# # import matplotlib.pyplot as plt
+
+# # plt.hist(values, 40, range=(0, 20))
+
+# d_results_PMD = get_lppd_and_waic(mcmc_PMD, data)
+
+# d_results_PMD_forward = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_forward)
+
+# d_results_PMD_reverse = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_reverse)

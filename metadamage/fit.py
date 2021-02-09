@@ -12,7 +12,9 @@ import os
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKey as Key
-from jax.scipy.special import logsumexp
+
+# from jax.scipy.special import logsumexp
+from scipy.special import logsumexp
 from joblib import delayed, Parallel
 import numpyro
 from numpyro import distributions as dist
@@ -101,8 +103,8 @@ def get_posterior_predictive(mcmc, data):
 #%%
 
 
-def get_y_average_and_hpdi(mcmc, data, func=jnp.median, return_hpdi=True):
-    """func = central tendency function, e.g. jnp.mean or jnp.median"""
+def get_y_average_and_hpdi(mcmc, data, func=np.median, return_hpdi=True):
+    """func = central tendency function, e.g. np.mean or np.median"""
     posterior_predictive = get_posterior_predictive(mcmc, data)
     predictions_fraction = posterior_predictive / data["N"]
     y_average = func(predictions_fraction, axis=0)
@@ -139,15 +141,15 @@ def compute_log_likelihood(mcmc, data):
 def get_lppd_and_waic(mcmc, data):
     d_results = {}
     # get the log likehood for each (point, num_samples)
-    logprob = compute_log_likelihood(mcmc, data)
+    logprob = np.asarray(compute_log_likelihood(mcmc, data))
     # lppd for each observation
-    lppd_i = logsumexp(logprob, 0) - jnp.log(logprob.shape[0])
+    lppd_i = logsumexp(logprob, 0) - np.log(logprob.shape[0])
     d_results["lppd_i"] = lppd_i
     # lppd
     lppd = lppd_i.sum()
     d_results["lppd"] = lppd
     # waic penalty for each observation
-    pWAIC_i = jnp.var(logprob, 0)
+    pWAIC_i = np.var(logprob, 0)
     d_results["pWAIC_i"] = pWAIC_i
     # waic penalty # the effective number of parameters penalty
     pWAIC = pWAIC_i.sum()
@@ -187,41 +189,91 @@ def compute_n_sigma(d_results_PMD, d_results_null):
     n = len(d_results_PMD["waic_i"])
     waic_i_PMD = d_results_PMD["waic_i"]
     waic_i_null = d_results_null["waic_i"]
-    dse = jnp.sqrt(n * jnp.var(waic_i_PMD - waic_i_null))
+    dse = np.sqrt(n * np.var(waic_i_PMD - waic_i_null))
     d_waic = d_results_null["waic"] - d_results_PMD["waic"]
     n_sigma = d_waic / dse
     return n_sigma
 
 
-def compute_fit_results(mcmc_PMD, mcmc_null, data):
+def compute_assymmetry_combined_vs_forwardreverse(
+    d_results_PMD,
+    d_results_PMD_forward,
+    d_results_PMD_reverse,
+):
+
+    n = len(d_results_PMD["waic_i"])
+
+    waic_i_combined = d_results_PMD["waic_i"]
+    waic_i_forwardreverse = np.concatenate(
+        [
+            d_results_PMD_forward["waic_i"],
+            d_results_PMD_reverse["waic_i"],
+        ]
+    )
+
+    dse = np.sqrt(n * np.var(waic_i_combined - waic_i_forwardreverse))
+
+    waic_combined = d_results_PMD["waic"]
+    waic_forwardreverse = d_results_PMD_forward["waic"] + d_results_PMD_reverse["waic"]
+
+    d_waic = waic_forwardreverse - waic_combined
+    n_sigma = d_waic / dse
+    return n_sigma
+
+
+def compute_fit_results(
+    mcmc_PMD,
+    mcmc_null,
+    mcmc_PMD_forward_reverse,
+    mcmc_null_forward_reverse,
+    data,
+    group,
+):
+
     d_results_PMD = get_lppd_and_waic(mcmc_PMD, data)
     d_results_null = get_lppd_and_waic(mcmc_null, data)
 
-    d_results = {}
+    fit_result = {}
     # y_frac = y/N, on the first position
-    y_frac_median, y_frac_hpdi = get_y_average_and_hpdi(mcmc_PMD, data, func=jnp.median)
-    d_results["D_max"] = y_frac_median[0].item()
+    y_frac_median, y_frac_hpdi = get_y_average_and_hpdi(mcmc_PMD, data, func=np.median)
+    fit_result["D_max"] = y_frac_median[0].item()
 
     n_sigma = compute_n_sigma(d_results_PMD, d_results_null)
-    d_results["n_sigma"] = n_sigma.item()
+    fit_result["n_sigma"] = n_sigma.item()
 
     # waic_weights = compute_waic_weight(d_results_PMD, d_results_null)
-    # d_results["waic_weight"] = waic_weights[0]
-    # d_results["waic_weight_null"] = waic_weights[1]
+    # fit_result["waic_weight"] = waic_weights[0]
+    # fit_result["waic_weight_null"] = waic_weights[1]
 
     # y_frac = y/N, on the first position, HPDIs
-    d_results["D_max_lower_hpdi"] = y_frac_hpdi[0, 0].item()
-    d_results["D_max_upper_hpdi"] = y_frac_hpdi[1, 0].item()
+    fit_result["D_max_lower_hpdi"] = y_frac_hpdi[0, 0].item()
+    fit_result["D_max_upper_hpdi"] = y_frac_hpdi[1, 0].item()
 
     # marginalized values:
 
     # probability of a single succes
-    d_results["q_mean"] = get_mean_of_variable(mcmc_PMD, "q")
+    fit_result["q_mean"] = get_mean_of_variable(mcmc_PMD, "q")
     # concentration or shape of beta/bino
-    d_results["concentration_mean"] = get_mean_of_variable(mcmc_PMD, "phi")
+    fit_result["concentration_mean"] = get_mean_of_variable(mcmc_PMD, "phi")
     # marginalized D_max
-    d_results["D_max_marginalized_mean"] = get_mean_of_variable(mcmc_PMD, "D_max")
-    return d_results
+    fit_result["D_max_marginalized_mean"] = get_mean_of_variable(mcmc_PMD, "D_max")
+
+    fit_result["N_alignments"] = group.N_alignments.iloc[0]
+    fit_result["N_z1_forward"] = data["N"][0]
+    fit_result["N_z1_reverse"] = data["N"][15]
+    fit_result["N_sum_forward"] = data["N"][:15].sum()
+    fit_result["N_sum_reverse"] = data["N"][15:].sum()
+    fit_result["N_sum_total"] = data["N"].sum()
+
+    add_assymetry_results_to_fit_results(
+        mcmc_PMD_forward_reverse,
+        mcmc_null_forward_reverse,
+        data,
+        fit_result,
+        d_results_PMD,
+    )
+
+    return fit_result
 
 
 def add_assymetry_results_to_fit_results(
@@ -229,6 +281,7 @@ def add_assymetry_results_to_fit_results(
     mcmc_null_forward_reverse,
     data,
     fit_result,
+    d_results_PMD,
 ):
     """computes the assymetry between a fit to forward data and reverse data
     the assymmetry is here defined as the n_sigma (WAIC) between the two fits
@@ -243,13 +296,14 @@ def add_assymetry_results_to_fit_results(
     fit_result["n_sigma_forward"] = compute_n_sigma(
         d_results_PMD_forward,
         d_results_null_forward,
-    ).item()
+    )
+
     fit_result["D_max_forward"] = get_y_average_and_hpdi(
         mcmc_PMD_forward_reverse,
         data_forward,
-        func=jnp.median,
+        func=np.median,
         return_hpdi=False,
-    )[0].item()
+    )[0]
 
     data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
     fit_mcmc(mcmc_PMD_forward_reverse, data_reverse)
@@ -260,16 +314,18 @@ def add_assymetry_results_to_fit_results(
     fit_result["n_sigma_reverse"] = compute_n_sigma(
         d_results_PMD_reverse,
         d_results_null_reverse,
-    ).item()
+    )
     fit_result["D_max_reverse"] = get_y_average_and_hpdi(
         mcmc_PMD_forward_reverse,
         data_forward,
-        func=jnp.median,
+        func=np.median,
         return_hpdi=False,
-    )[0].item()
+    )[0]
 
-    fit_result["asymmetry"] = np.abs(
-        compute_n_sigma(d_results_PMD_forward, d_results_PMD_reverse)
+    fit_result["asymmetry"] = compute_assymmetry_combined_vs_forwardreverse(
+        d_results_PMD,
+        d_results_PMD_forward,
+        d_results_PMD_reverse,
     )
 
 
@@ -320,7 +376,52 @@ def match_taxid_order_in_df_fit_results(df_fit_results, df):
     return df_fit_results.loc[pd.unique(df.taxid)]
 
 
-def fit_chunk(df, mcmc_kwargs, cfg):
+def fit_single_group(
+    group,
+    cfg,
+    mcmc_PMD,
+    mcmc_null,
+    mcmc_PMD_forward_reverse,
+    mcmc_null_forward_reverse,
+):
+
+    data = group_to_numpyro_data(group, cfg)
+    fit_mcmc(mcmc_PMD, data)
+    fit_mcmc(mcmc_null, data)
+    # mcmc_PMD.print_summary(prob=0.68)
+
+    y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
+        mcmc_PMD,
+        data,
+        func=np.median,
+    )
+
+    fit_result = compute_fit_results(
+        mcmc_PMD,
+        mcmc_null,
+        mcmc_PMD_forward_reverse,
+        mcmc_null_forward_reverse,
+        data,
+        group,
+    )
+
+    d_fit = {
+        "median": y_median_PMD,
+        "hpdi": y_hpdi_PMD,
+        "fit_result": fit_result,
+    }
+
+    # if False:
+    #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
+    #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
+    #     use_last_state_as_warmup_state(mcmc_PMD)
+    #     use_last_state_as_warmup_state(mcmc_null)
+
+    return d_fit
+
+
+def fit_not_parallel(df, mcmc_kwargs, cfg):
+
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
@@ -339,38 +440,20 @@ def fit_chunk(df, mcmc_kwargs, cfg):
         )
 
         for taxid, group in groupby:
-            data = group_to_numpyro_data(group, cfg)
-            fit_mcmc(mcmc_PMD, data)
-            fit_mcmc(mcmc_null, data)
 
-            # mcmc_PMD.print_summary(prob=0.68)
-
-            y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
+            d_fit = fit_single_group(
+                group,
+                cfg,
                 mcmc_PMD,
-                data,
-                func=jnp.median,
-            )
-            fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
-            fit_result["N_alignments"] = group.N_alignments.iloc[0]
-
-            add_assymetry_results_to_fit_results(
+                mcmc_null,
                 mcmc_PMD_forward_reverse,
                 mcmc_null_forward_reverse,
-                data,
-                fit_result,
             )
 
-            d_fits[taxid] = {
-                "median": y_median_PMD,
-                "hpdi": y_hpdi_PMD,
-                "fit_result": fit_result,
-            }
+            d_fits[taxid] = d_fit
+
             progress.advance(task_fit)
-            # if False:
-            #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
-            #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
-            #     use_last_state_as_warmup_state(mcmc_PMD)
-            #     use_last_state_as_warmup_state(mcmc_null)
+
     fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
@@ -378,6 +461,7 @@ def fit_chunk(df, mcmc_kwargs, cfg):
 
 
 def worker(queue_in, queue_out, mcmc_kwargs, cfg):
+
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
@@ -389,28 +473,16 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
         if taxid_group is None:
             break
         taxid, group = taxid_group
-        data = group_to_numpyro_data(group, cfg)
-        fit_mcmc(mcmc_PMD, data)
-        fit_mcmc(mcmc_null, data)
-        y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
-            mcmc_PMD, data, func=jnp.median
-        )
-        fit_result = compute_fit_results(mcmc_PMD, mcmc_null, data)
-        fit_result["N_alignments"] = group.N_alignments.iloc[0]
 
-        add_assymetry_results_to_fit_results(
+        d_fit = fit_single_group(
+            group,
+            cfg,
+            mcmc_PMD,
+            mcmc_null,
             mcmc_PMD_forward_reverse,
             mcmc_null_forward_reverse,
-            data,
-            fit_result,
         )
 
-        d_fit = {"median": y_median_PMD, "hpdi": y_hpdi_PMD, "fit_result": fit_result}
-        # if False:
-        #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
-        #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
-        #     use_last_state_as_warmup_state(mcmc_PMD)
-        #     use_last_state_as_warmup_state(mcmc_null)
         queue_out.put((taxid, d_fit))
 
 
@@ -505,7 +577,7 @@ def compute_fits(df, cfg, mcmc_kwargs):
     groupby = df.groupby("taxid", sort=False, observed=True)
 
     if cfg.num_cores == 1 or len(groupby) < 10:
-        return fit_chunk(df, mcmc_kwargs, cfg)  # do_tqdm=do_tqdm # TODO
+        return fit_not_parallel(df, mcmc_kwargs, cfg)
 
     # utils.avoid_fontconfig_warning()
     d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)

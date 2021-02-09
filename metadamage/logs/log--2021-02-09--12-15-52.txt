@@ -1,0 +1,4 @@
+2021-02-09 12:15:53,887 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
+2021-02-09 12:16:13,006 | metadamage.utils | INFO | Running new file: n_sigma_test
+2021-02-09 12:16:15,939 | metadamage.fileloader | INFO | Creating DataFrame, please wait.
+2021-02-09 12:16:24,783 | metadamage.fileloader | INFO | Saving DataFrame to file (in data/parquet/) for faster loading..
