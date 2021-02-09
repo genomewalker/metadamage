@@ -180,3 +180,5 @@ if utils.is_ipython():
 # d_results_PMD_forward = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_forward)
 
 # d_results_PMD_reverse = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_reverse)
+
+# df_fit_results =
