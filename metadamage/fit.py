@@ -273,6 +273,8 @@ def compute_fit_results(
         d_results_PMD,
     )
 
+    add_noise_estimates(group, fit_result)
+
     return fit_result
 
 
@@ -327,6 +329,25 @@ def add_assymetry_results_to_fit_results(
         d_results_PMD_forward,
         d_results_PMD_reverse,
     )
+
+
+def add_noise_estimates(group, fit_result):
+
+    base_columns = cols = [
+        col for col in group.columns if len(col) == 2 and col[0] != col[1]
+    ]
+
+    f_ij = group[base_columns].copy()
+
+    f_ij.loc[f_ij.index[:15], "CT"] = np.nan
+    f_ij.loc[f_ij.index[15:], "GA"] = np.nan
+
+    f_mean = f_ij.mean(axis=0)
+    noise_z = f_ij / f_mean
+
+    fit_result["normalized_noise"] = np.nanstd(noise_z.values)
+    fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
+    fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
 
 
 #%%

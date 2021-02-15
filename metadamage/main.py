@@ -152,33 +152,3 @@ if utils.is_ipython():
 
 
 #%%
-
-# cols = [col for col in group.columns if len(col) == 2 and col[0] != col[1]]
-
-# f_ij = group[cols].copy()
-
-# f_ij.loc[:, "CT"].iloc[:15] = np.nan
-# f_ij.loc[:, "GA"].iloc[15:] = np.nan
-# f_ij.plot(figsize=(16, 10))
-
-# f_mean = f_ij.mean(axis=0)
-# x = f_ij / f_mean
-# x.plot(figsize=(16, 10))
-
-# np.nanstd(x.values)
-
-
-# # values = x.values.flatten()
-# # values = values[~np.isnan(values)]
-
-# # import matplotlib.pyplot as plt
-
-# # plt.hist(values, 40, range=(0, 20))
-
-# d_results_PMD = get_lppd_and_waic(mcmc_PMD, data)
-
-# d_results_PMD_forward = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_forward)
-
-# d_results_PMD_reverse = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_reverse)
-
-# df_fit_results =
