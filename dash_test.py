@@ -157,26 +157,6 @@ fit_results = FitResults()
 
 #%%
 
-# custom_data_columns = [
-#     "name",
-#     "taxid",
-#     "n_sigma",
-#     "D_max",
-#     "N_alignments_str",
-#     "N_sum_total_str",
-# ]
-# hovertemplate = (
-#     "<b>%{customdata[0]}</b><br><br>"
-#     "taxid: %{customdata[1]}<br>"
-#     "<br>n sigma: %{customdata[2]:5.2f}<br>"
-#     "D max:    %{customdata[3]:.2f}<br>"
-#     "<br>N alignments: %{customdata[4]}<br>"
-#     "N sum total:   %{customdata[5]}<br>"
-#     "<extra></extra>"
-# )
-
-#%%
-
 
 def create_fit_results_figure(df_cutted):
 
@@ -198,7 +178,7 @@ def create_fit_results_figure(df_cutted):
     fig.update_traces(hovertemplate=fit_results.hovertemplate, marker_line_width=0)
 
     fig.update_layout(
-        title=f"Fit Results.",
+        title=f"Fit Results",
         xaxis_title=r"$\Large n_\sigma$",
         yaxis_title=r"$\Large D_\mathrm{max}$",
         font_size=16,
@@ -234,14 +214,10 @@ def create_scatter_matrix_figure(df_cutted):
     )
 
     # manually set ranges for scatter matrix
-    # ranges = {i + 1: fit_results.ranges[col] for i, col in enumerate(dimensions)}
-    ranges = {i + 1: range_ for i, range_ in enumerate(fit_results.dimensions.items())}
-    fig.update_layout(
-        {"xaxis" + str(key): dict(range=val) for key, val in ranges.items()}
-    )
-    fig.update_layout(
-        {"yaxis" + str(key): dict(range=val) for key, val in ranges.items()}
-    )
+    iterator = enumerate(fit_results.dimensions)
+    ranges = {i + 1: fit_results.ranges[col] for i, col in iterator}
+    for axis in ["xaxis", "yaxis"]:
+        fig.update_layout({axis + str(k): {"range": v} for k, v in ranges.items()})
 
     fig.update_layout(
         title="Scatter Matrix",
@@ -256,25 +232,6 @@ def create_scatter_matrix_figure(df_cutted):
 
 
 #%%
-
-
-# custom_data_columns = [
-#     "name",
-#     "taxid",
-#     "n_sigma",
-#     "D_max",
-#     "N_alignments_str",
-#     "N_sum_total_str",
-# ]
-# hovertemplate = (
-#     "<b>%{customdata[0]}</b><br><br>"
-#     "taxid: %{customdata[1]}<br>"
-#     "<br>n sigma: %{customdata[2]:5.2f}<br>"
-#     "D max:    %{customdata[3]:.2f}<br>"
-#     "<br>N alignments: %{customdata[4]}<br>"
-#     "N sum total:   %{customdata[5]}<br>"
-#     "<extra></extra>"
-# )
 
 
 def plotly_histogram(
@@ -450,8 +407,8 @@ def update_figure(slider_N_alignments):
     df_cutted = fit_results.cut_N_alignments(slider_N_alignments)
 
     # fig = create_fit_results_figure(df_cutted)
-    # fig = create_scatter_matrix_figure(df_cutted)
-    fig = plot_histograms(df_cutted)
+    fig = create_scatter_matrix_figure(df_cutted)
+    # fig = plot_histograms(df_cutted)
 
     return fig
 
