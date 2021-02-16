@@ -83,6 +83,20 @@ class FitResults:
         high = transform_slider(high)
         return self.df.query(f"{low} <= N_alignments <= {high}")
 
+    def filter_D_max(self, slider_D_max):
+        low, high = slider_D_max
+        return self.df.query(f"{low} <= D_max <= {high}")
+
+    def filter(self, filters):
+        query = ""
+        for dimension, filter in filters.items():
+            low, high = filter
+            if dimension == "N_alignments":
+                low = transform_slider(low)
+                high = transform_slider(high)
+            query += f"({low} <= {dimension} <= {high}) & "
+        return self.df.query(query[:-2])
+
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
         cmap = px.colors.qualitative.D3
@@ -174,7 +188,9 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         hover_name="name",
         size_max=30,
         opacity=0.2,
-        color_discrete_sequence=fit_results.cmap,
+        # color_discrete_sequence=fit_results.cmap,
+        color_discrete_map=fit_results.d_cmap,
+        # category_orders={"name": list(fit_results.d_cmap.keys())},
         custom_data=fit_results.custom_data_columns,
         range_x=fit_results.ranges["n_sigma"],
         range_y=[0, 1],
@@ -191,6 +207,11 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         width=width,
         height=height,
         uirevision=True,  # important for not reshowing legend after change in slider
+        margin=dict(
+            t=50,  # top margin: 30px, you want to leave around 30 pixels to
+            # display the modebar above the graph.
+            b=20,  # bottom margin: 10px
+        ),
     )
 
     return fig
@@ -282,7 +303,9 @@ def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
         color="name",
         hover_name="name",
         size_max=10,
-        color_discrete_sequence=fit_results.cmap,
+        color_discrete_map=fit_results.d_cmap,
+        # color_discrete_sequence=fit_results.cmap,
+        # category_orders={"name": list(fit_results.d_cmap.keys())},
         labels=fit_results.labels,
         opacity=0.1,
         custom_data=fit_results.custom_data_columns,
@@ -319,41 +342,44 @@ def transform_slider(x):
     return 10 ** x
 
 
-def get_range_slider_keywords(df, column="N_alignments", do_log=True, N_steps=100):
+def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
 
-    if do_log:
+    if column == "N_alignments":
 
-        N_alignments_log = np.log10(df[column])
-        N_alignments_min = np.floor(N_alignments_log.min())
-        N_alignments_max = np.ceil(N_alignments_log.max())
+        range_log = np.log10(df[column])
+        range_min = np.floor(range_log.min())
+        range_max = np.ceil(range_log.max())
 
-        marks_steps = np.arange(N_alignments_min, N_alignments_max + 1)
+        marks_steps = np.arange(range_min, range_max + 1)
         f = lambda x: utils.human_format(transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
-    else:
+        # marks[marks_steps[0]] = "Minimum"
+        # marks[marks_steps[-1]] = "No Maximum"
+        marks[marks_steps[0]] = {"label": "No Minimum", "style": {"color": "#a3ada9"}}
+        marks[marks_steps[-1]] = {"label": "No Maximum", "style": {"color": "#a3ada9"}}
 
-        N_alignments = np.log10(df[column])
-        N_alignments_min = float(N_alignments.min())
-        N_alignments_max = float(N_alignments.max())
-        marks = (
-            {
-                N_alignments_min: str(N_alignments_min),
-                N_alignments_max: str(N_alignments_max),
-            },
-        )
+    elif column == "D_max":
+        range_min = 0.0
+        range_max = 1.0
+        marks = {
+            # 0: "0.0",
+            0.25: "0.25",
+            0.5: "0.5",
+            0.75: "0.75",
+            # 1: "1.0",
+        }
+        marks[0] = {"label": "No Minimum", "style": {"color": "#a3ada9"}}
+        marks[1] = {"label": "No Maximum", "style": {"color": "#a3ada9"}}
 
-    step = (N_alignments_max - N_alignments_min) / N_steps
-
-    marks[marks_steps[0]] = "No Minimum"
-    marks[marks_steps[-1]] = "No Maximum"
+    step = (range_max - range_min) / N_steps
 
     return dict(
-        min=N_alignments_min,
-        max=N_alignments_max,
+        min=range_min,
+        max=range_max,
         step=step,
         marks=marks,
-        value=[N_alignments_min, N_alignments_max],
+        value=[range_min, range_max],
         allowCross=False,
         updatemode="mouseup",
         included=True,
@@ -377,6 +403,60 @@ app = dash.Dash(
 )
 
 
+range_slider_N_alignments = html.Div(
+    [
+        dcc.RangeSlider(
+            id="range-slider-N-alignments",
+            **get_range_slider_keywords(
+                fit_results.df,
+                column="N_alignments",
+                N_steps=100,
+            ),
+        ),
+    ],
+    style={"marginBottom": "1.5em"},
+)
+
+range_slider_D_max = html.Div(
+    [
+        dcc.RangeSlider(
+            id="range-slider-D-max",
+            **get_range_slider_keywords(
+                fit_results.df,
+                column="D_max",
+                N_steps=100,
+            ),
+        ),
+    ],
+)
+
+filter_N_alignments = dbc.Row(
+    [
+        dbc.Col(dcc.Markdown(id="range-slider-N-alignments-output")),
+        dbc.Col(range_slider_N_alignments, width=9),
+    ],
+    justify="start",
+)
+
+filter_D_max = dbc.Row(
+    [
+        dbc.Col(dcc.Markdown(id="range-slider-D-max-output")),
+        dbc.Col(range_slider_D_max, width=9),
+    ],
+    justify="start",
+)
+
+
+filters = dbc.Card(
+    [
+        html.H3("Filters", className="card-title"),
+        html.Br(),
+        filter_N_alignments,
+        filter_D_max,
+    ],
+    body=True,
+)
+
 app.layout = dbc.Container(
     [
         dcc.Store(id="store"),
@@ -392,19 +472,64 @@ app.layout = dbc.Container(
             id="tabs",
             active_tab="fig_fit_results",
         ),
-        html.Div(id="tab-content", className="p-4"),
-        html.Hr(),
-        html.Div(id="range-slider-N-alignments-output"),
-        dcc.RangeSlider(
-            id="range-slider-N-alignments",
-            **get_range_slider_keywords(
-                fit_results.df,
-                column="N_alignments",
-                do_log=True,
-                N_steps=100,
-            ),
+        html.Br(),
+        dbc.Row(
+            [
+                dbc.Col(filters, md=4),
+                # dbc.Col(html.Div(id="tab-content", className="p-4")),
+                dbc.Col(html.Div(id="tab-content"), md=8),
+            ]
         ),
-    ]
+        # html.Div(id="tab-content", className="p-4"),
+        # filters,
+        # dbc.Row([dbc.Col(filters)]),
+        # dbc.Row(
+        #     [
+        #         dbc.Col(filters, md=4),
+        #         # dbc.Col(dcc.Graph(id="cluster-graph"), md=8),
+        #     ],
+        #     align="center",
+        # ),
+        # dbc.Row(filter_D_max),
+        # html.Div(id="range-slider-N-alignments-output"),
+        # [
+        #     dbc.Col(dcc.Markdown(id="range-slider-N-alignments-output"), width=3),
+        #     dbc.Col(
+        #         html.Div(
+        #             [
+        #                 dcc.RangeSlider(
+        #                     id="range-slider-N-alignments",
+        #                     **get_range_slider_keywords(
+        #                         fit_results.df,
+        #                         column="N_alignments",
+        #                         N_steps=100,
+        #                     ),
+        #                 )
+        #             ],
+        #             style={"marginBottom": "1.5em"},
+        #         ),
+        #         width=12 - 3,
+        #     ),
+        # ],
+        # ),
+        # html.Br(),
+        # [
+        #     dbc.Col(dcc.Markdown(id="range-slider-D-max-output"), width=3),
+        #     dbc.Col(
+        #         dcc.RangeSlider(
+        #             id="range-slider-D-max",
+        #             **get_range_slider_keywords(
+        #                 fit_results.df,
+        #                 column="D_max",
+        #                 N_steps=100,
+        #             ),
+        #         ),
+        #         width=12 - 3,
+        #     ),
+        # ],
+        # ),
+    ],
+    fluid=True,
 )
 
 
@@ -412,12 +537,32 @@ app.layout = dbc.Container(
     Output("range-slider-N-alignments-output", "children"),
     [Input("range-slider-N-alignments", "value")],
 )
-def update_output(slider_range):
+def update_markdown_N_alignments(slider_range):
     low, high = slider_range
-    if True:
-        low = transform_slider(low)
-        high = transform_slider(high)
-    return f"Number of alignments interval: [{utils.human_format(low)}, {utils.human_format(high)}]"
+    low = transform_slider(low)
+    high = transform_slider(high)
+
+    # https://tex-image-link-generator.herokuapp.com/
+    latex = (
+        r"![\large N_\mathrm{alignments}](https://render.githubusercontent.com/render/"
+        + r"math?math=%5Cdisplaystyle+%5Clarge+N_%5Cmathrm%7Balignments%7D)"
+    )
+    return latex + f": \[{utils.human_format(low)}, {utils.human_format(high)}\]"
+
+
+@app.callback(
+    Output("range-slider-D-max-output", "children"),
+    [Input("range-slider-D-max", "value")],
+)
+def update_markdown_D_max(slider_range):
+    low, high = slider_range
+
+    # https://tex-image-link-generator.herokuapp.com/
+    latex = (
+        r"![\large D_\mathrm{max}](https://render.githubusercontent.com/render/"
+        + r"math?math=%5Cdisplaystyle+%5Clarge+D_%5Cmathrm%7Bmax%7D)"
+    )
+    return latex + f": \[{low:.2f}, {high:.2f}\]"
 
 
 @app.callback(
@@ -442,20 +587,44 @@ def render_tab_content(active_tab, data):
 
 @app.callback(
     Output("store", "data"),
-    [Input("range-slider-N-alignments", "value")],
+    [
+        Input("range-slider-N-alignments", "value"),
+        Input("range-slider-D-max", "value"),
+    ],
 )
-def generate_all_figures(slider_N_alignments):
+def generate_all_figures(slider_N_alignments, slider_D_max):
     """
     This callback generates the three graphs (figures) based on the filter
     and stores in the DCC store for faster change of tabs.
     """
-    df_filtered = fit_results.filter_N_alignments(slider_N_alignments)
-
-    fig_fit_results = create_fit_results_figure(df_filtered, width=1200, height=700)
-    fig_histograms = create_histograms_figure(df_filtered, width=1200, height=700)
-    fig_scatter_matrix = create_scatter_matrix_figure(
-        df_filtered, width=1200, height=700
+    df_filtered = fit_results.filter(
+        {
+            "N_alignments": slider_N_alignments,
+            "D_max": slider_D_max,
+        }
     )
+
+    height = 800
+    width = 1100
+
+    fig_fit_results = create_fit_results_figure(
+        df_filtered,
+        width=width,
+        height=height,
+    )
+    fig_histograms = create_histograms_figure(
+        df_filtered,
+        width=width,
+        height=height,
+    )
+    fig_scatter_matrix = create_scatter_matrix_figure(
+        df_filtered,
+        width=width,
+        height=height,
+    )
+
+    # print(fit_results.cmap)
+    # print(fit_results.d_cmap)
 
     # fig_fit_results['layout']['uirevision'] = True
 
