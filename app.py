@@ -2,7 +2,6 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import plotly.express as px
 
 # Scientific Library
 import numpy as np
@@ -15,6 +14,11 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
 from metadamage import utils
+
+#%%
+
+external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
+
 
 #%%
 
@@ -365,10 +369,15 @@ def get_log_range_slider(df, column="N_alignments"):
     return slider
 
 
+def is_ipython():
+    return hasattr(__builtins__, "__IPYTHON__")
+
+
 #%%
 
 app = dash.Dash(
     __name__,
+    external_stylesheets=external_stylesheets,
     external_scripts=[
         "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/"
         "MathJax.js?config=TeX-MML-AM_CHTML",
@@ -377,16 +386,23 @@ app = dash.Dash(
 
 app.layout = html.Div(
     [
+        html.H1("Fit Results"),
         dcc.Graph(id="scatter-plot"),
         html.Div(id="log-range-slider-output"),
+        html.Br(),
         get_log_range_slider(fit_results.df, column="N_alignments"),
-    ]
+    ],
+    style={
+        "width": "80%",
+        "marginLeft": 20,
+        "marginRight": 20,
+    },
 )
 
 
 @app.callback(
     Output("log-range-slider-output", "children"),
-    Input("log-range-slider", "value"),
+    [Input("log-range-slider", "value")],
 )
 def update_output(slider_range):
     low, high = slider_range
@@ -406,12 +422,12 @@ def update_figure(slider_N_alignments):
 
     df_cutted = fit_results.cut_N_alignments(slider_N_alignments)
 
-    # fig = create_fit_results_figure(df_cutted)
-    fig = create_scatter_matrix_figure(df_cutted)
+    fig = create_fit_results_figure(df_cutted)
+    # fig = create_scatter_matrix_figure(df_cutted)
     # fig = plot_histograms(df_cutted)
 
     return fig
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and not is_ipython():
     app.run_server(debug=True)
