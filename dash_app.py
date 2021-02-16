@@ -403,58 +403,83 @@ app = dash.Dash(
 )
 
 
-range_slider_N_alignments = html.Div(
-    [
-        dcc.RangeSlider(
-            id="range-slider-N-alignments",
-            **get_range_slider_keywords(
-                fit_results.df,
-                column="N_alignments",
-                N_steps=100,
+card_D_max = dbc.Card(
+    html.Div(
+        [
+            dbc.Row(
+                dcc.Markdown(id="range-slider-D-max-output"),
+                justify="center",
             ),
-        ),
-    ],
-    style={"marginBottom": "1.5em"},
-)
-
-range_slider_D_max = html.Div(
-    [
-        dcc.RangeSlider(
-            id="range-slider-D-max",
-            **get_range_slider_keywords(
-                fit_results.df,
-                column="D_max",
-                N_steps=100,
+            dbc.Row(
+                dbc.Col(
+                    dcc.RangeSlider(
+                        id="range-slider-D-max",
+                        **get_range_slider_keywords(
+                            fit_results.df,
+                            column="D_max",
+                            N_steps=100,
+                        ),
+                    ),
+                ),
+                justify="center",
             ),
-        ),
-    ],
+        ],
+        style={
+            "marginBottom": "1em",
+            "marginTop": "0.5em",
+            "marginLeft": "0.7em",
+            "marginRight": "0.7em",
+        },
+    ),
+    outline=True,
+    color="white",
+    # className="w-100",
 )
 
-filter_N_alignments = dbc.Row(
-    [
-        dbc.Col(dcc.Markdown(id="range-slider-N-alignments-output")),
-        dbc.Col(range_slider_N_alignments, width=9),
-    ],
-    justify="start",
-)
-
-filter_D_max = dbc.Row(
-    [
-        dbc.Col(dcc.Markdown(id="range-slider-D-max-output")),
-        dbc.Col(range_slider_D_max, width=9),
-    ],
-    justify="start",
+card_N_alignments = dbc.Card(
+    html.Div(
+        [
+            dbc.Row(
+                dcc.Markdown(id="range-slider-N-alignments-output"),
+                justify="center",
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dcc.RangeSlider(
+                        id="range-slider-N-alignments",
+                        **get_range_slider_keywords(
+                            fit_results.df,
+                            column="N_alignments",
+                            N_steps=100,
+                        ),
+                    ),
+                ),
+                justify="center",
+            ),
+        ],
+        style={
+            "marginBottom": "1em",
+            "marginTop": "0.5em",
+            "marginLeft": "0.7em",
+            "marginRight": "0.7em",
+        },
+    ),
+    outline=True,
+    color="white",
+    # className="w-100",
 )
 
 
 filters = dbc.Card(
     [
-        html.H3("Filters", className="card-title"),
         html.Br(),
-        filter_N_alignments,
-        filter_D_max,
+        html.H3("Filters", className="card-title"),
+        card_N_alignments,
+        card_D_max,
     ],
-    body=True,
+    body=True,  # spacing before border
+    outline=True,
+    color="white",
 )
 
 app.layout = dbc.Container(
@@ -476,58 +501,10 @@ app.layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(filters, md=4),
-                # dbc.Col(html.Div(id="tab-content", className="p-4")),
                 dbc.Col(html.Div(id="tab-content"), md=8),
             ]
         ),
-        # html.Div(id="tab-content", className="p-4"),
-        # filters,
-        # dbc.Row([dbc.Col(filters)]),
-        # dbc.Row(
-        #     [
-        #         dbc.Col(filters, md=4),
-        #         # dbc.Col(dcc.Graph(id="cluster-graph"), md=8),
-        #     ],
-        #     align="center",
-        # ),
-        # dbc.Row(filter_D_max),
-        # html.Div(id="range-slider-N-alignments-output"),
-        # [
-        #     dbc.Col(dcc.Markdown(id="range-slider-N-alignments-output"), width=3),
-        #     dbc.Col(
-        #         html.Div(
-        #             [
-        #                 dcc.RangeSlider(
-        #                     id="range-slider-N-alignments",
-        #                     **get_range_slider_keywords(
-        #                         fit_results.df,
-        #                         column="N_alignments",
-        #                         N_steps=100,
-        #                     ),
-        #                 )
-        #             ],
-        #             style={"marginBottom": "1.5em"},
-        #         ),
-        #         width=12 - 3,
-        #     ),
-        # ],
-        # ),
-        # html.Br(),
-        # [
-        #     dbc.Col(dcc.Markdown(id="range-slider-D-max-output"), width=3),
-        #     dbc.Col(
-        #         dcc.RangeSlider(
-        #             id="range-slider-D-max",
-        #             **get_range_slider_keywords(
-        #                 fit_results.df,
-        #                 column="D_max",
-        #                 N_steps=100,
-        #             ),
-        #         ),
-        #         width=12 - 3,
-        #     ),
-        # ],
-        # ),
+        # card_D_max,
     ],
     fluid=True,
 )
