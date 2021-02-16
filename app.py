@@ -1,5 +1,6 @@
 import dash
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
@@ -76,7 +77,7 @@ class FitResults:
                 pass
         return ranges
 
-    def cut_N_alignments(self, slider_N_alignments):
+    def filter_N_alignments(self, slider_N_alignments):
         low, high = slider_N_alignments
         low = transform_slider(low)
         high = transform_slider(high)
@@ -162,10 +163,10 @@ fit_results = FitResults()
 #%%
 
 
-def create_fit_results_figure(df_cutted):
+def create_fit_results_figure(df_filtered, width=1200, height=700):
 
     fig = px.scatter(
-        df_cutted,
+        df_filtered,
         x="n_sigma",
         y="D_max",
         size="N_alignments_sqrt",
@@ -182,54 +183,13 @@ def create_fit_results_figure(df_cutted):
     fig.update_traces(hovertemplate=fit_results.hovertemplate, marker_line_width=0)
 
     fig.update_layout(
-        title=f"Fit Results",
+        font_size=16,
         xaxis_title=r"$\Large n_\sigma$",
         yaxis_title=r"$\Large D_\mathrm{max}$",
-        font_size=16,
+        title=dict(text="Fit Results", font_size=30),
         legend=dict(title="Files", title_font_size=20, font_size=16),
-        width=1600,
-        height=800,
-    )
-
-    return fig
-
-
-#%%
-
-
-def create_scatter_matrix_figure(df_cutted):
-
-    fig = px.scatter_matrix(
-        df_cutted,
-        dimensions=fit_results.dimensions,
-        color="name",
-        hover_name="name",
-        size_max=10,
-        color_discrete_sequence=fit_results.cmap,
-        labels=fit_results.labels,
-        opacity=0.1,
-        custom_data=fit_results.custom_data_columns,
-    )
-
-    fig.update_traces(
-        diagonal_visible=False,
-        showupperhalf=False,
-        hovertemplate=fit_results.hovertemplate,
-    )
-
-    # manually set ranges for scatter matrix
-    iterator = enumerate(fit_results.dimensions)
-    ranges = {i + 1: fit_results.ranges[col] for i, col in iterator}
-    for axis in ["xaxis", "yaxis"]:
-        fig.update_layout({axis + str(k): {"range": v} for k, v in ranges.items()})
-
-    fig.update_layout(
-        title="Scatter Matrix",
-        font_size=12,
-        title_font_size=40,
-        legend=dict(title="Files", title_font_size=20, font_size=16),
-        width=1000 * 1.1,
-        height=800 * 1.1,
+        width=width,
+        height=height,
     )
 
     return fig
@@ -269,7 +229,7 @@ def plotly_histogram(
     return trace, np.max(binned[0])
 
 
-def plot_histograms(df_cutted):
+def create_histograms_figure(df_filtered, width=1200, height=700):
 
     fig = make_subplots(rows=2, cols=4)
 
@@ -277,7 +237,7 @@ def plot_histograms(df_cutted):
 
     for dimension, row, column in fit_results.iterate_over_rows_and_columns():
         highest_y_max = 0
-        for name, group in df_cutted.groupby("name", sort=False):
+        for name, group in df_filtered.groupby("name", sort=False):
             trace, y_max = plotly_histogram(
                 group[dimension],
                 name,
@@ -299,12 +259,11 @@ def plot_histograms(df_cutted):
 
     # Update title and width, height
     fig.update_layout(
-        height=800,
-        width=1600,
+        font_size=12,
         title=dict(text="1D Histograms", font_size=30),
-        legend=dict(
-            title_text="Files", title_font_size=20, font_size=16, tracegroupgap=2
-        ),
+        legend=dict(title="Files", title_font_size=20, font_size=16),
+        width=width,
+        height=height,
     )
 
     return fig
@@ -313,50 +272,80 @@ def plot_histograms(df_cutted):
 #%%
 
 
-def get_range_of_dataframe_column_slider(df, column="N_alignments"):
+def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
 
-    N_alignments_min = float(df[column].min())
-    N_alignments_max = float(df[column].max())
-    N_steps = 1000
-    step = (N_alignments_max - N_alignments_min) / N_steps
-
-    slider = dcc.RangeSlider(
-        id="range-slider",
-        min=N_alignments_min,
-        max=N_alignments_max,
-        step=step,
-        marks={
-            N_alignments_min: str(N_alignments_min),
-            N_alignments_max: str(N_alignments_max),
-        },
-        value=[N_alignments_min, N_alignments_max],
-        allowCross=False,
-        updatemode="mouseup",
-        included=True,
+    fig = px.scatter_matrix(
+        df_filtered,
+        dimensions=fit_results.dimensions,
+        color="name",
+        hover_name="name",
+        size_max=10,
+        color_discrete_sequence=fit_results.cmap,
+        labels=fit_results.labels,
+        opacity=0.1,
+        custom_data=fit_results.custom_data_columns,
     )
-    return slider
+
+    fig.update_traces(
+        diagonal_visible=False,
+        showupperhalf=False,
+        hovertemplate=fit_results.hovertemplate,
+    )
+
+    # manually set ranges for scatter matrix
+    iterator = enumerate(fit_results.dimensions)
+    ranges = {i + 1: fit_results.ranges[col] for i, col in iterator}
+    for axis in ["xaxis", "yaxis"]:
+        fig.update_layout({axis + str(k): {"range": v} for k, v in ranges.items()})
+
+    fig.update_layout(
+        font_size=12,
+        title=dict(text="Scatter Matrix", font_size=30),
+        legend=dict(title="Files", title_font_size=20, font_size=16),
+        width=width,
+        height=height,
+    )
+
+    return fig
+
+
+#%%
 
 
 def transform_slider(x):
     return 10 ** x
 
 
-def get_log_range_slider(df, column="N_alignments"):
+def get_range_slider_keywords(df, column="N_alignments", do_log=True, N_steps=100):
 
-    N_alignments_log = np.log10(df[column])
+    if do_log:
 
-    N_alignments_min = np.floor(N_alignments_log.min())
-    N_alignments_max = np.ceil(N_alignments_log.max())
-    N_steps = 100
+        N_alignments_log = np.log10(df[column])
+        N_alignments_min = np.floor(N_alignments_log.min())
+        N_alignments_max = np.ceil(N_alignments_log.max())
+
+        marks_steps = np.arange(N_alignments_min, N_alignments_max + 1)
+        f = lambda x: utils.human_format(transform_slider(x))
+        marks = {int(i): f"{f(i)}" for i in marks_steps}
+
+    else:
+
+        N_alignments = np.log10(df[column])
+        N_alignments_min = float(N_alignments.min())
+        N_alignments_max = float(N_alignments.max())
+        marks = (
+            {
+                N_alignments_min: str(N_alignments_min),
+                N_alignments_max: str(N_alignments_max),
+            },
+        )
+
     step = (N_alignments_max - N_alignments_min) / N_steps
 
-    marks_steps = np.arange(N_alignments_min, N_alignments_max + 1)
-    marks = {int(i): f"{utils.human_format(transform_slider(i))}" for i in marks_steps}
     marks[marks_steps[0]] = "No Minimum"
     marks[marks_steps[-1]] = "No Maximum"
 
-    slider = dcc.RangeSlider(
-        id="log-range-slider",
+    return dict(
         min=N_alignments_min,
         max=N_alignments_max,
         step=step,
@@ -366,7 +355,6 @@ def get_log_range_slider(df, column="N_alignments"):
         updatemode="mouseup",
         included=True,
     )
-    return slider
 
 
 def is_ipython():
@@ -375,58 +363,105 @@ def is_ipython():
 
 #%%
 
+
 app = dash.Dash(
     __name__,
-    external_stylesheets=external_stylesheets,
+    external_stylesheets=[dbc.themes.COSMO],
     external_scripts=[
         "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/"
         "MathJax.js?config=TeX-MML-AM_CHTML",
     ],
 )
 
-app.layout = html.Div(
+
+app.layout = dbc.Container(
     [
-        html.H1("Fit Results"),
-        dcc.Graph(id="scatter-plot"),
-        html.Div(id="log-range-slider-output"),
+        dcc.Store(id="store"),
         html.Br(),
-        get_log_range_slider(fit_results.df, column="N_alignments"),
-    ],
-    style={
-        "width": "80%",
-        "marginLeft": 20,
-        "marginRight": 20,
-    },
+        html.H1("Fit Results"),
+        html.Hr(),
+        dbc.Tabs(
+            [
+                dbc.Tab(label="Overview", tab_id="fig_fit_results"),
+                dbc.Tab(label="Histograms", tab_id="histograms"),
+                dbc.Tab(label="Scatter Matrix", tab_id="scatter-matrix"),
+            ],
+            id="tabs",
+            active_tab="fig_fit_results",
+        ),
+        html.Div(id="tab-content", className="p-4"),
+        html.Hr(),
+        html.Div(id="range-slider-output"),
+        dcc.RangeSlider(
+            id="range-slider",
+            **get_range_slider_keywords(
+                fit_results.df,
+                column="N_alignments",
+                do_log=True,
+                N_steps=100,
+            ),
+        ),
+    ]
 )
 
 
 @app.callback(
-    Output("log-range-slider-output", "children"),
-    [Input("log-range-slider", "value")],
+    Output("range-slider-output", "children"),
+    [Input("range-slider", "value")],
 )
 def update_output(slider_range):
     low, high = slider_range
-    low = transform_slider(low)
-    high = transform_slider(high)
+    if True:
+        low = transform_slider(low)
+        high = transform_slider(high)
     return f"Number of alignments interval: [{utils.human_format(low)}, {utils.human_format(high)}]"
 
 
-#%%
+@app.callback(
+    Output("tab-content", "children"),
+    [Input("tabs", "active_tab"), Input("store", "data")],
+)
+def render_tab_content(active_tab, data):
+    """
+    This callback takes the 'active_tab' property as input, as well as the
+    stored graphs, and renders the tab content depending on what the value of
+    'active_tab' is.
+    """
+    if active_tab and data is not None:
+        if active_tab == "fig_fit_results":
+            return dcc.Graph(figure=data["fig_fit_results"])
+        elif active_tab == "histograms":
+            return dcc.Graph(figure=data["fig_histograms"])
+        elif active_tab == "scatter-matrix":
+            return dcc.Graph(figure=data["fig_scatter_matrix"])
+    return "No tab selected"
 
 
 @app.callback(
-    Output("scatter-plot", "figure"),
-    [Input("log-range-slider", "value")],
+    Output("store", "data"),
+    [Input("range-slider", "value")],
 )
-def update_figure(slider_N_alignments):
+def generate_graphs(slider_N_alignments):
+    """
+    This callback generates the three graphs (figures) based on the filter.
+    """
+    df_filtered = fit_results.filter_N_alignments(slider_N_alignments)
 
-    df_cutted = fit_results.cut_N_alignments(slider_N_alignments)
+    fig_fit_results = create_fit_results_figure(df_filtered, width=1200, height=700)
+    fig_histograms = create_histograms_figure(df_filtered, width=1200, height=700)
+    fig_scatter_matrix = create_scatter_matrix_figure(
+        df_filtered, width=1200, height=700
+    )
 
-    fig = create_fit_results_figure(df_cutted)
-    # fig = create_scatter_matrix_figure(df_cutted)
-    # fig = plot_histograms(df_cutted)
+    # save figures in a dictionary for sending to the dcc.Store
+    return {
+        "fig_fit_results": fig_fit_results,
+        "fig_histograms": fig_histograms,
+        "fig_scatter_matrix": fig_scatter_matrix,
+    }
 
-    return fig
+
+#%%
 
 
 if __name__ == "__main__" and not is_ipython():
