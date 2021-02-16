@@ -190,6 +190,7 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         legend=dict(title="Files", title_font_size=20, font_size=16),
         width=width,
         height=height,
+        uirevision=True,  # important for not reshowing legend after change in slider
     )
 
     return fig
@@ -264,6 +265,7 @@ def create_histograms_figure(df_filtered, width=1200, height=700):
         legend=dict(title="Files", title_font_size=20, font_size=16),
         width=width,
         height=height,
+        uirevision=True,  # important for not reshowing legend after change in slider
     )
 
     return fig
@@ -304,6 +306,7 @@ def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
         legend=dict(title="Files", title_font_size=20, font_size=16),
         width=width,
         height=height,
+        uirevision=True,  # important for not reshowing legend after change in slider
     )
 
     return fig
@@ -383,17 +386,17 @@ app.layout = dbc.Container(
         dbc.Tabs(
             [
                 dbc.Tab(label="Overview", tab_id="fig_fit_results"),
-                dbc.Tab(label="Histograms", tab_id="histograms"),
-                dbc.Tab(label="Scatter Matrix", tab_id="scatter-matrix"),
+                dbc.Tab(label="Histograms", tab_id="fig_histograms"),
+                dbc.Tab(label="Scatter Matrix", tab_id="fig_scatter_matrix"),
             ],
             id="tabs",
             active_tab="fig_fit_results",
         ),
         html.Div(id="tab-content", className="p-4"),
         html.Hr(),
-        html.Div(id="range-slider-output"),
+        html.Div(id="range-slider-N-alignments-output"),
         dcc.RangeSlider(
-            id="range-slider",
+            id="range-slider-N-alignments",
             **get_range_slider_keywords(
                 fit_results.df,
                 column="N_alignments",
@@ -406,8 +409,8 @@ app.layout = dbc.Container(
 
 
 @app.callback(
-    Output("range-slider-output", "children"),
-    [Input("range-slider", "value")],
+    Output("range-slider-N-alignments-output", "children"),
+    [Input("range-slider-N-alignments", "value")],
 )
 def update_output(slider_range):
     low, high = slider_range
@@ -430,20 +433,21 @@ def render_tab_content(active_tab, data):
     if active_tab and data is not None:
         if active_tab == "fig_fit_results":
             return dcc.Graph(figure=data["fig_fit_results"])
-        elif active_tab == "histograms":
+        elif active_tab == "fig_histograms":
             return dcc.Graph(figure=data["fig_histograms"])
-        elif active_tab == "scatter-matrix":
+        elif active_tab == "fig_scatter_matrix":
             return dcc.Graph(figure=data["fig_scatter_matrix"])
     return "No tab selected"
 
 
 @app.callback(
     Output("store", "data"),
-    [Input("range-slider", "value")],
+    [Input("range-slider-N-alignments", "value")],
 )
-def generate_graphs(slider_N_alignments):
+def generate_all_figures(slider_N_alignments):
     """
-    This callback generates the three graphs (figures) based on the filter.
+    This callback generates the three graphs (figures) based on the filter
+    and stores in the DCC store for faster change of tabs.
     """
     df_filtered = fit_results.filter_N_alignments(slider_N_alignments)
 
@@ -452,6 +456,8 @@ def generate_graphs(slider_N_alignments):
     fig_scatter_matrix = create_scatter_matrix_figure(
         df_filtered, width=1200, height=700
     )
+
+    # fig_fit_results['layout']['uirevision'] = True
 
     # save figures in a dictionary for sending to the dcc.Store
     return {
