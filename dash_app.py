@@ -87,7 +87,7 @@ class FitResults:
         self.ranges = ranges
 
     def _set_names(self):
-        self.names = self.df.name.unique()
+        self.names = list(self.df.name.unique())
 
     def filter(self, filters):
         query = ""
@@ -223,11 +223,11 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         width=width,
         height=height,
         uirevision=True,  # important for not reshowing legend after change in slider
+        hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
         # margin=dict(
         #     t=50,  # top margin: 30px
         #     b=20,  # bottom margin: 10px
         # ),
-        hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
     )
 
     return fig
@@ -303,6 +303,7 @@ def create_histograms_figure(df_filtered, width=1200, height=700):
         width=width,
         height=height,
         uirevision=True,  # important for not reshowing legend after change in slider
+        hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
     )
 
     return fig
@@ -346,6 +347,8 @@ def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
         width=width,
         height=height,
         uirevision=True,  # important for not reshowing legend after change in slider
+        hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
+        dragmode="zoom",
     )
 
     return fig
@@ -533,7 +536,7 @@ app.layout = dbc.Container(
 
 @app.callback(
     Output("range-slider-N-alignments-output", "children"),
-    [Input("range-slider-N-alignments", "value")],
+    Input("range-slider-N-alignments", "value"),
 )
 def update_markdown_N_alignments(slider_range):
     low, high = slider_range
@@ -550,7 +553,7 @@ def update_markdown_N_alignments(slider_range):
 
 @app.callback(
     Output("range-slider-D-max-output", "children"),
-    [Input("range-slider-D-max", "value")],
+    Input("range-slider-D-max", "value"),
 )
 def update_markdown_D_max(slider_range):
     low, high = slider_range
@@ -565,7 +568,8 @@ def update_markdown_D_max(slider_range):
 
 @app.callback(
     Output("tab-content", "children"),
-    [Input("tabs", "active_tab"), Input("store", "data")],
+    Input("tabs", "active_tab"),
+    Input("store", "data"),
 )
 def render_tab_content(active_tab, data):
     """
@@ -573,22 +577,34 @@ def render_tab_content(active_tab, data):
     stored graphs, and renders the tab content depending on what the value of
     'active_tab' is.
     """
+
+    config = {
+        "displaylogo": False,
+        "doubleClick": "reset",
+        "showTips": True,
+        "modeBarButtonsToRemove": [
+            "select2d",
+            "lasso2d",
+            "autoScale2d",
+            "hoverClosestCartesian",
+            "hoverCompareCartesian",
+        ],
+    }
+
     if active_tab and data is not None:
         if active_tab == "fig_fit_results":
-            return dcc.Graph(figure=data["fig_fit_results"])
+            return dcc.Graph(figure=data["fig_fit_results"], config=config)
         elif active_tab == "fig_histograms":
-            return dcc.Graph(figure=data["fig_histograms"])
+            return dcc.Graph(figure=data["fig_histograms"], config=config)
         elif active_tab == "fig_scatter_matrix":
-            return dcc.Graph(figure=data["fig_scatter_matrix"])
+            return dcc.Graph(figure=data["fig_scatter_matrix"], config=config)
     return "No tab selected"
 
 
 @app.callback(
     Output("store", "data"),
-    [
-        Input("range-slider-N-alignments", "value"),
-        Input("range-slider-D-max", "value"),
-    ],
+    Input("range-slider-N-alignments", "value"),
+    Input("range-slider-D-max", "value"),
 )
 def generate_all_figures(slider_N_alignments, slider_D_max):
     """
@@ -637,12 +653,5 @@ if __name__ == "__main__" and not is_ipython():
 
 #%%
 
-df = fit_results.df
-
-
-#
-
-# s = "1234577889abcdefg"
-# print(f"{s[:5]:>10}")
-# print(f"{s[:10]:>10}")
-# # %%
+# df = fit_results.df
+# fit_results.names
