@@ -1,20 +1,25 @@
-import dash
-import dash_core_components as dcc
-import dash_bootstrap_components as dbc
-import dash_html_components as html
-from dash.dependencies import Input, Output
-
 # Scientific Library
 import numpy as np
 import pandas as pd
+
+# Standard Library
 from pathlib import Path
+from threading import Timer
+import webbrowser
 
-# import plotly as py
+# Third Party
+import dash
+from dash.dependencies import Input, Output
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import dash_html_components as html
 import plotly.express as px
-from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
+# First Party
 from metadamage import utils
+
 
 #%%
 
@@ -390,6 +395,10 @@ def is_ipython():
     return hasattr(__builtins__, "__IPYTHON__")
 
 
+def open_browser():
+    webbrowser.open_new("http://localhost:8050")
+
+
 #%%
 
 
@@ -600,11 +609,6 @@ def generate_all_figures(slider_N_alignments, slider_D_max):
         height=height,
     )
 
-    # print(fit_results.cmap)
-    # print(fit_results.d_cmap)
-
-    # fig_fit_results['layout']['uirevision'] = True
-
     # save figures in a dictionary for sending to the dcc.Store
     return {
         "fig_fit_results": fig_fit_results,
@@ -615,6 +619,6 @@ def generate_all_figures(slider_N_alignments, slider_D_max):
 
 #%%
 
-
 if __name__ == "__main__" and not is_ipython():
+    Timer(1, open_browser).start()
     app.run_server(debug=True)

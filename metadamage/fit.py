@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# from jax.scipy.special import logsumexp
+from scipy.special import logsumexp
+
 # Standard Library
 import logging
 from multiprocessing import current_process, Manager, Pool, Process, Queue
@@ -12,9 +15,6 @@ import os
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKey as Key
-
-# from jax.scipy.special import logsumexp
-from scipy.special import logsumexp
 from joblib import delayed, Parallel
 import numpyro
 from numpyro import distributions as dist
@@ -264,6 +264,9 @@ def compute_fit_results(
     fit_result["N_sum_forward"] = data["N"][:15].sum()
     fit_result["N_sum_reverse"] = data["N"][15:].sum()
     fit_result["N_sum_total"] = data["N"].sum()
+
+    fit_result["tax_name"] = group["name"].iloc[0]
+    fit_result["tax_rank"] = group["rank"].iloc[0]
 
     add_assymetry_results_to_fit_results(
         mcmc_PMD_forward_reverse,
