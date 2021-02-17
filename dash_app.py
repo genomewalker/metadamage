@@ -490,19 +490,42 @@ card_N_alignments = dbc.Card(
     ),
     outline=True,
     color="white",
-    # className="w-100",
+)
+
+dropdown = dcc.Dropdown(
+    id="dropdown",
+    options=[{"label": name, "value": name} for name in fit_results.names],
+    multi=True,
+    placeholder="Select files to plot",
 )
 
 
-filters = dbc.Card(
+dropdown_card = dbc.Card(
     [
-        html.Br(),
+        html.H3("File Selection", className="card-title"),
+        dropdown,
+    ],
+    body=True,  # spacing before border
+)
+
+filters_card = dbc.Card(
+    [
         html.H3("Filters", className="card-title"),
         card_N_alignments,
         card_D_max,
     ],
     body=True,  # spacing before border
-    outline=True,
+)
+
+left_column_filters_and_dropdown = dbc.Card(
+    [
+        html.Br(),
+        dropdown_card,
+        html.Br(),
+        filters_card,
+    ],
+    body=True,  # spacing before border
+    outline=True,  # together with color, makes a transparent/white border
     color="white",
 )
 
@@ -524,11 +547,10 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(
             [
-                dbc.Col(filters, md=4),
+                dbc.Col(left_column_filters_and_dropdown, md=4),
                 dbc.Col(html.Div(id="tab-content"), md=8),
             ]
         ),
-        # card_D_max,
     ],
     fluid=True,
 )
@@ -652,6 +674,3 @@ if __name__ == "__main__" and not is_ipython():
     app.run_server(debug=True)
 
 #%%
-
-# df = fit_results.df
-# fit_results.names
