@@ -31,17 +31,21 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 class FitResults:
     def __init__(self):
-        self.df = self.load_df_fit_results()
-        self.columns = list(self.df.columns)
-        self.ranges = self.compute_ranges()
+        self._load_df_fit_results()
+        self._compute_ranges()
         self._set_cmap()
         self._set_hover_info()
         self._set_dimensions()
         self._set_labels()
+        self._set_names()
 
-    def load_df_fit_results(self):
+    def _load_df_fit_results(self):
 
-        input_files = list(Path("").rglob("./data/fits/*.csv"))
+        input_folder = "./data/fits"
+        input_files = list(Path("").rglob(f"{input_folder}/*.csv"))
+
+        if len(input_files) == 0:
+            raise AssertionError(f"No csv files (fit results) found in {input_folder}.")
 
         dfs = []
         for file in input_files:
@@ -56,15 +60,15 @@ class FitResults:
         df = pd.concat(dfs, axis=0, ignore_index=True)
         df["N_alignments_log10"] = np.log10(df["N_alignments"])
         df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-        df["N_alignments_str"] = df.apply(
-            lambda row: utils.human_format(row["N_alignments"]), axis=1
-        )
+        # df["N_alignments_str"] = df.apply(
+        # lambda row: utils.human_format(row["N_alignments"]), axis=1
+        # )
         df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
-        df["N_sum_total_str"] = df.apply(
-            lambda row: utils.human_format(row["N_sum_total"]), axis=1
-        )
-
-        return df
+        # df["N_sum_total_str"] = df.apply(
+        # lambda row: utils.human_format(row["N_sum_total"]), axis=1
+        # )
+        self.df = df
+        self.columns = list(self.df.columns)
 
     def _get_range_of_column(self, column, spacing=20):
         range_min = self.df[column].min()
@@ -73,24 +77,17 @@ class FitResults:
         ranges = [range_min - delta / spacing, range_max + delta / spacing]
         return ranges
 
-    def compute_ranges(self, spacing=40):
+    def _compute_ranges(self, spacing=40):
         ranges = {}
         for column in self.columns:
             try:
                 ranges[column] = self._get_range_of_column(column, spacing=spacing)
             except TypeError:
                 pass
-        return ranges
+        self.ranges = ranges
 
-    def filter_N_alignments(self, slider_N_alignments):
-        low, high = slider_N_alignments
-        low = transform_slider(low)
-        high = transform_slider(high)
-        return self.df.query(f"{low} <= N_alignments <= {high}")
-
-    def filter_D_max(self, slider_D_max):
-        low, high = slider_D_max
-        return self.df.query(f"{low} <= D_max <= {high}")
+    def _set_names(self):
+        self.names = self.df.name.unique()
 
     def filter(self, filters):
         query = ""
@@ -117,20 +114,36 @@ class FitResults:
 
         self.custom_data_columns = [
             "name",
+            "tax_name",
+            "tax_rank",
             "taxid",
             "n_sigma",
             "D_max",
-            "N_alignments_str",
-            "N_sum_total_str",
+            "q_mean",
+            "concentration_mean",
+            "asymmetry",
+            "normalized_noise",
+            "N_alignments",
+            "N_sum_total",
         ]
 
         self.hovertemplate = (
             "<b>%{customdata[0]}</b><br><br>"
-            "taxid: %{customdata[1]}<br>"
-            "<br>n sigma: %{customdata[2]:5.2f}<br>"
-            "D max:    %{customdata[3]:.2f}<br>"
-            "<br>N alignments: %{customdata[4]}<br>"
-            "N sum total:   %{customdata[5]}<br>"
+            # "<i>Tax</i>:<br>"
+            "<b>Tax</b>: <br>"
+            "    Name: %{customdata[1]} <br>"
+            "    Rank: %{customdata[2]} <br>"
+            "    ID:   %{customdata[3]} <br><br>"
+            "<b>Fit Results</b>: <br>"
+            "    n sigma:  %{customdata[4]:9.2f} <br>"
+            "    D max:    %{customdata[5]:9.2f} <br>"
+            "    q:        %{customdata[6]:9.2f} <br>"
+            "    phi:      %{customdata[7]:9.3s} <br>"
+            "    asymmetry:%{customdata[8]:9.2f} <br>"
+            "    noise:    %{customdata[9]:9.2f} <br><br>"
+            "<b>Counts</b>: <br>"
+            "    N alignments:%{customdata[10]:6.3s} <br>"
+            "    N sum total: %{customdata[11]:6.3s} <br>"
             "<extra></extra>"
         )
 
@@ -193,9 +206,7 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         hover_name="name",
         size_max=30,
         opacity=0.2,
-        # color_discrete_sequence=fit_results.cmap,
         color_discrete_map=fit_results.d_cmap,
-        # category_orders={"name": list(fit_results.d_cmap.keys())},
         custom_data=fit_results.custom_data_columns,
         range_x=fit_results.ranges["n_sigma"],
         range_y=[0, 1],
@@ -212,11 +223,11 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         width=width,
         height=height,
         uirevision=True,  # important for not reshowing legend after change in slider
-        margin=dict(
-            t=50,  # top margin: 30px, you want to leave around 30 pixels to
-            # display the modebar above the graph.
-            b=20,  # bottom margin: 10px
-        ),
+        # margin=dict(
+        #     t=50,  # top margin: 30px
+        #     b=20,  # bottom margin: 10px
+        # ),
+        hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
     )
 
     return fig
@@ -396,7 +407,8 @@ def is_ipython():
 
 
 def open_browser():
-    webbrowser.open_new("http://localhost:8050")
+    # webbrowser.open_new("http://localhost:8050")
+    webbrowser.open("http://localhost:8050")
 
 
 #%%
@@ -620,5 +632,17 @@ def generate_all_figures(slider_N_alignments, slider_D_max):
 #%%
 
 if __name__ == "__main__" and not is_ipython():
-    Timer(1, open_browser).start()
+    # Timer(1, open_browser).start()
     app.run_server(debug=True)
+
+#%%
+
+df = fit_results.df
+
+
+#
+
+# s = "1234577889abcdefg"
+# print(f"{s[:5]:>10}")
+# print(f"{s[:10]:>10}")
+# # %%
