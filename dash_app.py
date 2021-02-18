@@ -92,12 +92,23 @@ class FitResults:
     def filter(self, filters):
         query = ""
         for dimension, filter in filters.items():
-            low, high = filter
-            if dimension == "N_alignments":
-                low = transform_slider(low)
-                high = transform_slider(high)
-            query += f"({low} <= {dimension} <= {high}) & "
-        return self.df.query(query[:-2])
+
+            if filter is None:
+                continue
+
+            elif dimension == "names":
+                query += f"(name in {filter}) & "
+
+            else:
+                low, high = filter
+                if dimension == "N_alignments":
+                    low = transform_slider(low)
+                    high = transform_slider(high)
+                query += f"({low} <= {dimension} <= {high}) & "
+
+        query = query[:-2]
+        # print(query)
+        return self.df.query(query)
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
@@ -222,8 +233,10 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         legend=dict(title="Files", title_font_size=20, font_size=16),
         width=width,
         height=height,
-        uirevision=True,  # important for not reshowing legend after change in slider
+        # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
+        # yaxis_autorange=False,
+        # yaxis_range=[0, 1],
         # margin=dict(
         #     t=50,  # top margin: 30px
         #     b=20,  # bottom margin: 10px
@@ -302,7 +315,7 @@ def create_histograms_figure(df_filtered, width=1200, height=700):
         legend=dict(title="Files", title_font_size=20, font_size=16),
         width=width,
         height=height,
-        uirevision=True,  # important for not reshowing legend after change in slider
+        # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
     )
 
@@ -346,11 +359,35 @@ def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
         legend=dict(title="Files", title_font_size=20, font_size=16),
         width=width,
         height=height,
-        uirevision=True,  # important for not reshowing legend after change in slider
+        # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
         dragmode="zoom",
     )
 
+    return fig
+
+
+#%%
+
+
+def create_empty_figures(width, height):
+    fig = go.Figure()
+
+    fig.add_annotation(
+        xref="x domain",
+        yref="y domain",
+        x=0.5,
+        y=0.5,
+        text="Please select some files to plot",
+        showarrow=False,
+    )
+
+    fig.update_layout(
+        xaxis_visible=False,
+        yaxis_visible=False,
+        width=width,
+        height=height,
+    )
     return fig
 
 
@@ -415,17 +452,6 @@ def open_browser():
 
 
 #%%
-
-
-app = dash.Dash(
-    __name__,
-    external_stylesheets=[dbc.themes.COSMO],
-    external_scripts=[
-        "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/"
-        "MathJax.js?config=TeX-MML-AM_CHTML",
-    ],
-)
-
 
 card_D_max = dbc.Card(
     html.Div(
@@ -495,6 +521,7 @@ card_N_alignments = dbc.Card(
 dropdown = dcc.Dropdown(
     id="dropdown",
     options=[{"label": name, "value": name} for name in fit_results.names],
+    value=fit_results.names[:10],
     multi=True,
     placeholder="Select files to plot",
 )
@@ -529,6 +556,35 @@ left_column_filters_and_dropdown = dbc.Card(
     color="white",
 )
 
+#%%
+
+config = {
+    "displaylogo": False,
+    "doubleClick": "reset",
+    "showTips": True,
+    "modeBarButtonsToRemove": [
+        "select2d",
+        "lasso2d",
+        "autoScale2d",
+        "hoverClosestCartesian",
+        "hoverCompareCartesian",
+        "toggleSpikelines",
+    ],
+}
+
+#%%
+
+app = dash.Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.COSMO],
+    external_scripts=[
+        "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/"
+        "MathJax.js?config=TeX-MML-AM_CHTML",
+    ],
+)
+
+# config = {"doubleClick": "reset"}
+
 app.layout = dbc.Container(
     [
         dcc.Store(id="store"),
@@ -548,8 +604,9 @@ app.layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(left_column_filters_and_dropdown, md=4),
-                dbc.Col(html.Div(id="tab-content"), md=8),
-            ]
+                # this has to be a div for "reset axis" to work properly
+                dbc.Col(html.Div(id="tab_figure"), md=8),
+            ],
         ),
     ],
     fluid=True,
@@ -570,7 +627,7 @@ def update_markdown_N_alignments(slider_range):
         r"![\large N_\mathrm{alignments}](https://render.githubusercontent.com/render/"
         + r"math?math=%5Cdisplaystyle+%5Clarge+N_%5Cmathrm%7Balignments%7D)"
     )
-    return latex + f": \[{utils.human_format(low)}, {utils.human_format(high)}\]"
+    return latex + fr": \[{utils.human_format(low)}, {utils.human_format(high)}\]"
 
 
 @app.callback(
@@ -589,59 +646,77 @@ def update_markdown_D_max(slider_range):
 
 
 @app.callback(
-    Output("tab-content", "children"),
+    Output("tab_figure", "children"),
     Input("tabs", "active_tab"),
     Input("store", "data"),
 )
-def render_tab_content(active_tab, data):
+def render_tab_figure(active_tab, data):
     """
     This callback takes the 'active_tab' property as input, as well as the
     stored graphs, and renders the tab content depending on what the value of
     'active_tab' is.
     """
-
-    config = {
-        "displaylogo": False,
-        "doubleClick": "reset",
-        "showTips": True,
-        "modeBarButtonsToRemove": [
-            "select2d",
-            "lasso2d",
-            "autoScale2d",
-            "hoverClosestCartesian",
-            "hoverCompareCartesian",
-        ],
-    }
-
     if active_tab and data is not None:
         if active_tab == "fig_fit_results":
             return dcc.Graph(figure=data["fig_fit_results"], config=config)
+            # return data["fig_fit_results"]
         elif active_tab == "fig_histograms":
             return dcc.Graph(figure=data["fig_histograms"], config=config)
+            # return data["fig_histograms"]
         elif active_tab == "fig_scatter_matrix":
             return dcc.Graph(figure=data["fig_scatter_matrix"], config=config)
+            # return data["fig_scatter_matrix"]
+    print("Got here")
     return "No tab selected"
+    # return go.Figure()
+
+
+# @app.callback(
+#     Output("tab_figure", "figure"),
+#     Input("tab_figure", "restyleData"),
+# )
+# def test(legend_click):
+#     print(legend_click)
 
 
 @app.callback(
     Output("store", "data"),
     Input("range-slider-N-alignments", "value"),
     Input("range-slider-D-max", "value"),
+    Input("dropdown", "value"),
+    # Input("tab_figure", "restyleData"),
 )
-def generate_all_figures(slider_N_alignments, slider_D_max):
+def generate_all_figures(
+    slider_N_alignments,
+    slider_D_max,
+    dropdown_names,
+    # restyleData,
+):
     """
     This callback generates the three graphs (figures) based on the filter
     and stores in the DCC store for faster change of tabs.
     """
+
+    # print(restyleData)
+
+    height = 800
+    width = 1100
+
+    if dropdown_names is None or len(dropdown_names) == 0:
+        fig_empty = create_empty_figures(width=width, height=height)
+        return {
+            "fig_fit_results": fig_empty,
+            "fig_histograms": fig_empty,
+            "fig_scatter_matrix": fig_empty,
+        }
+
     df_filtered = fit_results.filter(
         {
             "N_alignments": slider_N_alignments,
             "D_max": slider_D_max,
+            "names": dropdown_names,
         }
     )
-
-    height = 800
-    width = 1100
 
     fig_fit_results = create_fit_results_figure(
         df_filtered,
@@ -674,3 +749,5 @@ if __name__ == "__main__" and not is_ipython():
     app.run_server(debug=True)
 
 #%%
+
+# df = fit_results.df
