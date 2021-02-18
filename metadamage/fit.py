@@ -292,6 +292,8 @@ def add_assymetry_results_to_fit_results(
     the assymmetry is here defined as the n_sigma (WAIC) between the two fits
     """
 
+    # FORWARD
+
     data_forward = {key: val[data["z"] > 0] for key, val in data.items()}
     fit_mcmc(mcmc_PMD_forward_reverse, data_forward)
     fit_mcmc(mcmc_null_forward_reverse, data_forward)
@@ -310,6 +312,10 @@ def add_assymetry_results_to_fit_results(
         return_hpdi=False,
     )[0]
 
+    fit_result["q_mean_forward"] = get_mean_of_variable(mcmc_PMD_forward_reverse, "q")
+
+    # REVERSE
+
     data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
     fit_mcmc(mcmc_PMD_forward_reverse, data_reverse)
     fit_mcmc(mcmc_null_forward_reverse, data_reverse)
@@ -326,6 +332,8 @@ def add_assymetry_results_to_fit_results(
         func=np.median,
         return_hpdi=False,
     )[0]
+
+    fit_result["q_mean_reverse"] = get_mean_of_variable(mcmc_PMD_forward_reverse, "q")
 
     fit_result["asymmetry"] = compute_assymmetry_combined_vs_forwardreverse(
         d_results_PMD,

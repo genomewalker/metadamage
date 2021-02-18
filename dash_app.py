@@ -235,8 +235,6 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         height=height,
         # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
-        # yaxis_autorange=False,
-        # yaxis_range=[0, 1],
         # margin=dict(
         #     t=50,  # top margin: 30px
         #     b=20,  # bottom margin: 10px
@@ -583,8 +581,6 @@ app = dash.Dash(
     ],
 )
 
-# config = {"doubleClick": "reset"}
-
 app.layout = dbc.Container(
     [
         dcc.Store(id="store"),
@@ -750,4 +746,73 @@ if __name__ == "__main__" and not is_ipython():
 
 #%%
 
-# df = fit_results.df
+df = fit_results.df
+
+#%%
+
+cmap = fit_results.cmap
+
+
+subtitles = [r'$\Large n_\sigma$',  r'$\Large D_\mathrm{max}$', r'$\Large N_{z=1}$', r'$\Large N_\mathrm{sum}$', r'$\Large \text{Noise (normalized)}$']
+
+fig_forward_reverse = make_subplots(rows=3, cols=2,
+            subplot_titles=subtitles)
+
+kwargs = {}
+for i, (name, _) in enumerate(df.groupby("name", sort=False)):
+    kwargs[name] = dict(name=name, mode="markers", legendgroup=name, marker=dict(color=cmap[i], opacity=0.2))
+
+
+for i, (name, group) in enumerate(df.groupby("name", sort=False)):
+
+    fig_forward_reverse.add_trace(
+        go.Scatter(x=group['n_sigma_forward'], y=group['n_sigma_reverse'], **kwargs[name]),
+        row=1, col=1)
+
+    fig_forward_reverse.add_trace(
+        go.Scatter(x=group['D_max_forward'], y=group['D_max_reverse'], showlegend=False, **kwargs[name]),
+        row=1, col=2)
+
+    fig_forward_reverse.add_trace(
+        go.Scatter(x=group['N_z1_forward'], y=group['N_z1_reverse'], showlegend=False, **kwargs[name]),
+        row=2, col=1)
+
+    fig_forward_reverse.add_trace(
+        go.Scatter(x=group['N_sum_forward'], y=group['N_sum_reverse'], showlegend=False, **kwargs[name]),
+        row=2, col=2)
+
+
+    fig_forward_reverse.add_trace(
+        go.Scatter(x=group['normalized_noise_forward'], y=group['normalized_noise_reverse'], showlegend=False, **kwargs[name]),
+        row=3, col=1)
+
+
+
+# Update xaxis properties
+fig_forward_reverse.update_xaxes(row=1, col=1, title_text=r"$\Large n_\sigma \text{ forward}$")
+fig_forward_reverse.update_yaxes(row=1, col=1, title_text=r"$\Large n_\sigma \text{ reverse}$")
+
+fig_forward_reverse.update_xaxes(row=1, col=2, title_text=r"$\Large D_\mathrm{max} \text{ forward}$") # range=[10, 50], showgrid=False, type="log"
+fig_forward_reverse.update_yaxes(row=1, col=2, title_text=r"$\Large D_\mathrm{max} \text{ reverse}$")
+
+fig_forward_reverse.update_xaxes(row=2, col=1, title_text=r"$\Large N_{z=1} \text{ forward}$")
+fig_forward_reverse.update_yaxes(row=2, col=1, title_text=r"$\Large N_{z=1} \text{ reverse}$")
+
+fig_forward_reverse.update_xaxes(row=2, col=2, title_text=r"$\Large N_\mathrm{sum} \text{ forward}$")
+fig_forward_reverse.update_yaxes(row=2, col=2, title_text=r"$\Large N_\mathrm{sum} \text{ reverse}$")
+
+fig_forward_reverse.update_xaxes(row=3, col=1, title_text=r'$\Large \text{Noise forward}$')
+fig_forward_reverse.update_yaxes(row=3, col=1, title_text=r"$\Large \text{Noise reverse}$")
+
+# Update title and width, height
+fig_forward_reverse.update_layout(height=1100, width=1500, title=dict(text="Forward vs Reverse", font_size=20),
+    legend=dict(
+        title_text="Files",
+        title_font_size=20,
+        font_size=16,
+        tracegroupgap=2)
+    )
+
+#fig
+
+# %%
