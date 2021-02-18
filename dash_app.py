@@ -13,6 +13,7 @@ from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+from dash_table import DataTable
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -99,6 +100,12 @@ class FitResults:
 
             elif dimension == "names":
                 query += f"(name in {filter}) & "
+
+            elif dimension == "name":
+                query += f"(name == '{filter}') & "
+
+            elif dimension == "taxid":
+                query += f"(taxid == {filter}) & "
 
             else:
                 low, high = filter
@@ -500,6 +507,156 @@ def create_empty_figures(width, height):
 #%%
 
 
+def create_empty_dataframe_for_datatable(s=None):
+    if s is None:
+        s = "Please click any datapoint on the graph"
+    return pd.DataFrame({"name": [s]})
+
+
+def get_data_table_keywords():
+
+    data_table_columns_dtypes = {
+        # File name
+        "name": {"name": "File Name"},
+        # Tax Info
+        "tax_name": {"name": "Tax Name"},
+        "tax_rank": {"name": "Tax Rank"},
+        "taxid": {"name": "Tax ID"},
+        # Fit Results
+        "n_sigma": {
+            "name": "n sigma",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "D_max": {
+            "name": "D max",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "q_mean": {
+            "name": "q",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "concentration_mean": {
+            "name": "Concentration",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "asymmetry": {
+            "name": "Assymmetry",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "normalized_noise": {
+            "name": "Noise",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        # Counts
+        "N_alignments": {
+            "name": "N alignments",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "N_sum_total": {
+            "name": "N sum total",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        # Forward & Reverse
+        "n_sigma_forward": {
+            "name": "n sigma, forward",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "n_sigma_reverse": {
+            "name": "n sigma, reverse",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "D_max_forward": {
+            "name": "D max, forward",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "D_max_reverse": {
+            "name": "D max, reverse",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "N_z1_forward": {
+            "name": "N z=1, forward",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "N_z1_reverse": {
+            "name": "N z=1, reverse",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "N_sum_forward": {
+            "name": "N sum, forward",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "N_sum_reverse": {
+            "name": "N sum, reverse",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "normalized_noise_forward": {
+            "name": "Noise, forward",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+        "normalized_noise_reverse": {
+            "name": "Noise, reverse",
+            "type": "numeric",
+            "format": {"specifier": ".3f"},
+        },
+    }
+
+    columns = [
+        {"id": col, **dtypes} for col, dtypes in data_table_columns_dtypes.items()
+    ]
+
+    kwargs = dict(
+        id="data_table",
+        columns=columns,
+        data=create_empty_dataframe_for_datatable().to_dict("records"),
+        style_table={
+            "overflowX": "auto",
+        },
+        style_data={"border": "0px"},
+        style_cell={"fontFamily": "sans-serif", "fontSize": "12px"},
+        # inspired by https://github.com/plotly/dash-table/issues/231
+        style_header={
+            "backgroundColor": "white",
+            "fontWeight": "bold",
+            "border": "0px",
+        },
+        style_data_conditional=[
+            {
+                "if": {"row_index": 0},
+                "backgroundColor": "#F9F9F9",
+                "borderTop": "1px solid black",
+            },
+            {
+                "if": {"state": "selected"},
+                "backgroundColor": "#F9F9F9",
+                "borderTop": "1px solid black",
+                "border": "0px",
+            },
+        ],
+    )
+
+    return kwargs
+
+
+#%%
+
+
 def transform_slider(x):
     return 10 ** x
 
@@ -557,7 +714,7 @@ def open_browser():
 
 #%%
 
-card_D_max = dbc.Card(
+card_D_max_slider = dbc.Card(
     html.Div(
         [
             dbc.Row(
@@ -590,7 +747,7 @@ card_D_max = dbc.Card(
     # className="w-100",
 )
 
-card_N_alignments = dbc.Card(
+card_N_alignments_slider = dbc.Card(
     html.Div(
         [
             dbc.Row(
@@ -631,7 +788,7 @@ dropdown = dcc.Dropdown(
 )
 
 
-dropdown_card = dbc.Card(
+card_dropdown = dbc.Card(
     [
         html.H3("File Selection", className="card-title"),
         dropdown,
@@ -639,28 +796,56 @@ dropdown_card = dbc.Card(
     body=True,  # spacing before border
 )
 
-filters_card = dbc.Card(
+card_filters = dbc.Card(
     [
         html.H3("Filters", className="card-title"),
-        card_N_alignments,
-        card_D_max,
+        card_N_alignments_slider,
+        card_D_max_slider,
     ],
     body=True,  # spacing before border
 )
 
-left_column_filters_and_dropdown = dbc.Card(
+
+card_datatable = dbc.Card(
+    [
+        dbc.Row(
+            [
+                # dbc.Col(html.H3("Table", className="card-title"), md=1),
+                dbc.Col(
+                    DataTable(**get_data_table_keywords()),
+                    # md=10,
+                ),
+            ],
+        )
+    ],
+    body=True,  # spacing before border
+)
+
+
+card_filter_and_dropdown = dbc.Card(
     [
         html.Br(),
-        dropdown_card,
+        card_dropdown,
         html.Br(),
-        filters_card,
+        card_filters,
     ],
     body=True,  # spacing before border
     outline=True,  # together with color, makes a transparent/white border
     color="white",
 )
 
-#%%
+
+card_main_plot = dbc.Card(
+    [
+        html.Br(),
+        html.Div(
+            id="tab_figure"
+        ),  # this has to be a div for "reset axis" to work properly
+    ],
+    body=True,  # spacing before border
+    outline=True,  # together with color, makes a transparent/white border
+    color="white",
+)
 
 
 #%%
@@ -672,32 +857,43 @@ app = dash.Dash(
         "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/"
         "MathJax.js?config=TeX-MML-AM_CHTML",
     ],
+    suppress_callback_exceptions=True,
 )
 
 app.layout = dbc.Container(
     [
         dcc.Store(id="store"),
         html.Br(),
-        html.H1("Fit Results"),
-        html.Hr(),
-        dbc.Tabs(
-            [
-                dbc.Tab(label="Overview", tab_id="fig_fit_results"),
-                dbc.Tab(label="Histograms", tab_id="fig_histograms"),
-                dbc.Tab(label="Scatter Matrix", tab_id="fig_scatter_matrix"),
-                dbc.Tab(label="Forward / Reverse", tab_id="fig_forward_reverse"),
-            ],
-            id="tabs",
-            active_tab="fig_fit_results",
-        ),
-        html.Br(),
         dbc.Row(
             [
-                dbc.Col(left_column_filters_and_dropdown, md=4),
-                # this has to be a div for "reset axis" to work properly
-                dbc.Col(html.Div(id="tab_figure"), md=8),
+                dbc.Col(html.H1("Fit Results"), md=2),
+                dbc.Col(
+                    dbc.Tabs(
+                        [
+                            dbc.Tab(label="Overview", tab_id="fig_fit_results"),
+                            dbc.Tab(label="Histograms", tab_id="fig_histograms"),
+                            dbc.Tab(
+                                label="Scatter Matrix", tab_id="fig_scatter_matrix"
+                            ),
+                            dbc.Tab(
+                                label="Forward / Reverse", tab_id="fig_forward_reverse"
+                            ),
+                        ],
+                        id="tabs",
+                        active_tab="fig_fit_results",
+                    ),
+                ),
             ],
         ),
+        # html.Hr(),
+        # html.Br(),
+        dbc.Row(
+            [
+                dbc.Col(card_filter_and_dropdown, md=2),
+                dbc.Col(card_main_plot, md=8),
+            ],
+        ),
+        card_datatable,
     ],
     fluid=True,
 )
@@ -736,6 +932,35 @@ def update_markdown_D_max(slider_range):
 
 
 @app.callback(
+    Output("data_table", "data"),
+    Input("graph", "clickData"),
+)
+def make_clickData_table(clickData):
+    """
+    This callback takes the 'active_tab' property as input, as well as the
+    stored graphs, and renders the tab content depending on what the value of
+    'active_tab' is.
+    """
+    if clickData is not None:
+        index_taxid = fit_results.custom_data_columns.index("taxid")
+        index_name = fit_results.custom_data_columns.index("name")
+        try:
+            name = clickData["points"][0]["customdata"][index_name]
+            taxid = clickData["points"][0]["customdata"][index_taxid]
+            # df_filtered = fit_results.filter({"name": name, "taxid": taxid})
+            df_filtered = fit_results.df.query(f"taxid == {taxid} & name == '{name}'")
+            return df_filtered.to_dict("records")
+
+        # when selecting histogram without customdata
+        except KeyError:
+            s = "Does not work for binned data (histograms)"
+            return create_empty_dataframe_for_datatable(s).to_dict("records")
+
+    else:
+        return create_empty_dataframe_for_datatable().to_dict("records")
+
+
+@app.callback(
     Output("tab_figure", "children"),
     Input("tabs", "active_tab"),
     Input("store", "data"),
@@ -748,6 +973,7 @@ def render_tab_figure(active_tab, data):
     """
 
     kwargs = dict(
+        id="graph",
         config={
             "displaylogo": False,
             "doubleClick": "reset",
@@ -762,7 +988,7 @@ def render_tab_figure(active_tab, data):
             ],
         },
         # https://css-tricks.com/fun-viewport-units/
-        style={"width": "90%", "height": "75vh"},
+        style={"width": "90%", "height": "78vh"},
     )
 
     if active_tab and data is not None:
@@ -777,14 +1003,6 @@ def render_tab_figure(active_tab, data):
 
     print("Got here", active_tab, data)
     return "No tab selected"
-
-
-# @app.callback(
-#     Output("tab_figure", "figure"),
-#     Input("tab_figure", "restyleData"),
-# )
-# def test(legend_click):
-#     print(legend_click)
 
 
 @app.callback(
