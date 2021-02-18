@@ -38,6 +38,7 @@ class FitResults:
         self._set_dimensions()
         self._set_labels()
         self._set_names()
+        self._set_dimensions_forward_reverse()
 
     def _load_df_fit_results(self):
 
@@ -70,14 +71,14 @@ class FitResults:
         self.df = df
         self.columns = list(self.df.columns)
 
-    def _get_range_of_column(self, column, spacing=20):
+    def _get_range_of_column(self, column, spacing):
         range_min = self.df[column].min()
         range_max = self.df[column].max()
         delta = range_max - range_min
         ranges = [range_min - delta / spacing, range_max + delta / spacing]
         return ranges
 
-    def _compute_ranges(self, spacing=40):
+    def _compute_ranges(self, spacing=20):
         ranges = {}
         for column in self.columns:
             try:
@@ -188,7 +189,7 @@ class FitResults:
         iterator = zip(self.dimensions, labels_list)
         self.labels = {dimension: label for dimension, label in iterator}
 
-    def iterate_over_rows_and_columns(self):
+    def iterate_over_dimensions(self):
         row = 1
         column = 1
         for dimension in self.dimensions:
@@ -199,6 +200,29 @@ class FitResults:
             else:
                 column += 1
 
+    def _set_dimensions_forward_reverse(self):
+        self.dimensions_forward_reverse = {
+            "n_sigma": r"$\large n_\sigma$",
+            "D_max": r"$\large D_\mathrm{max}$",
+            "N_z1": r"$\large N_{z=1}$",
+            "N_sum": r"$\large N_\mathrm{sum}$",
+            "normalized_noise": r"$\large \mathrm{noise}$",
+        }
+
+    def iterate_over_dimensions_forward_reverse(self, N_cols):
+        showlegend = True
+        for i, dimension in enumerate(self.dimensions_forward_reverse.keys()):
+            column = i % N_cols
+            row = (i - column) // N_cols
+            column += 1
+            row += 1
+
+            forward = f"{dimension}_forward"
+            reverse = f"{dimension}_reverse"
+
+            yield dimension, row, column, showlegend, forward, reverse
+            showlegend = False
+
 
 fit_results = FitResults()
 
@@ -206,7 +230,7 @@ fit_results = FitResults()
 #%%
 
 
-def create_fit_results_figure(df_filtered, width=1200, height=700):
+def create_fit_results_figure(df_filtered):
 
     fig = px.scatter(
         df_filtered,
@@ -230,9 +254,16 @@ def create_fit_results_figure(df_filtered, width=1200, height=700):
         xaxis_title=r"$\Large n_\sigma$",
         yaxis_title=r"$\Large D_\mathrm{max}$",
         title=dict(text="Fit Results", font_size=30),
-        legend=dict(title="Files", title_font_size=20, font_size=16),
-        width=width,
-        height=height,
+        legend=dict(
+            title="Files",
+            title_font_size=20,
+            font_size=16,
+            itemsizing="constant",
+            itemclick=False,
+            itemdoubleclick=False,
+        ),
+        # width=width,
+        # height=height,
         # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
         # margin=dict(
@@ -278,13 +309,13 @@ def plotly_histogram(
     return trace, np.max(binned[0])
 
 
-def create_histograms_figure(df_filtered, width=1200, height=700):
+def create_histograms_figure(df_filtered):
 
     fig = make_subplots(rows=2, cols=4)
 
     showlegend = True
 
-    for dimension, row, column in fit_results.iterate_over_rows_and_columns():
+    for dimension, row, column in fit_results.iterate_over_dimensions():
         highest_y_max = 0
         for name, group in df_filtered.groupby("name", sort=False):
             trace, y_max = plotly_histogram(
@@ -306,13 +337,20 @@ def create_histograms_figure(df_filtered, width=1200, height=700):
         if column == 1:
             fig.update_yaxes(title_text="Counts", row=row, col=column)
 
-    # Update title and width, height
     fig.update_layout(
         font_size=12,
         title=dict(text="1D Histograms", font_size=30),
-        legend=dict(title="Files", title_font_size=20, font_size=16),
-        width=width,
-        height=height,
+        legend=dict(
+            title="Files",
+            title_font_size=20,
+            font_size=16,
+            tracegroupgap=2,
+            itemsizing="constant",
+            itemclick=False,
+            itemdoubleclick=False,
+        ),
+        # width=width,
+        # height=height,
         # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
     )
@@ -323,7 +361,7 @@ def create_histograms_figure(df_filtered, width=1200, height=700):
 #%%
 
 
-def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
+def create_scatter_matrix_figure(df_filtered):
 
     fig = px.scatter_matrix(
         df_filtered,
@@ -354,12 +392,81 @@ def create_scatter_matrix_figure(df_filtered, width=1200, height=700):
     fig.update_layout(
         font_size=12,
         title=dict(text="Scatter Matrix", font_size=30),
-        legend=dict(title="Files", title_font_size=20, font_size=16),
-        width=width,
-        height=height,
+        legend=dict(
+            title="Files",
+            title_font_size=20,
+            font_size=16,
+            itemsizing="constant",
+            itemclick=False,
+            itemdoubleclick=False,
+        ),
+        # width=width,
+        # height=height,
         # uirevision=True,  # important for not reshowing legend after change in slider
         hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
         dragmode="zoom",
+    )
+
+    return fig
+
+
+#%%
+
+
+def create_forward_reverse_figure(df_filtered):
+
+    N_rows = 3
+    N_cols = 2
+    subtitles = list(fit_results.dimensions_forward_reverse.values())
+    fig = make_subplots(rows=N_rows, cols=N_cols, subplot_titles=subtitles)
+
+    for it in fit_results.iterate_over_dimensions_forward_reverse(N_cols):
+        dimension, row, column, showlegend, forward, reverse = it
+
+        for name, group in df_filtered.groupby("name", sort=False):
+            kwargs = dict(
+                name=name,
+                mode="markers",
+                legendgroup=name,
+                marker=dict(color=fit_results.d_cmap[name], opacity=0.2),
+                hovertemplate=fit_results.hovertemplate,
+                customdata=np.array(group[fit_results.custom_data_columns].values),
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=group[forward],
+                    y=group[reverse],
+                    showlegend=showlegend,
+                    **kwargs,
+                ),
+                row=row,
+                col=column,
+            )
+
+        fig.update_xaxes(range=fit_results.ranges[forward], row=row, col=column)
+        fig.update_yaxes(range=fit_results.ranges[reverse], row=row, col=column)
+
+    # Update xaxis properties
+    fig.update_xaxes(title_text="Forward")
+    fig.update_yaxes(title_text="Reverse")
+
+    fig.update_layout(
+        font_size=12,
+        title=dict(text="Forward / Reverse", font_size=30),
+        legend=dict(
+            title="Files",
+            title_font_size=20,
+            font_size=16,
+            itemsizing="constant",
+            itemclick=False,
+            itemdoubleclick=False,
+            tracegroupgap=2,
+        ),  #
+        # width=width,
+        # height=height,
+        # uirevision=True,  # important for not reshowing legend after change in slider
+        hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
     )
 
     return fig
@@ -377,6 +484,7 @@ def create_empty_figures(width, height):
         x=0.5,
         y=0.5,
         text="Please select some files to plot",
+        font_size=20,
         showarrow=False,
     )
 
@@ -408,8 +516,6 @@ def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
         f = lambda x: utils.human_format(transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
-        # marks[marks_steps[0]] = "Minimum"
-        # marks[marks_steps[-1]] = "No Maximum"
         marks[marks_steps[0]] = {"label": "No Minimum", "style": {"color": "#a3ada9"}}
         marks[marks_steps[-1]] = {"label": "No Maximum", "style": {"color": "#a3ada9"}}
 
@@ -556,19 +662,6 @@ left_column_filters_and_dropdown = dbc.Card(
 
 #%%
 
-config = {
-    "displaylogo": False,
-    "doubleClick": "reset",
-    "showTips": True,
-    "modeBarButtonsToRemove": [
-        "select2d",
-        "lasso2d",
-        "autoScale2d",
-        "hoverClosestCartesian",
-        "hoverCompareCartesian",
-        "toggleSpikelines",
-    ],
-}
 
 #%%
 
@@ -592,6 +685,7 @@ app.layout = dbc.Container(
                 dbc.Tab(label="Overview", tab_id="fig_fit_results"),
                 dbc.Tab(label="Histograms", tab_id="fig_histograms"),
                 dbc.Tab(label="Scatter Matrix", tab_id="fig_scatter_matrix"),
+                dbc.Tab(label="Forward / Reverse", tab_id="fig_forward_reverse"),
             ],
             id="tabs",
             active_tab="fig_fit_results",
@@ -652,19 +746,37 @@ def render_tab_figure(active_tab, data):
     stored graphs, and renders the tab content depending on what the value of
     'active_tab' is.
     """
+
+    kwargs = dict(
+        config={
+            "displaylogo": False,
+            "doubleClick": "reset",
+            "showTips": True,
+            "modeBarButtonsToRemove": [
+                "select2d",
+                "lasso2d",
+                "autoScale2d",
+                "hoverClosestCartesian",
+                "hoverCompareCartesian",
+                "toggleSpikelines",
+            ],
+        },
+        # https://css-tricks.com/fun-viewport-units/
+        style={"width": "90%", "height": "75vh"},
+    )
+
     if active_tab and data is not None:
         if active_tab == "fig_fit_results":
-            return dcc.Graph(figure=data["fig_fit_results"], config=config)
-            # return data["fig_fit_results"]
+            return dcc.Graph(figure=data["fig_fit_results"], **kwargs)
         elif active_tab == "fig_histograms":
-            return dcc.Graph(figure=data["fig_histograms"], config=config)
-            # return data["fig_histograms"]
+            return dcc.Graph(figure=data["fig_histograms"], **kwargs)
         elif active_tab == "fig_scatter_matrix":
-            return dcc.Graph(figure=data["fig_scatter_matrix"], config=config)
-            # return data["fig_scatter_matrix"]
-    print("Got here")
+            return dcc.Graph(figure=data["fig_scatter_matrix"], **kwargs)
+        elif active_tab == "fig_forward_reverse":
+            return dcc.Graph(figure=data["fig_forward_reverse"], **kwargs)
+
+    print("Got here", active_tab, data)
     return "No tab selected"
-    # return go.Figure()
 
 
 # @app.callback(
@@ -704,6 +816,7 @@ def generate_all_figures(
             "fig_fit_results": fig_empty,
             "fig_histograms": fig_empty,
             "fig_scatter_matrix": fig_empty,
+            "fig_forward_reverse": fig_empty,
         }
 
     df_filtered = fit_results.filter(
@@ -716,18 +829,16 @@ def generate_all_figures(
 
     fig_fit_results = create_fit_results_figure(
         df_filtered,
-        width=width,
-        height=height,
     )
     fig_histograms = create_histograms_figure(
         df_filtered,
-        width=width,
-        height=height,
     )
     fig_scatter_matrix = create_scatter_matrix_figure(
         df_filtered,
-        width=width,
-        height=height,
+    )
+
+    fig_forward_reverse = create_forward_reverse_figure(
+        df_filtered,
     )
 
     # save figures in a dictionary for sending to the dcc.Store
@@ -735,6 +846,7 @@ def generate_all_figures(
         "fig_fit_results": fig_fit_results,
         "fig_histograms": fig_histograms,
         "fig_scatter_matrix": fig_scatter_matrix,
+        "fig_forward_reverse": fig_forward_reverse,
     }
 
 
@@ -746,73 +858,4 @@ if __name__ == "__main__" and not is_ipython():
 
 #%%
 
-df = fit_results.df
-
-#%%
-
-cmap = fit_results.cmap
-
-
-subtitles = [r'$\Large n_\sigma$',  r'$\Large D_\mathrm{max}$', r'$\Large N_{z=1}$', r'$\Large N_\mathrm{sum}$', r'$\Large \text{Noise (normalized)}$']
-
-fig_forward_reverse = make_subplots(rows=3, cols=2,
-            subplot_titles=subtitles)
-
-kwargs = {}
-for i, (name, _) in enumerate(df.groupby("name", sort=False)):
-    kwargs[name] = dict(name=name, mode="markers", legendgroup=name, marker=dict(color=cmap[i], opacity=0.2))
-
-
-for i, (name, group) in enumerate(df.groupby("name", sort=False)):
-
-    fig_forward_reverse.add_trace(
-        go.Scatter(x=group['n_sigma_forward'], y=group['n_sigma_reverse'], **kwargs[name]),
-        row=1, col=1)
-
-    fig_forward_reverse.add_trace(
-        go.Scatter(x=group['D_max_forward'], y=group['D_max_reverse'], showlegend=False, **kwargs[name]),
-        row=1, col=2)
-
-    fig_forward_reverse.add_trace(
-        go.Scatter(x=group['N_z1_forward'], y=group['N_z1_reverse'], showlegend=False, **kwargs[name]),
-        row=2, col=1)
-
-    fig_forward_reverse.add_trace(
-        go.Scatter(x=group['N_sum_forward'], y=group['N_sum_reverse'], showlegend=False, **kwargs[name]),
-        row=2, col=2)
-
-
-    fig_forward_reverse.add_trace(
-        go.Scatter(x=group['normalized_noise_forward'], y=group['normalized_noise_reverse'], showlegend=False, **kwargs[name]),
-        row=3, col=1)
-
-
-
-# Update xaxis properties
-fig_forward_reverse.update_xaxes(row=1, col=1, title_text=r"$\Large n_\sigma \text{ forward}$")
-fig_forward_reverse.update_yaxes(row=1, col=1, title_text=r"$\Large n_\sigma \text{ reverse}$")
-
-fig_forward_reverse.update_xaxes(row=1, col=2, title_text=r"$\Large D_\mathrm{max} \text{ forward}$") # range=[10, 50], showgrid=False, type="log"
-fig_forward_reverse.update_yaxes(row=1, col=2, title_text=r"$\Large D_\mathrm{max} \text{ reverse}$")
-
-fig_forward_reverse.update_xaxes(row=2, col=1, title_text=r"$\Large N_{z=1} \text{ forward}$")
-fig_forward_reverse.update_yaxes(row=2, col=1, title_text=r"$\Large N_{z=1} \text{ reverse}$")
-
-fig_forward_reverse.update_xaxes(row=2, col=2, title_text=r"$\Large N_\mathrm{sum} \text{ forward}$")
-fig_forward_reverse.update_yaxes(row=2, col=2, title_text=r"$\Large N_\mathrm{sum} \text{ reverse}$")
-
-fig_forward_reverse.update_xaxes(row=3, col=1, title_text=r'$\Large \text{Noise forward}$')
-fig_forward_reverse.update_yaxes(row=3, col=1, title_text=r"$\Large \text{Noise reverse}$")
-
-# Update title and width, height
-fig_forward_reverse.update_layout(height=1100, width=1500, title=dict(text="Forward vs Reverse", font_size=20),
-    legend=dict(
-        title_text="Files",
-        title_font_size=20,
-        font_size=16,
-        tracegroupgap=2)
-    )
-
-#fig
-
-# %%
+# df = fit_results.df
