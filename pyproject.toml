@@ -9,6 +9,10 @@ repository = "https://github.com/ChristianMichelsen/metadamage"
 readme = "README.md"
 include = ["metadamage/style.mplstyle", 'pyproject.toml']
 exclude = ["logs/log*"]
+# packages = [
+#     # { include = "metadamage" },
+#     { include = "mydash", from = "metadamage" },
+# ]
 
 
 [tool.poetry.dependencies]
@@ -35,7 +39,8 @@ notebook = ">=5.3"
 ipywidgets = ">=7.5"
 jupyterlab = "^3.0.7"
 dash-bootstrap-components = "^0.11.3"
-si-prefix = {git = "https://github.com/cfobel/si-prefix"}
+lazy-object-proxy = "1.4.3"
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

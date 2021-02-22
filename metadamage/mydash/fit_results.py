@@ -5,7 +5,7 @@ from pathlib import Path
 
 import plotly.express as px
 
-from metadamage import utils, dash_utils
+from metadamage import utils, mydash
 
 
 class FitResults:
@@ -88,8 +88,8 @@ class FitResults:
             else:
                 low, high = filter
                 if dimension == "N_alignments":
-                    low = dash_utils.transform_slider(low)
-                    high = dash_utils.transform_slider(high)
+                    low = mydash.utils.transform_slider(low)
+                    high = mydash.utils.transform_slider(high)
                 query += f"({low} <= {dimension} <= {high}) & "
 
         query = query[:-2]

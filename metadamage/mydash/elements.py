@@ -8,7 +8,7 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 
-from metadamage import utils, dash_utils, dash_datatable
+from metadamage import utils, mydash
 
 
 def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
@@ -20,7 +20,7 @@ def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
         range_max = np.ceil(range_log.max())
 
         marks_steps = np.arange(range_min, range_max + 1)
-        f = lambda x: utils.human_format(dash_utils.transform_slider(x))
+        f = lambda x: utils.human_format(mydash.utils.transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
         marks[marks_steps[0]] = {"label": "No Minimum", "style": {"color": "#a3ada9"}}
@@ -181,7 +181,7 @@ def get_card_datatable(fit_results):
                 [
                     # dbc.Col(html.H3("Table", className="card-title"), md=1),
                     dbc.Col(
-                        DataTable(**dash_datatable.get_data_table_keywords()),
+                        DataTable(**mydash.datatable.get_data_table_keywords()),
                         # md=10,
                     ),
                 ],

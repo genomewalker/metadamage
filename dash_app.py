@@ -20,25 +20,15 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import (
-    utils,
-    dash_utils,
-    dash_fit_results,
-    dash_figures,
-    dash_datatable,
-    dash_elements,
-)
-
+from metadamage import utils, mydash
 
 #%%
 
-dash_utils.set_custom_theme()
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
-
 #%%
 
-fit_results = dash_fit_results.FitResults()
+fit_results = mydash.fit_results.FitResults()
 
 #%%
 
@@ -81,11 +71,13 @@ app.layout = dbc.Container(
         # html.Br(),
         dbc.Row(
             [
-                dbc.Col(dash_elements.get_card_filter_and_dropdown(fit_results), md=2),
-                dbc.Col(dash_elements.get_card_main_plot(fit_results), md=8),
+                dbc.Col(
+                    mydash.elements.get_card_filter_and_dropdown(fit_results), md=2
+                ),
+                dbc.Col(mydash.elements.get_card_main_plot(fit_results), md=8),
             ],
         ),
-        dash_elements.get_card_datatable(fit_results),
+        mydash.elements.get_card_datatable(fit_results),
     ],
     fluid=True,
 )
@@ -97,8 +89,8 @@ app.layout = dbc.Container(
 )
 def update_markdown_N_alignments(slider_range):
     low, high = slider_range
-    low = dash_utils.transform_slider(low)
-    high = dash_utils.transform_slider(high)
+    low = mydash.utils.transform_slider(low)
+    high = mydash.utils.transform_slider(high)
 
     # https://tex-image-link-generator.herokuapp.com/
     latex = (
@@ -151,7 +143,9 @@ def make_clickData_table(clickData):
             )
 
     else:
-        return dash_datatable.create_empty_dataframe_for_datatable().to_dict("records")
+        return mydash.datatable.create_empty_dataframe_for_datatable().to_dict(
+            "records"
+        )
 
 
 @app.callback(
@@ -223,7 +217,7 @@ def generate_all_figures(
     width = 1100
 
     if dropdown_names is None or len(dropdown_names) == 0:
-        fig_empty = dash_figures.create_empty_figures(width=width, height=height)
+        fig_empty = mydash.figures.create_empty_figures(width=width, height=height)
         return {
             "fig_fit_results": fig_empty,
             "fig_histograms": fig_empty,
@@ -239,19 +233,19 @@ def generate_all_figures(
         }
     )
 
-    fig_fit_results = dash_figures.create_fit_results_figure(
+    fig_fit_results = mydash.figures.create_fit_results_figure(
         fit_results,
         df_filtered,
     )
-    fig_histograms = dash_figures.create_histograms_figure(
+    fig_histograms = mydash.figures.create_histograms_figure(
         fit_results,
         df_filtered,
     )
-    fig_scatter_matrix = dash_figures.create_scatter_matrix_figure(
+    fig_scatter_matrix = mydash.figures.create_scatter_matrix_figure(
         fit_results,
         df_filtered,
     )
-    fig_forward_reverse = dash_figures.create_forward_reverse_figure(
+    fig_forward_reverse = mydash.figures.create_forward_reverse_figure(
         fit_results,
         df_filtered,
     )
@@ -279,6 +273,6 @@ if __name__ == "__main__" and not is_ipython():
 #%%
 else:
     df = fit_results.df
-    fig_fit_results = dash_figures.create_fit_results_figure(fit_results, df)
+    fig_fit_results = mydash.figures.create_fit_results_figure(fit_results, df)
     fig_fit_results
 # %%
