@@ -2,13 +2,15 @@
 import numpy as np
 import pandas as pd
 
-
+# Third Party
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+from dash_table import DataTable
 
-from metadamage import utils, mydash
+# First Party
+from metadamage import mydash, utils
 
 
 def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
@@ -131,29 +133,29 @@ def get_card_N_alignments_slider(fit_results):
     return card_N_alignments_slider
 
 
-def get_dropdown(fit_results):
+def get_dropdown_file_selection(fit_results):
 
-    dropdown = dcc.Dropdown(
-        id="dropdown",
+    dropdown_file_selection = dcc.Dropdown(
+        id="dropdown_file_selection",
         options=[{"label": name, "value": name} for name in fit_results.names],
         value=fit_results.names[:10],
         multi=True,
         placeholder="Select files to plot",
     )
 
-    return dropdown
+    return dropdown_file_selection
 
 
-def get_card_dropdown(fit_results):
+def get_card_dropdown_file_selection(fit_results):
 
-    card_dropdown = dbc.Card(
+    card_dropdown_file_selection = dbc.Card(
         [
             html.H3("File Selection", className="card-title"),
-            get_dropdown(fit_results),
+            get_dropdown_file_selection(fit_results),
         ],
         body=True,  # spacing before border
     )
-    return card_dropdown
+    return card_dropdown_file_selection
 
 
 def get_card_filters(fit_results):
@@ -168,9 +170,6 @@ def get_card_filters(fit_results):
     )
 
     return card_filters
-
-
-from dash_table import DataTable
 
 
 def get_card_datatable(fit_results):
@@ -193,20 +192,98 @@ def get_card_datatable(fit_results):
     return card_datatable
 
 
-def get_card_filter_and_dropdown(fit_results):
+def get_dropdown_marker_transformation(fit_results):
 
-    card_filter_and_dropdown = dbc.Card(
+    dropdown_marker_transformation = dcc.Dropdown(
+        id="dropdown_marker_transformation",
+        options=[
+            {"label": "Identity", "value": "identity"},
+            {"label": "Sqrt", "value": "sqrt"},
+            {"label": "Log", "value": "log10"},
+            {"label": "Constant", "value": "constant"},
+        ],
+        value="sqrt",
+        searchable=False,
+        clearable=False,
+    )
+
+    return dropdown_marker_transformation
+
+
+def get_slider_keywords():
+    marks = [1, 10, 20, 30, 40, 50, 60]
+    return dict(
+        min=1,
+        max=60,
+        step=1,
+        value=30,
+        marks={mark: str(mark) for mark in marks},
+    )
+
+
+def get_card_marker_size_slider(fit_results):
+
+    card_marker_size_slider = dbc.Card(
+        html.Div(
+            [
+                dbc.Row(
+                    dcc.Markdown(id="slider-marker-size-output"),
+                    justify="center",
+                ),
+                dbc.Row(
+                    dbc.Col(
+                        dcc.Slider(
+                            id="slider-marker-size",
+                            **get_slider_keywords(),
+                        ),
+                    ),
+                    justify="center",
+                ),
+            ],
+            style={
+                "marginBottom": "1em",
+                "marginTop": "0.5em",
+                "marginLeft": "0.7em",
+                "marginRight": "0.7em",
+            },
+        ),
+        outline=True,
+        color="white",
+        # className="w-100",
+    )
+
+    return card_marker_size_slider
+
+
+def get_card_dropdown_marker_transformation(fit_results):
+
+    card_dropdown_marker_transformation = dbc.Card(
+        [
+            html.H3("Marker Size", className="card-title"),
+            get_card_marker_size_slider(fit_results),
+            get_dropdown_marker_transformation(fit_results),
+        ],
+        body=True,  # spacing before border
+    )
+    return card_dropdown_marker_transformation
+
+
+def get_card_filter_and_dropdown_file_selection(fit_results):
+
+    card_filter_and_dropdown_file_selection = dbc.Card(
         [
             html.Br(),
-            get_card_dropdown(fit_results),
+            get_card_dropdown_file_selection(fit_results),
             html.Br(),
             get_card_filters(fit_results),
+            html.Br(),
+            get_card_dropdown_marker_transformation(fit_results),
         ],
         body=True,  # spacing before border
         outline=True,  # together with color, makes a transparent/white border
         color="white",
     )
-    return card_filter_and_dropdown
+    return card_filter_and_dropdown_file_selection
 
 
 def get_card_main_plot(fit_results):

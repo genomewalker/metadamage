@@ -2,24 +2,28 @@
 import numpy as np
 import pandas as pd
 
-import plotly.io as pio
+# Third Party
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 from plotly.subplots import make_subplots
+
 
 #%%
 
 
-def create_fit_results_figure(fit_results, df_filtered):
+def create_fit_results_figure(fit_results, df_filtered, marker_size_max):
+
+    # size_max = 30
 
     fig = px.scatter(
         df_filtered,
         x="n_sigma",
         y="D_max",
-        size="N_alignments_sqrt",
+        size="size",
         color="name",
         hover_name="name",
-        size_max=30,
+        # size_max=marker_size_max,
         opacity=0.2,
         color_discrete_map=fit_results.d_cmap,
         custom_data=fit_results.custom_data_columns,
@@ -27,7 +31,11 @@ def create_fit_results_figure(fit_results, df_filtered):
         range_y=[0, 1],
     )
 
-    fig.update_traces(hovertemplate=fit_results.hovertemplate, marker_line_width=0)
+    fig.update_traces(
+        hovertemplate=fit_results.hovertemplate,
+        marker_line_width=0,
+        marker_sizeref=2.0 * fit_results.max_of_size / (marker_size_max ** 2),
+    )
 
     fig.update_layout(
         xaxis_title=r"$\Large n_\sigma$",
@@ -99,7 +107,8 @@ def create_histograms_figure(fit_results, df_filtered):
 
         showlegend = False
         fig.update_xaxes(title_text=fit_results.labels[dimension], row=row, col=column)
-        fig.update_yaxes(range=(0, highest_y_max * 1.1), row=row, col=column)
+        # fig.update_yaxes(range=(0, highest_y_max * 1.1), row=row, col=column)
+        fig.update_yaxes(rangemode="nonnegative")
         if column == 1:
             fig.update_yaxes(title_text="Counts", row=row, col=column)
 

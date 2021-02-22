@@ -14,16 +14,20 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash_table import DataTable
-import plotly.io as pio
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import utils, mydash
+from metadamage import mydash, utils
+
+
+from about_time import about_time
 
 #%%
 
+mydash.utils.set_custom_theme()
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 #%%
@@ -72,7 +76,10 @@ app.layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(
-                    mydash.elements.get_card_filter_and_dropdown(fit_results), md=2
+                    mydash.elements.get_card_filter_and_dropdown_file_selection(
+                        fit_results
+                    ),
+                    md=2,
                 ),
                 dbc.Col(mydash.elements.get_card_main_plot(fit_results), md=8),
             ],
@@ -85,7 +92,7 @@ app.layout = dbc.Container(
 
 @app.callback(
     Output("range-slider-N-alignments-output", "children"),
-    Input("range-slider-N-alignments", "value"),
+    Input("range-slider-N-alignments", "drag_value"),
 )
 def update_markdown_N_alignments(slider_range):
     low, high = slider_range
@@ -102,7 +109,7 @@ def update_markdown_N_alignments(slider_range):
 
 @app.callback(
     Output("range-slider-D-max-output", "children"),
-    Input("range-slider-D-max", "value"),
+    Input("range-slider-D-max", "drag_value"),
 )
 def update_markdown_D_max(slider_range):
     low, high = slider_range
@@ -113,6 +120,14 @@ def update_markdown_D_max(slider_range):
         + r"math?math=%5Cdisplaystyle+%5Clarge+D_%5Cmathrm%7Bmax%7D)"
     )
     return latex + f": \[{low:.2f}, {high:.2f}\]"
+
+
+@app.callback(
+    Output("slider-marker-size-output", "children"),
+    Input("slider-marker-size", "drag_value"),
+)
+def update_markdown_marker_size(slider):
+    return f"Max Size: {slider}"
 
 
 @app.callback(
@@ -138,7 +153,7 @@ def make_clickData_table(clickData):
         # when selecting histogram without customdata
         except KeyError:
             s = "Does not work for binned data (histograms)"
-            return dash_datatable.create_empty_dataframe_for_datatable(s).to_dict(
+            return mydash.datatable.create_empty_dataframe_for_datatable(s).to_dict(
                 "records"
             )
 
@@ -197,13 +212,17 @@ def render_tab_figure(active_tab, data):
     Output("store", "data"),
     Input("range-slider-N-alignments", "value"),
     Input("range-slider-D-max", "value"),
-    Input("dropdown", "value"),
+    Input("dropdown_file_selection", "value"),
+    Input("dropdown_marker_transformation", "value"),
+    Input("slider-marker-size", "value"),
     # Input("tab_figure", "restyleData"),
 )
 def generate_all_figures(
     slider_N_alignments,
     slider_D_max,
     dropdown_names,
+    dropdown_marker_transformation,
+    marker_size_max,
     # restyleData,
 ):
     """
@@ -225,30 +244,49 @@ def generate_all_figures(
             "fig_forward_reverse": fig_empty,
         }
 
-    df_filtered = fit_results.filter(
-        {
-            "N_alignments": slider_N_alignments,
-            "D_max": slider_D_max,
-            "names": dropdown_names,
-        }
-    )
+    # important step before filter
+    fit_results.set_marker_size(dropdown_marker_transformation)
 
-    fig_fit_results = mydash.figures.create_fit_results_figure(
-        fit_results,
-        df_filtered,
-    )
-    fig_histograms = mydash.figures.create_histograms_figure(
-        fit_results,
-        df_filtered,
-    )
-    fig_scatter_matrix = mydash.figures.create_scatter_matrix_figure(
-        fit_results,
-        df_filtered,
-    )
-    fig_forward_reverse = mydash.figures.create_forward_reverse_figure(
-        fit_results,
-        df_filtered,
-    )
+    with about_time() as t:
+        df_filtered = fit_results.filter(
+            {
+                "N_alignments": slider_N_alignments,
+                "D_max": slider_D_max,
+                "names": dropdown_names,
+            }
+        )
+
+        print("")
+        print(t.duration_human, "Filter")
+
+    with about_time() as t:
+        fig_fit_results = mydash.figures.create_fit_results_figure(
+            fit_results,
+            df_filtered,
+            marker_size_max,
+        )
+        print(t.duration_human, "Fit Results")
+
+    with about_time() as t:
+        fig_histograms = mydash.figures.create_histograms_figure(
+            fit_results,
+            df_filtered,
+        )
+        print(t.duration_human, "Histograms")
+
+    with about_time() as t:
+        fig_scatter_matrix = mydash.figures.create_scatter_matrix_figure(
+            fit_results,
+            df_filtered,
+        )
+        print(t.duration_human, "Scatter Matrix")
+
+    with about_time() as t:
+        fig_forward_reverse = mydash.figures.create_forward_reverse_figure(
+            fit_results,
+            df_filtered,
+        )
+        print(t.duration_human, "Forward Reverse")
 
     # save figures in a dictionary for sending to the dcc.Store
     return {
@@ -275,4 +313,53 @@ else:
     df = fit_results.df
     fig_fit_results = mydash.figures.create_fit_results_figure(fit_results, df)
     fig_fit_results
-# %%
+    # %%
+
+    input_folder = "./data/parquet"
+    input_files = list(Path("").rglob(f"{input_folder}/*.parquet"))
+
+    if len(input_files) == 0:
+        raise AssertionError(f"No Parquet files (fit results) found in {input_folder}.")
+
+    dfs = []
+    for file in input_files:
+        df = pd.read_parquet(file)
+        name = utils.extract_name(file, max_length=20)
+        df["name"] = name
+        dfs.append(df)
+
+    df = pd.concat(dfs, axis=0, ignore_index=True)
+
+    taxid = 1
+    group = df.query(f"name == '{name}' & taxid == {taxid}")
+
+    group_forward = group.query(f"position >= 0")
+
+    #%%
+
+    fig = px.scatter(group_forward, x="position", y=["f_CT", "f_GA"])
+    fig.update_yaxes(rangemode="nonnegative")
+
+    size = group_forward.position.values
+
+    sizemin = 0
+    sizemax = 20
+
+    fig.update_traces(
+        marker=dict(
+            size=size,
+            sizemode="area",
+            sizeref=2.0 * max(size) / (sizemax ** 2),
+            sizemin=sizemin,
+        )
+    )
+
+    fig.update_layout(
+        xaxis_title="Position (z)",
+        yaxis_title="Fraction",
+        title_text="Raw Data",
+        legend_title="Legend",
+    )
+
+    fig
+    # %%

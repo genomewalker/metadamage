@@ -9,10 +9,6 @@ repository = "https://github.com/ChristianMichelsen/metadamage"
 readme = "README.md"
 include = ["metadamage/style.mplstyle", 'pyproject.toml']
 exclude = ["logs/log*"]
-# packages = [
-#     # { include = "metadamage" },
-#     { include = "mydash", from = "metadamage" },
-# ]
 
 
 [tool.poetry.dependencies]

@@ -1,5 +1,9 @@
-import plotly.io as pio
+# Standard Library
+import webbrowser
+
+# Third Party
 import plotly.graph_objects as go
+import plotly.io as pio
 
 
 def set_custom_theme():
@@ -41,8 +45,10 @@ def transform_slider(x):
     return 10 ** x
 
 
-import webbrowser
 def open_browser():
     # webbrowser.open_new("http://localhost:8050")
     webbrowser.open("http://localhost:8050")
+
+
+#%%
 

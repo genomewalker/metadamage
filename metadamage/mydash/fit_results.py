@@ -1,11 +1,15 @@
 # Scientific Library
 import numpy as np
 import pandas as pd
+
+# Standard Library
 from pathlib import Path
 
+# Third Party
 import plotly.express as px
 
-from metadamage import utils, mydash
+# First Party
+from metadamage import mydash, utils
 
 
 class FitResults:
@@ -68,6 +72,30 @@ class FitResults:
 
     def _set_names(self):
         self.names = list(self.df.name.unique())
+
+    def set_marker_size(self, dropdown_marker_transformation):
+
+        df = self.df
+
+        if dropdown_marker_transformation == "identity":
+            df.loc[:, "size"] = df["N_alignments"]
+
+        elif dropdown_marker_transformation == "sqrt":
+            df.loc[:, "size"] = np.sqrt(df["N_alignments"])
+
+        elif dropdown_marker_transformation == "log10":
+            df.loc[:, "size"] = np.log10(df["N_alignments"])
+
+        elif dropdown_marker_transformation == "constant":
+            df.loc[:, "size"] = np.ones_like(df["N_alignments"])
+
+        else:
+            raise AssertionError(
+                f"Did not recieve proper dropdown_marker_transformation: {dropdown_marker_transformation}"
+            )
+
+        self.max_of_size = np.max(df["size"])
+        return None
 
     def filter(self, filters):
         query = ""
