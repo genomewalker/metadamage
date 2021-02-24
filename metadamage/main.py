@@ -94,7 +94,7 @@ if utils.is_ipython():
 
     cfg = utils.Config(
         max_fits=10,
-        max_plots=None,
+        max_plots=0,
         max_cores=-1,
         max_position=15,
         min_damage=None,
@@ -106,6 +106,7 @@ if utils.is_ipython():
         force_reload_files=False,
         force_plots=False,
         force_fits=False,
+        force_no_fits=False,
         version="0.0.0",
     )
 
