@@ -13,7 +13,25 @@ from dash_table import DataTable
 from metadamage import mydash, utils
 
 
-def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
+def get_dropdown_file_selection(id, fit_results):
+
+    dropdown_file_selection = dcc.Dropdown(
+        id=id,
+        options=[{"label": name, "value": name} for name in fit_results.names],
+        value=fit_results.names[:10],
+        multi=True,
+        placeholder="Select files to plot",
+    )
+
+    return dropdown_file_selection
+
+
+#%%
+
+
+def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
+
+    df = fit_results.df_fit_results
 
     if column == "N_alignments":
 
@@ -22,11 +40,16 @@ def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
         range_max = np.ceil(range_log.max())
 
         marks_steps = np.arange(range_min, range_max + 1)
+        if len(marks_steps) > 6:
+            marks_steps = (
+                [marks_steps[0]] + [x for x in marks_steps[1:-1:2]] + [marks_steps[-1]]
+            )
+
         f = lambda x: utils.human_format(mydash.utils.transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
-        marks[marks_steps[0]] = {"label": "No Minimum", "style": {"color": "#a3ada9"}}
-        marks[marks_steps[-1]] = {"label": "No Maximum", "style": {"color": "#a3ada9"}}
+        marks[marks_steps[0]] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
+        marks[marks_steps[-1]] = {"label": "No Max.", "style": {"color": "#a3ada9"}}
 
     elif column == "D_max":
         range_min = 0.0
@@ -38,8 +61,8 @@ def get_range_slider_keywords(df, column="N_alignments", N_steps=100):
             0.75: "0.75",
             # 1: "1.0",
         }
-        marks[0] = {"label": "No Minimum", "style": {"color": "#a3ada9"}}
-        marks[1] = {"label": "No Maximum", "style": {"color": "#a3ada9"}}
+        marks[0] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
+        marks[1] = {"label": "No Max.", "style": {"color": "#a3ada9"}}
 
     step = (range_max - range_min) / N_steps
 
@@ -131,19 +154,6 @@ def get_card_N_alignments_slider(fit_results):
     )
 
     return card_N_alignments_slider
-
-
-def get_dropdown_file_selection(fit_results):
-
-    dropdown_file_selection = dcc.Dropdown(
-        id="dropdown_file_selection",
-        options=[{"label": name, "value": name} for name in fit_results.names],
-        value=fit_results.names[:10],
-        multi=True,
-        placeholder="Select files to plot",
-    )
-
-    return dropdown_file_selection
 
 
 def get_card_dropdown_file_selection(fit_results):
@@ -300,3 +310,21 @@ def get_card_main_plot(fit_results):
     )
 
     return card_main_plot
+
+
+def get_card_mismatch_figure(fit_results):
+
+    card_mismatch_figure = dbc.Card(
+        [
+            html.Br(),
+            # dcc.Graph(id="mismatch_figure")
+            html.Div(id="mismatch_figure-div"),
+            # this has to be a div for "reset axis" to work properly
+            # html.Div(id="mismatch_figure_div"),
+        ],
+        body=True,  # spacing before border
+        outline=True,  # together with color, makes a transparent/white border
+        color="white",
+    )
+
+    return card_mismatch_figure

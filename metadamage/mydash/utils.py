@@ -13,7 +13,7 @@ def set_custom_theme():
             font_size=16,
             title_font_size=30,
             legend=dict(
-                title="Files",
+                # title="",
                 title_font_size=20,
                 font_size=16,
                 itemsizing="constant",
@@ -52,3 +52,9 @@ def open_browser():
 
 #%%
 
+from PIL import ImageColor
+
+
+def hex_to_rgb(hex_string, opacity=1):
+    rgb = ImageColor.getcolor(hex_string, "RGB")
+    return f"rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})"

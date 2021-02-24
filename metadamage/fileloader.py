@@ -274,7 +274,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
             .pipe(remove_taxids_with_too_few_alignments, cfg)
             # compute error rates
             .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
-            .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+            .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[1])
             .pipe(
                 add_error_rates,
                 ref=cfg.substitution_bases_forward[0],

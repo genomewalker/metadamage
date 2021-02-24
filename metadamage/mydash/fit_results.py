@@ -7,6 +7,7 @@ from pathlib import Path
 
 # Third Party
 import plotly.express as px
+import dill
 
 # First Party
 from metadamage import mydash, utils
@@ -15,6 +16,8 @@ from metadamage import mydash, utils
 class FitResults:
     def __init__(self):
         self._load_df_fit_results()
+        self._load_fit_predictions()
+        self._load_df_mismatch_counts()
         self._compute_ranges()
         self._set_cmap()
         self._set_hover_info()
@@ -44,19 +47,65 @@ class FitResults:
         df = pd.concat(dfs, axis=0, ignore_index=True)
         df["N_alignments_log10"] = np.log10(df["N_alignments"])
         df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-        # df["N_alignments_str"] = df.apply(
-        # lambda row: utils.human_format(row["N_alignments"]), axis=1
-        # )
         df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
-        # df["N_sum_total_str"] = df.apply(
-        # lambda row: utils.human_format(row["N_sum_total"]), axis=1
-        # )
-        self.df = df
-        self.columns = list(self.df.columns)
+        self.df_fit_results = df
+        self.columns = list(self.df_fit_results.columns)
+        self.set_marker_size(marker_transformation="sqrt")
+
+    def _load_fit_predictions(self):
+
+        input_folder = "./data/fits"
+        input_files = list(Path("").rglob(f"{input_folder}/*.dill"))
+
+        if len(input_files) == 0:
+            raise AssertionError(
+                f"No Parquet files (fit results) found in {input_folder}."
+            )
+
+        d_fits_median = {}
+        d_fits_hpdi = {}
+
+        for file in input_files:
+
+            name = utils.extract_name(file, max_length=20)
+
+            d_fits_taxid = utils.load_dill(file)[0]
+            d_fits_median_taxid = {
+                taxid: d_fits_taxid[taxid]["median"] for taxid in d_fits_taxid.keys()
+            }
+            d_fits_hpdi_taxid = {
+                taxid: d_fits_taxid[taxid]["hpdi"] for taxid in d_fits_taxid.keys()
+            }
+
+            d_fits_median[name] = d_fits_median_taxid
+            d_fits_hpdi[name] = d_fits_hpdi_taxid
+
+        self.d_fits_median = d_fits_median
+        self.d_fits_hpdi = d_fits_hpdi
+
+    def _load_df_mismatch_counts(self):
+
+        input_folder = "./data/parquet"
+        input_files = list(Path("").rglob(f"{input_folder}/*.parquet"))
+
+        if len(input_files) == 0:
+            raise AssertionError(
+                f"No Parquet files (fit results) found in {input_folder}."
+            )
+
+        dfs = []
+        for file in input_files:
+            df = pd.read_parquet(file)
+            name = utils.extract_name(file, max_length=20)
+            df["name"] = name
+            dfs.append(df)
+
+        df = pd.concat(dfs, axis=0, ignore_index=True)
+        self.df_mismatch = df
 
     def _get_range_of_column(self, column, spacing):
-        range_min = self.df[column].min()
-        range_max = self.df[column].max()
+        range_min = self.df_fit_results[column].min()
+        range_max = self.df_fit_results[column].max()
         delta = range_max - range_min
         ranges = [range_min - delta / spacing, range_max + delta / spacing]
         return ranges
@@ -71,33 +120,34 @@ class FitResults:
         self.ranges = ranges
 
     def _set_names(self):
-        self.names = list(self.df.name.unique())
+        self.names = list(self.df_fit_results.name.unique())
 
-    def set_marker_size(self, dropdown_marker_transformation):
+    def set_marker_size(self, marker_transformation="sqrt", marker_size_max=30):
 
-        df = self.df
+        df = self.df_fit_results
 
-        if dropdown_marker_transformation == "identity":
+        if marker_transformation == "identity":
             df.loc[:, "size"] = df["N_alignments"]
 
-        elif dropdown_marker_transformation == "sqrt":
+        elif marker_transformation == "sqrt":
             df.loc[:, "size"] = np.sqrt(df["N_alignments"])
 
-        elif dropdown_marker_transformation == "log10":
+        elif marker_transformation == "log10":
             df.loc[:, "size"] = np.log10(df["N_alignments"])
 
-        elif dropdown_marker_transformation == "constant":
+        elif marker_transformation == "constant":
             df.loc[:, "size"] = np.ones_like(df["N_alignments"])
 
         else:
             raise AssertionError(
-                f"Did not recieve proper dropdown_marker_transformation: {dropdown_marker_transformation}"
+                f"Did not recieve proper marker_transformation: {marker_transformation}"
             )
 
         self.max_of_size = np.max(df["size"])
+        self.marker_size_max = marker_size_max
         return None
 
-    def filter(self, filters):
+    def filter(self, filters, df="df_fit_results"):
         query = ""
         for dimension, filter in filters.items():
 
@@ -122,14 +172,32 @@ class FitResults:
 
         query = query[:-2]
         # print(query)
-        return self.df.query(query)
+
+        if df == "df_fit_results":
+            return self.df_fit_results.query(query)
+        elif df == "df_mismatch":
+            return self.df_mismatch.query(query)
+        else:
+            raise AssertionError(
+                f"df = {df} not implemented yet, "
+                "only 'df_fit_results' and 'df_mismatch"
+            )
+
+    def get_mismatch_group(self, name, taxid):
+        return self.df_mismatch.query(f"name == '{name}' & taxid == {taxid}")
+
+    def get_fit_predictions(self, name, taxid):
+        return {
+            "median": self.d_fits_median[name][taxid],
+            "hdpi": self.d_fits_hpdi[name][taxid],
+        }
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
         cmap = px.colors.qualitative.D3
 
         d_cmap = {}
-        for i, (name, _) in enumerate(self.df.groupby("name", sort=False)):
+        for i, (name, _) in enumerate(self.df_fit_results.groupby("name", sort=False)):
             d_cmap[name] = cmap[i]
 
         self.cmap = cmap
@@ -171,7 +239,7 @@ class FitResults:
             "<extra></extra>"
         )
 
-        self.customdata = self.df[self.custom_data_columns]
+        self.customdata = self.df_fit_results[self.custom_data_columns]
 
     def _set_dimensions(self):
         self.dimensions = [
@@ -234,3 +302,12 @@ class FitResults:
 
             yield dimension, row, column, showlegend, forward, reverse
             showlegend = False
+
+    def parse_click_data(self, click_data, variable):
+        try:
+            index = self.custom_data_columns.index(variable)
+            value = click_data["points"][0]["customdata"][index]
+            return value
+
+        except Exception as e:
+            raise e

@@ -9,7 +9,7 @@ def create_empty_dataframe_for_datatable(s=None):
     return pd.DataFrame({"name": [s]})
 
 
-def get_data_table_keywords():
+def get_data_table_keywords(id="data_table"):
 
     data_table_columns_dtypes = {
         # File name
@@ -118,7 +118,7 @@ def get_data_table_keywords():
     ]
 
     kwargs = dict(
-        id="data_table",
+        id=id,
         columns=columns,
         data=create_empty_dataframe_for_datatable().to_dict("records"),
         style_table={

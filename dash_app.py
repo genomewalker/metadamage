@@ -19,6 +19,8 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
+from importlib import reload
+
 # First Party
 from metadamage import mydash, utils
 
@@ -82,6 +84,7 @@ app.layout = dbc.Container(
                     md=2,
                 ),
                 dbc.Col(mydash.elements.get_card_main_plot(fit_results), md=8),
+                # dbc.Col(mydash.elements.get_card_mismatch_figure(fit_results), md=3),
             ],
         ),
         mydash.elements.get_card_datatable(fit_results),
@@ -95,6 +98,9 @@ app.layout = dbc.Container(
     Input("range-slider-N-alignments", "drag_value"),
 )
 def update_markdown_N_alignments(slider_range):
+
+    print(slider_range)
+
     low, high = slider_range
     low = mydash.utils.transform_slider(low)
     high = mydash.utils.transform_slider(high)
@@ -135,11 +141,7 @@ def update_markdown_marker_size(slider):
     Input("graph", "clickData"),
 )
 def make_clickData_table(clickData):
-    """
-    This callback takes the 'active_tab' property as input, as well as the
-    stored graphs, and renders the tab content depending on what the value of
-    'active_tab' is.
-    """
+    """"""
     if clickData is not None:
         index_taxid = fit_results.custom_data_columns.index("taxid")
         index_name = fit_results.custom_data_columns.index("name")
@@ -161,6 +163,74 @@ def make_clickData_table(clickData):
         return mydash.datatable.create_empty_dataframe_for_datatable().to_dict(
             "records"
         )
+
+
+# @app.callback(
+#     Output("mismatch_figure-div", "children"),
+#     Input("graph", "clickData"),
+# )
+# def make_clickData_mismatch_fractions(clickData):
+#     """"""
+
+#     # print("make_clickData_mismatch_fractions")
+#     # print(clickData)
+
+#     if clickData is not None:
+#         index_taxid = fit_results.custom_data_columns.index("taxid")
+#         index_name = fit_results.custom_data_columns.index("name")
+#         try:
+#             name = clickData["points"][0]["customdata"][index_name]
+#             taxid = clickData["points"][0]["customdata"][index_taxid]
+
+#             print(name, taxid)
+
+#             group = fit_results.get_mismatch_group(name, taxid)
+#             fit = fit_results.get_fit_predictions(name, taxid)
+
+#             chosen_mismatch_columns = ["C→T", "G→A"]
+
+#             fig_mismatch_fractions = mydash.figures.plot_mismatch_fractions(
+#                 group,
+#                 fit,
+#                 chosen_mismatch_columns,
+#             )
+
+#             print("make_clickData_mismatch_fractions")
+#             # print(group)
+#             # print(fit)
+#             # print(fig_mismatch_fractions)
+
+#             # return fig_mismatch_fractions
+
+#             kwargs = dict(
+#                 id="graph-mismatch-figure",
+#                 config={
+#                     "displaylogo": False,
+#                     "doubleClick": "reset",
+#                     "showTips": True,
+#                     "modeBarButtonsToRemove": [
+#                         "select2d",
+#                         "lasso2d",
+#                         "autoScale2d",
+#                         "hoverClosestCartesian",
+#                         "hoverCompareCartesian",
+#                         "toggleSpikelines",
+#                     ],
+#                 },
+#                 # https://css-tricks.com/fun-viewport-units/
+#                 style={"width": "90%", "height": "78vh"},
+#             )
+
+#             return dcc.Graph(figure=fig_mismatch_fractions, **kwargs)
+
+#         # when selecting histogram without customdata
+#         except KeyError:
+#             s = "Does not work for binned data (histograms)"
+#             print(s)
+
+#     else:
+#         print("Got here")
+#         # return None
 
 
 @app.callback(
@@ -313,53 +383,41 @@ else:
     df = fit_results.df
     fig_fit_results = mydash.figures.create_fit_results_figure(fit_results, df)
     fig_fit_results
-    # %%
 
-    input_folder = "./data/parquet"
-    input_files = list(Path("").rglob(f"{input_folder}/*.parquet"))
+    name = "SJArg-1-Nit__number_..."
+    taxid = 33969
 
-    if len(input_files) == 0:
-        raise AssertionError(f"No Parquet files (fit results) found in {input_folder}.")
+    # group = fit_results.df_mismatch.query(f"taxid == {taxid}")
 
-    dfs = []
-    for file in input_files:
-        df = pd.read_parquet(file)
-        name = utils.extract_name(file, max_length=20)
-        df["name"] = name
-        dfs.append(df)
+    group = fit_results.get_mismatch_group(name, taxid)
+    fit = fit_results.get_fit_predictions(name, taxid)
 
-    df = pd.concat(dfs, axis=0, ignore_index=True)
+    chosen_mismatch_columns = ["C→T", "G→A"]
 
-    taxid = 1
-    group = df.query(f"name == '{name}' & taxid == {taxid}")
-
-    group_forward = group.query(f"position >= 0")
-
-    #%%
-
-    fig = px.scatter(group_forward, x="position", y=["f_CT", "f_GA"])
-    fig.update_yaxes(rangemode="nonnegative")
-
-    size = group_forward.position.values
-
-    sizemin = 0
-    sizemax = 20
-
-    fig.update_traces(
-        marker=dict(
-            size=size,
-            sizemode="area",
-            sizeref=2.0 * max(size) / (sizemax ** 2),
-            sizemin=sizemin,
-        )
+    fig_mismatch_fractions = mydash.figures.plot_mismatch_fractions(
+        group,
+        fit,
+        chosen_mismatch_columns,
     )
 
-    fig.update_layout(
-        xaxis_title="Position (z)",
-        yaxis_title="Fraction",
-        title_text="Raw Data",
-        legend_title="Legend",
-    )
-
-    fig
     # %%
+
+
+#%%
+
+# name = "KapK-198A-Ext-55-Lib..."
+# taxid = 1
+# group = df.query(f"name == '{name}' & taxid == {taxid}")
+
+
+#%%
+
+
+# %%
+
+# ACTG = ["A", "C", "G", "T"]
+# all_mismatch_columns = []
+# for ref in ACTG:
+#     for obs in ACTG:
+#         if ref != obs:
+#             all_mismatch_columns.append(f"{ref}→{obs}")
