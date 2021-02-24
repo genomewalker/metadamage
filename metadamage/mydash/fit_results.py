@@ -231,9 +231,9 @@ class FitResults:
         query = query[:-2]
         # print(query)
 
-        if df == "df_fit_results":
+        if "fit_results" in df:
             return self.df_fit_results.query(query)
-        elif df == "df_mismatch":
+        elif "mismatch" in df:
             return self.df_mismatch.query(query)
         else:
             raise AssertionError(
@@ -245,10 +245,13 @@ class FitResults:
         return self.df_mismatch.query(f"name == '{name}' & taxid == {taxid}")
 
     def get_fit_predictions(self, name, taxid):
-        return {
-            "median": self.d_fits_median[name][taxid],
-            "hdpi": self.d_fits_hpdi[name][taxid],
-        }
+        try:
+            return {
+                "median": self.d_fits_median[name][taxid],
+                "hdpi": self.d_fits_hpdi[name][taxid],
+            }
+        except KeyError:
+            return None
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express

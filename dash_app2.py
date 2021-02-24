@@ -93,8 +93,61 @@ card_tabs = dbc.Card(
     body=True,
 )
 
+#%%
+
+
+dropdown_mismatch_file_names = dbc.FormGroup(
+    [
+        dbc.Label("File Names"),
+        dcc.Dropdown(
+            id="dropdown_mismatch_file_names",
+            options=[{"label": name, "value": name} for name in fit_results.names],
+            value=fit_results.names[0],
+            placeholder="Select file name",
+        ),
+    ],
+)
+
+
+dropdown_mismatch_taxid = dbc.FormGroup(
+    [
+        dbc.Label("Tax IDs"),
+        dcc.Dropdown(id="dropdown_mismatch_taxid", placeholder="Select taxid"),
+    ],
+)
+
+
+card_form_mismatch = dbc.Card(
+    [
+        html.H3("Dropdowns", className="card-title"),
+        html.Div(
+            [
+                dcc.Dropdown(
+                    id="name-dropdown",
+                    options=[
+                        {"label": name, "value": name} for name in fit_results.names
+                    ],
+                ),
+            ],
+        ),
+        html.Div(
+            [
+                dcc.Dropdown(
+                    id="opt-dropdown",
+                ),
+            ],
+        ),
+        html.Hr(),
+        html.Div(id="display-selected-values")
+        # dbc.Form([dropdown_mismatch_file_names, dropdown_mismatch_taxid]),
+    ],
+    body=True,  # spacing before border
+)
+
+
 card_mismatch = dbc.Card(
     [
+        card_form_mismatch,
         dcc.Graph(
             figure=mydash.figures.create_empty_figure(),
             id="graph_mismatch",
@@ -103,6 +156,9 @@ card_mismatch = dbc.Card(
     ],
     body=True,
 )
+
+
+#%%
 
 card_datatable = dbc.Card(
     [
@@ -459,13 +515,45 @@ def update_tab_layout(active_tab, button_n, data):
 #%%
 
 
+# @app.callback(
+#     Output("graph_mismatch", "figure"),
+#     Input("main_graph", "clickData"),
+#     Input("tabs", "active_tab"),
+# )
+# def update_mismatch_plot(click_data, active_tab):
+
+#     if click_data is None:
+#         if active_tab == "fig_histograms":
+#             s = "Does not work for binned data"
+#             return mydash.figures.create_empty_figure(s=s)
+#         else:
+#             return mydash.figures.create_empty_figure()
+
+#     try:
+#         taxid = fit_results.parse_click_data(click_data, variable="taxid")
+#         name = fit_results.parse_click_data(click_data, variable="name")
+#         group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+#         fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+#         chosen_mismatch_columns = ["C→T", "G→A"]
+#         fig = mydash.figures.plot_mismatch_fractions(
+#             group, chosen_mismatch_columns, fit
+#         )
+#         return fig
+
+#     # when selecting histogram without customdata
+#     except KeyError:
+#         raise PreventUpdate
+
+
 @app.callback(
     Output("graph_mismatch", "figure"),
-    Input("main_graph", "clickData"),
     Input("tabs", "active_tab"),
+    Input("opt-dropdown", "value"),
+    Input("name-dropdown", "value"),
 )
-def update_mismatch_plot(click_data, active_tab):
-    if click_data is None:
+def update_mismatch_plot(active_tab, dropdown_taxid, dropdown_name):
+
+    if dropdown_taxid is None:
         if active_tab == "fig_histograms":
             s = "Does not work for binned data"
             return mydash.figures.create_empty_figure(s=s)
@@ -473,13 +561,13 @@ def update_mismatch_plot(click_data, active_tab):
             return mydash.figures.create_empty_figure()
 
     try:
-        taxid = fit_results.parse_click_data(click_data, variable="taxid")
-        name = fit_results.parse_click_data(click_data, variable="name")
-        group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-        fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+        group = fit_results.get_mismatch_group(name=dropdown_name, taxid=dropdown_taxid)
+        fit = fit_results.get_fit_predictions(name=dropdown_name, taxid=dropdown_taxid)
         chosen_mismatch_columns = ["C→T", "G→A"]
         fig = mydash.figures.plot_mismatch_fractions(
-            group, chosen_mismatch_columns, fit
+            group,
+            chosen_mismatch_columns,
+            fit,
         )
         return fig
 
@@ -513,6 +601,52 @@ def update_data_table(click_data, active_tab):
 
     # when selecting histogram without customdata
     except KeyError:
+        raise PreventUpdate
+
+
+#%%
+
+
+def get_taxid_options_based_on_filename(name, df_string="df_fit_results"):
+    """df_string is a string, eg. df_fit_results or  df_mismatch.
+    The 'df_' part is optional
+    """
+    taxids = sorted(fit_results.filter({"name": name}, df="mismatch")["taxid"].unique())
+    options = [{"label": i, "value": i} for i in taxids]
+    return options
+
+
+@app.callback(
+    Output("opt-dropdown", "options"),
+    Input("name-dropdown", "value"),
+)
+def update_date_dropdown(name):
+    # return get_taxid_options_based_on_filename(name, df_string='fit_results')
+    return get_taxid_options_based_on_filename(name, df_string="mismatch")
+
+
+@app.callback(
+    Output("display-selected-values", "children"),
+    Input("opt-dropdown", "value"),
+    Input("main_graph", "clickData"),
+)
+def set_display_children(taxid, click_data):
+    if click_data is not None:
+        taxid = fit_results.parse_click_data(click_data, variable="taxid")
+    return "you have selected Tax ID {}".format(taxid)
+
+
+@app.callback(
+    Output("name-dropdown", "value"),
+    Output("opt-dropdown", "value"),
+    Input("main_graph", "clickData"),
+)
+def update_dropdowns_based_on_click_data(click_data):
+    if click_data is not None:
+        taxid = fit_results.parse_click_data(click_data, variable="taxid")
+        name = fit_results.parse_click_data(click_data, variable="name")
+        return name, taxid
+    else:
         raise PreventUpdate
 
 
