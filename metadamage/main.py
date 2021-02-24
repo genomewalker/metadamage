@@ -1,6 +1,7 @@
 # Scientific Library
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Standard Library
 from collections import defaultdict
@@ -8,29 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
 import logging
-import os.path
-from pprint import pformat, pprint
-import sys
-import time
-from typing import Iterable
-from urllib.request import urlopen
-
-# Third Party
 import numpyro
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TaskID,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-    track,
-    TransferSpeedColumn,
-)
-from tqdm.auto import tqdm
 
 # First Party
 from metadamage import fileloader, fit, plot, utils
@@ -112,8 +91,8 @@ if utils.is_ipython():
     reload(utils)
 
     cfg = utils.Config(
-        max_fits=1000,
-        max_plots=100,
+        max_fits=10,
+        max_plots=None,
         max_cores=-1,
         max_position=15,
         min_damage=None,

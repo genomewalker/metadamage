@@ -59,8 +59,9 @@ def cli(
     # input arguments (filenames)
     filenames: List[Path] = typer.Argument(...),
     # maximum values
-    max_fits: Optional[int] = typer.Option(None, help="[default: None]"),
-    max_plots: Optional[int] = typer.Option(None, help="[default: None]"),
+    max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
+    max_plots: Optional[int] = typer.Option(0, help="[default: 0 (No plots)]"),
+    # max_plots: int = 0,
     max_cores: int = 1,
     max_position: int = typer.Option(15),
     # minimum fit values (used for deciding what to plot)

@@ -221,10 +221,13 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
     )
     ax_forward.set_title("Forward ", loc="right", pad=10, fontdict=dict(fontsize=30))
 
-    name = group["name"].iloc[0].replace(r"_", r"\_")
-    rank = group["rank"].iloc[0].replace(r"_", r"\_")
+    name = group["name"].iloc[0]
+    rank = group["rank"].iloc[0]
     title = f"Error rate frequency as a function of position.\nTaxon: {taxid}, {name}, {rank}\n"
-    title = title.replace("root, no rank", "root")
+
+    # fix LaTeX errors:
+    title = utils.fix_latex_warnings_in_string(title)
+
     fig.suptitle(title, fontsize=34)
     fig.subplots_adjust(top=0.8)
 

@@ -97,7 +97,7 @@ class Config:
         logger.info(f"Setting number_of_fits to {self.number_of_fits}")
 
     def set_number_of_plots(self):
-        if self.max_plots is None:
+        if self.max_plots is None or self.max_plots < 0:
             self.number_of_plots = self.number_of_fits
         else:
             self.number_of_plots = self.max_plots
@@ -441,3 +441,14 @@ def normalize_header(cell):
     cell = cell.upper()
     cell = cell or "BLANK"
     return cell
+
+#%%
+
+def fix_latex_warnings_in_string(s):
+    # fix LaTeX errors:
+    replacements = [(r"_", r"\_"), (r"&", r"\&"), (r"#", r"\#")]
+    # fix bad root title
+    replacements.append(("root, no rank", "root"))
+    for replacement in replacements:
+        s = s.replace(replacement[0], replacement[1])
+    return s
