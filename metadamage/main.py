@@ -106,7 +106,7 @@ if utils.is_ipython():
         force_reload_files=False,
         force_plots=False,
         force_fits=False,
-        force_no_fits=False,
+        force_no_plots=False,
         version="0.0.0",
     )
 

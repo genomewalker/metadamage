@@ -461,8 +461,16 @@ def normalize_header(cell):
 
 
 def fix_latex_warnings_in_string(s):
+    # https://matplotlib.org/stable/tutorials/text/usetex.html
+
     # fix LaTeX errors:
-    replacements = [(r"_", r"\_"), (r"&", r"\&"), (r"#", r"\#")]
+    replacements = [
+        (r"_", r"\_"),
+        (r"&", r"\&"),
+        (r"#", r"\#"),
+        (r"%", r"\%"),
+        (r"$", r"\$"),
+    ]
     # fix bad root title
     replacements.append(("root, no rank", "root"))
     for replacement in replacements:
