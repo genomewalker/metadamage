@@ -224,7 +224,7 @@ def plot_forward_reverse(fit_results, df_fit_results):
 def create_empty_figure(s=None, width=None, height=None):
 
     if s is None:
-        s = "Please select some files to plot"
+        s = "Please select a point"
 
     fig = go.Figure()
 

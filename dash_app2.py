@@ -9,7 +9,7 @@ import webbrowser
 
 # Third Party
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State, MATCH, ALL
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
@@ -69,7 +69,7 @@ graph_kwargs = dict(
         ],
     },
     # https://css-tricks.com/fun-viewport-units/
-    style={"width": "90%", "height": "70vh"},
+    # style={"width": "90%", "height": "70vh"},
 )
 
 
@@ -96,7 +96,7 @@ card_tabs = dbc.Card(
 card_mismatch = dbc.Card(
     [
         dcc.Graph(
-            figure=mydash.figures.create_empty_figure(s="Please select a point"),
+            figure=mydash.figures.create_empty_figure(),
             id="graph_mismatch",
             **graph_kwargs,
         ),
@@ -169,20 +169,32 @@ card_form = dbc.Card(
 
 form_overview_marker_size = dbc.FormGroup(
     [
-        dbc.Label("Marker Size"),
-        dcc.Slider(
-            id="slider_overview_marker_size",
-            **mydash.elements.get_slider_keywords(),
-        ),
-    ]
+        dbc.Label("Marker Size", className="mr-2"),
+        # dbc.Col(
+        html.Div(
+            dcc.Slider(
+                # id="slider_overview_marker_size",
+                # possible fix for ReferenceError
+                id={"type": "slider_overview_marker_size", "index": 0},
+                **mydash.elements.get_slider_keywords(),
+            ),
+            style={"min-width": "300px"},
+        )
+        # width=5,
+        # ),
+    ],
+    className="mr-6",
 )
 
 
 form_overview_marker_transformation = dbc.FormGroup(
     [
-        dbc.Label("Marker Transformation"),
+        dbc.Label("Marker Transformation", className="mr-2"),
+        # dbc.Col(
         dcc.Dropdown(
-            id="dropdown_overview_marker_transformation",
+            # id="dropdown_overview_marker_transformation",
+            # possible fix for ReferenceError
+            id={"type": "dropdown_overview_marker_transformation", "index": 0},
             options=[
                 {"label": "Identity", "value": "identity"},
                 {"label": "Sqrt", "value": "sqrt"},
@@ -192,19 +204,139 @@ form_overview_marker_transformation = dbc.FormGroup(
             value="sqrt",
             searchable=False,
             clearable=False,
+            style={"min-width": "100px"},
+            # ),
+            # width=5,
         ),
-    ]
+    ],
+    className="mr-6",
 )
+
+button_reset = dbc.FormGroup(
+    [
+        dbc.Label("", className="mr-5"),
+        dbc.Button(
+            "Reset",
+            id={"type": "button_reset", "index": 0},
+            color="primary",
+        ),
+    ],
+    className="mr-6",
+)
+
 
 card_overview_marker = dbc.Card(
     [
-        html.H3("Markers", className="card-title"),
+        # html.H3("Markers", className="card-title"),
         dbc.Form(
-            [form_overview_marker_size, form_overview_marker_transformation],
+            [
+                form_overview_marker_size,
+                form_overview_marker_transformation,
+                button_reset,
+            ],
+            inline=True,
         ),
     ],
     body=True,  # spacing before border
+    # className="mr-6",
 )
+
+
+#%%
+
+
+def get_figure_from_df_and_tab(df_fit_results_filtered, active_tab):
+    if active_tab == "fig_fit_results":
+        fig = mydash.figures.plot_fit_results(fit_results, df_fit_results_filtered)
+    elif active_tab == "fig_histograms":
+        fig = mydash.figures.plot_histograms(fit_results, df_fit_results_filtered)
+    elif active_tab == "fig_scatter_matrix":
+        fig = mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_filtered)
+    elif active_tab == "fig_forward_reverse":
+        fig = mydash.figures.plot_forward_reverse(fit_results, df_fit_results_filtered)
+    else:
+        print("got here: get_figure_from_df_and_tab")
+    return fig
+
+
+def get_main_figure(data_or_df, active_tab="fig_fit_results"):
+    if data_or_df is None:
+        return mydash.figures.create_empty_figure(s="")
+
+    if isinstance(data_or_df, list):
+        df = pd.DataFrame.from_records(data_or_df)
+    elif isinstance(data_or_df, pd.DataFrame):
+        df = data_or_df
+    else:
+        raise AssertionError(f"Got wrong type for data_or_df: {type(data_or_df)}")
+    return get_figure_from_df_and_tab(df, active_tab)
+
+
+def make_tab_from_data(data_or_df=None, active_tab="fig_fit_results"):
+
+    figure = get_main_figure(data_or_df, active_tab)
+    main_graph = dcc.Graph(figure=figure, id="main_graph", **graph_kwargs)
+
+    if active_tab == "fig_fit_results" or active_tab == "overview":
+
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                    dbc.Row(
+                        dbc.Col(card_overview_marker, width=10),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+        # return [
+        #     main_graph,
+        #     card_overview_marker,
+        # ]
+
+    elif active_tab == "fig_histograms":
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    elif active_tab == "fig_scatter_matrix":
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    elif active_tab == "fig_forward_reverse":
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    else:
+        print("got here: make_tab_from_data")
 
 
 #%%
@@ -212,11 +344,7 @@ card_overview_marker = dbc.Card(
 card_graph = dbc.Card(
     [
         html.Div(
-            dcc.Graph(
-                figure=mydash.figures.create_empty_figure(s=""),
-                id="main_graph",
-                **graph_kwargs,
-            ),
+            make_tab_from_data(active_tab="overview"),  # main_graph
             id="main_graph_div",
             className="loader-fade",
         ),
@@ -232,7 +360,7 @@ import time
 
 app.layout = dbc.Container(
     [
-        # dcc.Store(id="store"),
+        dcc.Store(id="store"),
         html.Br(),
         dbc.Row(
             [
@@ -261,25 +389,26 @@ from dash.exceptions import PreventUpdate
 
 
 @app.callback(
-    Output("main_graph_div", "children"),
-    [
-        Input("dropdown_file_selection", "value"),
-        Input("range_slider_N_alignments", "value"),
-        Input("range_slider_D_max", "value"),
-        Input("tabs", "active_tab"),
-    ],
+    Output("store", "data"),
+    Input("dropdown_file_selection", "value"),
+    Input("range_slider_N_alignments", "value"),
+    Input("range_slider_D_max", "value"),
+    Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
+    Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
 )
-def main_plot(
+def filter_fit_results(
     dropdown_file_selection,
     range_slider_N_alignments,
     range_slider_D_max,
-    active_tab,
+    marker_size_max,
+    marker_transformation,
 ):
 
     # if no files selected
     if not dropdown_file_selection:
         raise PreventUpdate
 
+    fit_results.set_marker_size(marker_transformation, marker_size_max)
     df_fit_results_filtered = fit_results.filter(
         {
             "N_alignments": range_slider_N_alignments,
@@ -288,32 +417,43 @@ def main_plot(
         }
     )
 
+    return df_fit_results_filtered.to_dict("records")
+
+
+@app.callback(
+    Output("main_graph", "figure"),
+    Input("store", "data"),
+    Input("tabs", "active_tab"),
+)
+def update_main_graph(data, active_tab):
+    if active_tab is None:
+        print("update_main_graph got active_tab == None")
+    if data is None:
+        print("update_main_graph got data == None")
+
+    figure = get_main_figure(data, active_tab)
+
+    # allows to size of marker to change without loosing zoom level
     if active_tab == "fig_fit_results":
-        fig = mydash.figures.plot_fit_results(fit_results, df_fit_results_filtered)
-        # graph = dcc.Graph(figure=fig, id="main_graph", **graph_kwargs)
-        # card_graph = dbc.Card([graph], body=True)  # spacing before border
-        # container = dbc.Container(
-        #     [
-        #         dbc.Row([card_graph]),
-        #         dbc.Row([card_overview_marker]),
-        #     ]
-        # )
-        # return container
+        figure["layout"]["uirevision"] = True
 
-    elif active_tab == "fig_histograms":
-        fig = mydash.figures.plot_histograms(fit_results, df_fit_results_filtered)
+    return figure
 
-    elif active_tab == "fig_scatter_matrix":
-        fig = mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_filtered)
 
-    elif active_tab == "fig_forward_reverse":
-        fig = mydash.figures.plot_forward_reverse(fit_results, df_fit_results_filtered)
-
-    else:
-        print(f"{active_tab} not implemented yet")
+@app.callback(
+    Output("main_graph_div", "children"),
+    Input("tabs", "active_tab"),
+    Input({"type": "button_reset", "index": ALL}, "n_clicks"),
+    State("store", "data"),
+)
+def update_tab_layout(active_tab, button_n, data):
+    if active_tab is None:
+        print("update_tab_layout got active_tab == None")
+    if data is None:
+        # print("update_tab_layout got data == None")
         raise PreventUpdate
 
-    return dcc.Graph(figure=fig, id="main_graph", **graph_kwargs)
+    return make_tab_from_data(data, active_tab)
 
 
 #%%
@@ -322,10 +462,15 @@ def main_plot(
 @app.callback(
     Output("graph_mismatch", "figure"),
     Input("main_graph", "clickData"),
+    Input("tabs", "active_tab"),
 )
-def mismatch_plot(click_data):
+def update_mismatch_plot(click_data, active_tab):
     if click_data is None:
-        raise PreventUpdate
+        if active_tab == "fig_histograms":
+            s = "Does not work for binned data"
+            return mydash.figures.create_empty_figure(s=s)
+        else:
+            return mydash.figures.create_empty_figure()
 
     try:
         taxid = fit_results.parse_click_data(click_data, variable="taxid")
@@ -340,9 +485,7 @@ def mismatch_plot(click_data):
 
     # when selecting histogram without customdata
     except KeyError:
-        s = "Does not work for binned data"
-        fig = mydash.figures.create_empty_figure(s=s)
-        return fig
+        raise PreventUpdate
 
 
 #%%
@@ -351,10 +494,15 @@ def mismatch_plot(click_data):
 @app.callback(
     Output("data_table", "data"),
     Input("main_graph", "clickData"),
+    Input("tabs", "active_tab"),
 )
-def mismatch_plot(click_data):
+def update_data_table(click_data, active_tab):
     if click_data is None:
-        ds = mydash.datatable.create_empty_dataframe_for_datatable()
+        if active_tab == "fig_histograms":
+            s = "Does not work for binned data (histograms)"
+            ds = mydash.datatable.create_empty_dataframe_for_datatable(s)
+        else:
+            ds = mydash.datatable.create_empty_dataframe_for_datatable()
         return ds.to_dict("records")
 
     try:
@@ -365,9 +513,7 @@ def mismatch_plot(click_data):
 
     # when selecting histogram without customdata
     except KeyError:
-        s = "Does not work for binned data (histograms)"
-        ds = mydash.datatable.create_empty_dataframe_for_datatable(s)
-        return ds.to_dict("records")
+        raise PreventUpdate
 
 
 #%%
@@ -384,26 +530,25 @@ if __name__ == "__main__" and not is_ipython():
 else:
 
     name = "KapK-198A-Ext-55-Lib-55-Index1"
-    # name = "EC-Ext-14-Lib-14-Ind..."
     taxid = 1
 
-    fit_results.names
+    # fit_results.names
 
-    df_mismatch = fit_results.filter({"taxid": taxid, "name": name}, df="df_mismatch")
-    df_fit_results = fit_results.filter(
-        {"taxid": taxid, "name": name}, df="df_fit_results"
-    )
+    # df_mismatch = fit_results.filter({"taxid": taxid, "name": name}, df="df_mismatch")
+    # df_fit_results = fit_results.filter(
+    #     {"taxid": taxid, "name": name}, df="df_fit_results"
+    # )
 
-    group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-    fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+    # group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+    # fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
 
-    chosen_mismatch_columns = ["C→T", "G→A"]
+    # chosen_mismatch_columns = ["C→T", "G→A"]
 
-    #%%
+    # #%%
 
-    fig = mydash.figures.plot_mismatch_fractions(
-        df_mismatch, chosen_mismatch_columns, fit=fit
-    )
-    fig
+    # fig = mydash.figures.plot_mismatch_fractions(
+    #     df_mismatch, chosen_mismatch_columns, fit=fit
+    # )
+    # fig
 
-    df_mismatch[["position", "CT", "C"]]
+    # df_mismatch[["position", "CT", "C"]]

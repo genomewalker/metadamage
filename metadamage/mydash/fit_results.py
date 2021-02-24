@@ -176,6 +176,14 @@ class FitResults:
 
         df = self.df_fit_results
 
+        if isinstance(marker_transformation, list) and isinstance(
+            marker_size_max, list
+        ):
+            if len(marker_transformation) == 0 and len(marker_size_max) == 0:
+                return None
+            marker_transformation = marker_transformation[0]
+            marker_size_max = marker_size_max[0]
+
         if marker_transformation == "identity":
             df.loc[:, "size"] = df["N_alignments"]
 
