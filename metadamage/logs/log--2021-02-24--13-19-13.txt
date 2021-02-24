@@ -1,0 +1,6 @@
+2021-02-24 13:19:15,892 | metadamage.utils | INFO | 'max-cores' is set to a negative valueso using 7 (available-max_cores) cores
+2021-02-24 13:19:17,358 | metadamage.utils | INFO | Running new file: EC-Ext-14-Lib-14-Index1
+2021-02-24 13:19:30,280 | metadamage.fileloader | INFO | Creating DataFrame, please wait.
+2021-02-24 13:19:49,242 | metadamage.fileloader | INFO | Loading DataFrame from parquet-file.
+2021-02-24 13:33:41,790 | metadamage.utils | INFO | Running new file: SJArg-1-Nit
+2021-02-24 13:33:52,098 | metadamage.fileloader | INFO | Loading DataFrame from parquet-file.

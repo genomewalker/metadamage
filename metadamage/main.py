@@ -136,6 +136,7 @@ if utils.is_ipython():
     os.chdir(path)
 
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
+    filename = filenames[1]
     filename = filenames[-1]
 
     if False:

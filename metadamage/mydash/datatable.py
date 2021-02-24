@@ -60,6 +60,11 @@ def get_data_table_keywords(id="data_table"):
             "type": "numeric",
             "format": {"specifier": ".3s"},
         },
+        "y_sum_total": {
+            "name": "y sum total",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
         # Forward & Reverse
         "n_sigma_forward": {
             "name": "n sigma, forward",
@@ -98,6 +103,16 @@ def get_data_table_keywords(id="data_table"):
         },
         "N_sum_reverse": {
             "name": "N sum, reverse",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "y_sum_forward": {
+            "name": "y sum, forward",
+            "type": "numeric",
+            "format": {"specifier": ".3s"},
+        },
+        "y_sum_reverse": {
+            "name": "y sum, reverse",
             "type": "numeric",
             "format": {"specifier": ".3s"},
         },

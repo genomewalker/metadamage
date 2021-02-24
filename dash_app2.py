@@ -69,7 +69,7 @@ graph_kwargs = dict(
         ],
     },
     # https://css-tricks.com/fun-viewport-units/
-    # style={"width": "90%", "height": "70vh"},
+    style={"width": "90%", "height": "70vh"},
 )
 
 
@@ -383,10 +383,27 @@ if __name__ == "__main__" and not is_ipython():
 
 else:
 
-    name = "SJArg-1-Nit"
-    taxid = 33969
+    name = "KapK-198A-Ext-55-Lib-55-Index1"
+    # name = "EC-Ext-14-Lib-14-Ind..."
+    taxid = 1
 
-    group = fit_results.filter({"taxid": taxid, "name": name}, df="df_mismatch")
+    fit_results.names
+
+    df_mismatch = fit_results.filter({"taxid": taxid, "name": name}, df="df_mismatch")
+    df_fit_results = fit_results.filter(
+        {"taxid": taxid, "name": name}, df="df_fit_results"
+    )
+
+    group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+    fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+
     chosen_mismatch_columns = ["C→T", "G→A"]
 
-    fig = mydash.figures.plot_mismatch_fractions(group, chosen_mismatch_columns)
+    #%%
+
+    fig = mydash.figures.plot_mismatch_fractions(
+        df_mismatch, chosen_mismatch_columns, fit=fit
+    )
+    fig
+
+    df_mismatch[["position", "CT", "C"]]

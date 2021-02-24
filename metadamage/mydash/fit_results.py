@@ -28,21 +28,39 @@ class FitResults:
 
     def _load_df_fit_results(self):
 
-        input_folder = "./data/fits"
-        input_files = list(Path("").rglob(f"{input_folder}/*.csv"))
+        input_folder = "./data/input/"
+        fit_results_folder = "./data/fits/"
+        input_files = list(Path(input_folder).rglob("*.txt"))
 
         if len(input_files) == 0:
             raise AssertionError(f"No csv files (fit results) found in {input_folder}.")
 
         dfs = []
+        names = []
         for file in input_files:
-            df = pd.read_csv(file)
+
+            name = utils.extract_name(file)
+            fit_file = list(Path(fit_results_folder).rglob(f"{name}*.csv"))
+
+            if len(fit_file) == 0:
+                continue
+
+            elif len(fit_file) > 1:
+                print("Got more than 1 fit file for df_fit_results.", fit_file)
+                print(f"Choosing {fit_file[0]}")
+                fit_file = fit_file[0]
+
+            elif len(fit_file) == 1:
+                fit_file = fit_file[0]
+
+            df = pd.read_csv(fit_file)
             cols = list(df.columns)
             cols[0] = "taxid"
             df.columns = cols
-            name = utils.extract_name(file, max_length=20)
+            # name = utils.extract_name(file)
             df["name"] = name
             dfs.append(df)
+            names.append(name)
 
         df = pd.concat(dfs, axis=0, ignore_index=True)
         df["N_alignments_log10"] = np.log10(df["N_alignments"])
@@ -51,11 +69,13 @@ class FitResults:
         self.df_fit_results = df
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
+        self.names = names
 
     def _load_fit_predictions(self):
 
-        input_folder = "./data/fits"
-        input_files = list(Path("").rglob(f"{input_folder}/*.dill"))
+        input_folder = "./data/input/"
+        fit_results_folder = "./data/fits/"
+        input_files = list(Path(input_folder).rglob("*.txt"))
 
         if len(input_files) == 0:
             raise AssertionError(
@@ -67,9 +87,21 @@ class FitResults:
 
         for file in input_files:
 
-            name = utils.extract_name(file, max_length=20)
+            name = utils.extract_name(file)
+            fit_file = list(Path(fit_results_folder).rglob(f"{name}*.dill"))
 
-            d_fits_taxid = utils.load_dill(file)[0]
+            if len(fit_file) == 0:
+                continue
+
+            elif len(fit_file) > 1:
+                print("Got more than 1 fit file for fit prediction.", fit_file)
+                print(f"Choosing {fit_file[0]}")
+                fit_file = fit_file[0]
+
+            elif len(fit_file) == 1:
+                fit_file = fit_file[0]
+
+            d_fits_taxid = utils.load_dill(fit_file)[0]
             d_fits_median_taxid = {
                 taxid: d_fits_taxid[taxid]["median"] for taxid in d_fits_taxid.keys()
             }
@@ -85,8 +117,12 @@ class FitResults:
 
     def _load_df_mismatch_counts(self):
 
-        input_folder = "./data/parquet"
-        input_files = list(Path("").rglob(f"{input_folder}/*.parquet"))
+        # input_folder = "./data/parquet"
+        # input_files = list(Path("").rglob(f"{input_folder}/*.parquet"))
+
+        input_folder = "./data/input/"
+        parquet_folder = "./data/parquet/"
+        input_files = list(Path(input_folder).rglob("*.txt"))
 
         if len(input_files) == 0:
             raise AssertionError(
@@ -95,8 +131,22 @@ class FitResults:
 
         dfs = []
         for file in input_files:
-            df = pd.read_parquet(file)
-            name = utils.extract_name(file, max_length=20)
+
+            name = utils.extract_name(file)
+            fit_file = list(Path(parquet_folder).rglob(f"{name}*.parquet"))
+
+            if len(fit_file) == 0:
+                continue
+
+            elif len(fit_file) > 1:
+                print("Got more than 1 fit file for parquet.", fit_file)
+                print(f"Choosing {fit_file[0]}")
+                fit_file = fit_file[0]
+
+            elif len(fit_file) == 1:
+                fit_file = fit_file[0]
+
+            df = pd.read_parquet(fit_file)
             df["name"] = name
             dfs.append(df)
 
@@ -218,6 +268,7 @@ class FitResults:
             "normalized_noise",
             "N_alignments",
             "N_sum_total",
+            "y_sum_total",
         ]
 
         self.hovertemplate = (
@@ -236,6 +287,7 @@ class FitResults:
             "<b>Counts</b>: <br>"
             "    N alignments:%{customdata[10]:6.3s} <br>"
             "    N sum total: %{customdata[11]:6.3s} <br>"
+            "    y sum total: %{customdata[12]:6.3s} <br>"
             "<extra></extra>"
         )
 
@@ -286,6 +338,7 @@ class FitResults:
             "D_max": r"$\large D_\mathrm{max}$",
             "N_z1": r"$\large N_{z=1}$",
             "N_sum": r"$\large N_\mathrm{sum}$",
+            "y_sum": r"$\large y_\mathrm{sum}$",
             "normalized_noise": r"$\large \mathrm{noise}$",
         }
 
