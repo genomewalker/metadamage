@@ -326,13 +326,23 @@ def main_plot(
 def mismatch_plot(click_data):
     if click_data is None:
         raise PreventUpdate
-    taxid = fit_results.parse_click_data(click_data, variable="taxid")
-    name = fit_results.parse_click_data(click_data, variable="name")
-    group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-    fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
-    chosen_mismatch_columns = ["C→T", "G→A"]
-    fig = mydash.figures.plot_mismatch_fractions(group, chosen_mismatch_columns, fit)
-    return fig
+
+    try:
+        taxid = fit_results.parse_click_data(click_data, variable="taxid")
+        name = fit_results.parse_click_data(click_data, variable="name")
+        group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+        fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+        chosen_mismatch_columns = ["C→T", "G→A"]
+        fig = mydash.figures.plot_mismatch_fractions(
+            group, chosen_mismatch_columns, fit
+        )
+        return fig
+
+    # when selecting histogram without customdata
+    except KeyError:
+        s = "Does not work for binned data"
+        fig = mydash.figures.create_empty_figure(s=s)
+        return fig
 
 
 #%%
