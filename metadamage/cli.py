@@ -81,6 +81,7 @@ def cli(
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
     force_fits: bool = typer.Option(False, "--force-fits"),
     force_plots: bool = typer.Option(False, "--force-plots"),
+    force_no_plots: bool = typer.Option(False, "--force-no-plots"),
     # version
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
@@ -120,6 +121,7 @@ def cli(
         "force_reload_files": force_reload_files,
         "force_fits": force_fits,
         "force_plots": force_plots,
+        "force_no_plots": force_no_plots,
         #
         "version": "0.0.0",
     }

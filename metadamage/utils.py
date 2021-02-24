@@ -58,6 +58,7 @@ class Config:
     force_reload_files: bool
     force_fits: bool
     force_plots: bool
+    force_no_plots: bool
     version: str
     #
     filename: Optional[str] = None
@@ -68,6 +69,7 @@ class Config:
 
     def __post_init__(self):
         self._set_num_cores()
+        self._check_force_plots_conflicts()
 
     def _set_num_cores(self):
         available_cores = cpu_count(logical=True)
@@ -86,6 +88,11 @@ class Config:
         else:
             self.num_cores = self.max_cores
 
+    def _check_force_plots_conflicts(self):
+        if self.force_plots and self.force_no_plots:
+            s = f"force_plots and force_no_plots cannot be set at the same time"
+            raise AssertionError(s)
+
     def set_number_of_fits(self, df):
         N_all_taxids = len(pd.unique(df.taxid))
 
@@ -97,6 +104,10 @@ class Config:
         logger.info(f"Setting number_of_fits to {self.number_of_fits}")
 
     def set_number_of_plots(self):
+        if self.force_no_plots:
+            self.number_of_plots = 0
+            return None
+
         if self.max_plots is None or self.max_plots < 0:
             self.number_of_plots = self.number_of_fits
         else:
@@ -116,9 +127,12 @@ class Config:
 
     @property
     def do_make_plots(self):
-        if self.max_plots is None or self.max_plots > 0:
-            return True
-        return False
+        if (self.max_plots is not None and self.max_plots <= 0) or self.force_no_plots:
+            return False
+        return True
+        # if (self.max_plots is None or self.max_plots > 0) and not self.force_no_plots:
+        #     return True
+        # return False
 
     # FILENAMES BASED ON CFG
 
@@ -442,7 +456,9 @@ def normalize_header(cell):
     cell = cell or "BLANK"
     return cell
 
+
 #%%
+
 
 def fix_latex_warnings_in_string(s):
     # fix LaTeX errors:

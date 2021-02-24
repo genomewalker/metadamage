@@ -1,7 +1,7 @@
 # Scientific Library
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # Standard Library
 from collections import defaultdict
@@ -9,6 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
 import logging
+
+# Third Party
 import numpyro
 
 # First Party
@@ -74,7 +76,7 @@ def main(filenames, cfg):
     if bad_files == N_files:
         raise Exception("All files were bad!")
 
-    if len(all_fit_results) >= 1:
+    if len(all_fit_results) >= 1 and cfg.do_make_plots:
         # plot.set_style()
         N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)

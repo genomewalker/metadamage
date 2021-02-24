@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# from jax.scipy.special import logsumexp
+from scipy.special import logsumexp
+
 # Standard Library
 import logging
 from multiprocessing import current_process, Manager, Pool, Process, Queue
@@ -12,9 +15,6 @@ import os
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKey as Key
-
-# from jax.scipy.special import logsumexp
-from scipy.special import logsumexp
 from joblib import delayed, Parallel
 import numpyro
 from numpyro import distributions as dist

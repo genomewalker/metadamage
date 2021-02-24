@@ -68,6 +68,7 @@ clean = """
 rm -rf .coverage
        .mypy_cache
        .pytest_cache
+       metadamage/logs/*
        dist
        ./**/__pycache__
 """
