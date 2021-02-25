@@ -95,31 +95,53 @@ card_tabs = dbc.Card(
 
 #%%
 
-card_form_mismatch = dbc.Card(
+mismatch_dropdown_filenames = dbc.FormGroup(
     [
-        html.H3("Dropdowns", className="card-title"),
+        dbc.Label("Filenames:", className="mr-2"),
         html.Div(
-            [
-                dcc.Dropdown(
-                    id="dropdown_mismatch_filename",
-                    options=[
-                        {"label": name, "value": name} for name in fit_results.names
-                    ],
-                    clearable=False,
-                ),
-            ],
+            dcc.Dropdown(
+                id="dropdown_mismatch_filename",
+                options=[{"label": name, "value": name} for name in fit_results.names],
+                clearable=False,
+            ),
+            style={"min-width": "250px"},
         ),
-        html.Div([dcc.Dropdown(id="dropdown_mismatch_taxid", clearable=True)]),
-        html.Hr(),
-        html.Div(id="display-selected-values"),
+    ],
+    className="mr-5",
+)
+
+mismatch_dropdown_taxids = dbc.FormGroup(
+    [
+        dbc.Label("Tax IDs:", className="mr-2"),
+        html.Div(
+            dcc.Dropdown(id="dropdown_mismatch_taxid", clearable=True),
+            style={"min-width": "150px"},
+        ),
+    ],
+    className="mr-3",
+)
+
+
+mismatch_dropdowns = dbc.Card(
+    [
+        dbc.Form(
+            [
+                mismatch_dropdown_filenames,
+                mismatch_dropdown_taxids,
+            ],
+            inline=True,
+        ),
     ],
     body=True,
 )
 
 
-card_mismatch = dbc.Card(
+card_mismatch_dropdowns_and_graph = dbc.Card(
     [
-        card_form_mismatch,
+        dbc.Row(
+            dbc.Col(mismatch_dropdowns, width=10),
+            justify="center",
+        ),
         dcc.Graph(
             figure=mydash.figures.create_empty_figure(),
             id="graph_mismatch",
@@ -182,7 +204,7 @@ form_range_slider_D_max = dbc.FormGroup(
     ]
 )
 
-card_form = dbc.Card(
+card_filter = dbc.Card(
     [
         html.H3("Filters", className="card-title"),
         dbc.Form(
@@ -387,9 +409,9 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(
             [
-                dbc.Col(card_form, width=2),
+                dbc.Col(card_filter, width=2),
                 dbc.Col([card_tabs, card_graph], width=6),
-                dbc.Col(card_mismatch, width=4),
+                dbc.Col(card_mismatch_dropdowns_and_graph, width=4),
             ],
             justify="center",
             # className="h-75",
@@ -569,28 +591,28 @@ def update_dropdown_taxid_options(name):
     return get_taxid_options_based_on_filename(name, df_string="mismatch")
 
 
-@app.callback(
-    Output("display-selected-values", "children"),
-    Input("dropdown_mismatch_taxid", "value"),
-    Input("main_graph", "clickData"),
-    State("tabs", "active_tab"),
-)
-def update_click_data_text(taxid, click_data, active_tab):
-    if click_data is not None:
-        if active_tab == "fig_histograms":
-            # print("update_click_data_text got here")
-            raise PreventUpdate
-        try:
-            taxid = fit_results.parse_click_data(click_data, variable="taxid")
-            return "you have selected Tax ID {}".format(taxid)
+# @app.callback(
+#     Output("display-selected-values", "children"),
+#     Input("dropdown_mismatch_taxid", "value"),
+#     Input("main_graph", "clickData"),
+#     State("tabs", "active_tab"),
+# )
+# def update_click_data_text(taxid, click_data, active_tab):
+#     if click_data is not None:
+#         if active_tab == "fig_histograms":
+#             # print("update_click_data_text got here")
+#             raise PreventUpdate
+#         try:
+#             taxid = fit_results.parse_click_data(click_data, variable="taxid")
+#             return "you have selected Tax ID {}".format(taxid)
 
-        except KeyError:
-            # print("update_click_data_text had KeyError")
-            return "Cannot select binned data (histograms)."
+#         except KeyError:
+#             # print("update_click_data_text had KeyError")
+#             return "Cannot select binned data (histograms)."
 
-    if active_tab == "fig_histograms":
-        return "Cannot select binned data (histograms)."
-    return "Please select a point."
+#     if active_tab == "fig_histograms":
+#         return "Cannot select binned data (histograms)."
+#     return "Please select a point."
 
 
 @app.callback(

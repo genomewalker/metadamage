@@ -358,11 +358,13 @@ def _plot_mismatch_fit_filled(
     show_legend,
 ):
 
+    not_mask = ~np.isnan(y)
+
     fig.add_trace(
         go.Scatter(
             name="Fit",
-            x=x,
-            y=y,
+            x=x[not_mask],
+            y=y[not_mask],
             mode="lines",
             line_color=green_color,
             customdata=customdata_errors,
@@ -375,8 +377,8 @@ def _plot_mismatch_fit_filled(
 
     fig.add_trace(
         go.Scatter(
-            x=x,
-            y=errors[1],
+            x=x[not_mask],
+            y=errors[1][not_mask],
             mode="lines",
             line_width=0,
             showlegend=False,
@@ -388,8 +390,8 @@ def _plot_mismatch_fit_filled(
 
     fig.add_trace(
         go.Scatter(
-            x=x,
-            y=errors[0],
+            x=x[not_mask],
+            y=errors[0][not_mask],
             line_width=0,
             mode="lines",
             fillcolor=green_color_transparent,
