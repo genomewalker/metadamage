@@ -1,4 +1,5 @@
 # Scientific Library
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -8,29 +9,9 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
 import logging
-import os.path
-from pprint import pformat, pprint
-import sys
-import time
-from typing import Iterable
-from urllib.request import urlopen
 
 # Third Party
 import numpyro
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TaskID,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-    track,
-    TransferSpeedColumn,
-)
-from tqdm.auto import tqdm
 
 # First Party
 from metadamage import fileloader, fit, plot, utils
@@ -95,7 +76,7 @@ def main(filenames, cfg):
     if bad_files == N_files:
         raise Exception("All files were bad!")
 
-    if len(all_fit_results) >= 1:
+    if len(all_fit_results) >= 1 and cfg.do_make_plots:
         # plot.set_style()
         N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
         plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
@@ -112,8 +93,8 @@ if utils.is_ipython():
     reload(utils)
 
     cfg = utils.Config(
-        max_fits=1000,
-        max_plots=100,
+        max_fits=10,
+        max_plots=0,
         max_cores=-1,
         max_position=15,
         min_damage=None,
@@ -125,6 +106,7 @@ if utils.is_ipython():
         force_reload_files=False,
         force_plots=False,
         force_fits=False,
+        force_no_plots=False,
         version="0.0.0",
     )
 

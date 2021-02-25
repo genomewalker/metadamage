@@ -59,8 +59,9 @@ def cli(
     # input arguments (filenames)
     filenames: List[Path] = typer.Argument(...),
     # maximum values
-    max_fits: Optional[int] = typer.Option(None, help="[default: None]"),
-    max_plots: Optional[int] = typer.Option(None, help="[default: None]"),
+    max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
+    max_plots: Optional[int] = typer.Option(0, help="[default: 0 (No plots)]"),
+    # max_plots: int = 0,
     max_cores: int = 1,
     max_position: int = typer.Option(15),
     # minimum fit values (used for deciding what to plot)
@@ -80,6 +81,7 @@ def cli(
     force_reload_files: bool = typer.Option(False, "--force-reload-files"),
     force_fits: bool = typer.Option(False, "--force-fits"),
     force_plots: bool = typer.Option(False, "--force-plots"),
+    force_no_plots: bool = typer.Option(False, "--force-no-plots"),
     # version
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
@@ -119,6 +121,7 @@ def cli(
         "force_reload_files": force_reload_files,
         "force_fits": force_fits,
         "force_plots": force_plots,
+        "force_no_plots": force_no_plots,
         #
         "version": "0.0.0",
     }
