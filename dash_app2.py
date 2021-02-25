@@ -109,7 +109,7 @@ card_form_mismatch = dbc.Card(
                 ),
             ],
         ),
-        html.Div([dcc.Dropdown(id="dropdown_mismatch_taxid", clearable=False)]),
+        html.Div([dcc.Dropdown(id="dropdown_mismatch_taxid", clearable=True)]),
         html.Hr(),
         html.Div(id="display-selected-values"),
     ],
@@ -321,11 +321,6 @@ def make_tab_from_data(data_or_df=None, active_tab="fig_fit_results"):
                 ],
             ),
         )
-
-        # return [
-        #     main_graph,
-        #     card_overview_marker,
-        # ]
 
     elif active_tab == "fig_histograms":
         return (
@@ -569,6 +564,8 @@ def get_taxid_options_based_on_filename(name, df_string="df_fit_results"):
     Input("dropdown_mismatch_filename", "value"),
 )
 def update_dropdown_taxid_options(name):
+    # if name is None:
+    # print("update_dropdown_taxid_options got name==None")
     return get_taxid_options_based_on_filename(name, df_string="mismatch")
 
 
@@ -576,30 +573,47 @@ def update_dropdown_taxid_options(name):
     Output("display-selected-values", "children"),
     Input("dropdown_mismatch_taxid", "value"),
     Input("main_graph", "clickData"),
+    State("tabs", "active_tab"),
 )
-def update_click_data_text(taxid, click_data):
+def update_click_data_text(taxid, click_data, active_tab):
     if click_data is not None:
+        if active_tab == "fig_histograms":
+            # print("update_click_data_text got here")
+            raise PreventUpdate
         try:
             taxid = fit_results.parse_click_data(click_data, variable="taxid")
+            return "you have selected Tax ID {}".format(taxid)
+
         except KeyError:
-            raise PreventUpdate
-    return "you have selected Tax ID {}".format(taxid)
+            # print("update_click_data_text had KeyError")
+            return "Cannot select binned data (histograms)."
+
+    if active_tab == "fig_histograms":
+        return "Cannot select binned data (histograms)."
+    return "Please select a point."
 
 
 @app.callback(
     Output("dropdown_mismatch_filename", "value"),
     Output("dropdown_mismatch_taxid", "value"),
     Input("main_graph", "clickData"),
+    State("tabs", "active_tab"),
 )
-def update_dropdowns_based_on_click_data(click_data):
+def update_dropdowns_based_on_click_data(click_data, active_tab):
     if click_data is not None:
+        if active_tab == "fig_histograms":
+            # print("update_dropdowns_based_on_click_data got here")
+            raise PreventUpdate
         try:
             taxid = fit_results.parse_click_data(click_data, variable="taxid")
             name = fit_results.parse_click_data(click_data, variable="name")
             return name, taxid
         except KeyError:
+            # print("update_dropdowns_based_on_click_data got KeyError")
             raise PreventUpdate
+            # return None, None
     else:
+        # print("update_dropdowns_based_on_click_data got click_data == None")
         raise PreventUpdate
 
 
