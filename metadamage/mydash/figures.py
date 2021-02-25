@@ -358,6 +358,7 @@ def _plot_mismatch_fit_filled(
     show_legend,
 ):
 
+    # fix when filling between lines when the lines include nans
     not_mask = ~np.isnan(y)
 
     fig.add_trace(
