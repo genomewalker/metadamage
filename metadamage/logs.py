@@ -22,11 +22,21 @@ class Log:
         if self.has_run_before or current_process().name != "MainProcess":
             # print("Has been setup before", current_process())
             return None
-
         # print("Setting up logs", current_process())
 
-        Path("./logs/").mkdir(parents=True, exist_ok=True)
-        filename = f"./logs/log--{self.start_time}.txt"
+        # if running from CLI:
+        if Path("pyproject.toml").is_file():
+            log_dir = "./logs"
+
+        # if running from iPython / VS Code
+        elif Path("cli.py").is_file():
+            log_dir = "../logs"
+
+        else:
+            raise AssertionError(f"Could not figure out logging dir")
+
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
+        filename = f"{log_dir}/log--{self.start_time}.txt"
 
         # Create handlers
         # stream_handler = logging.StreamHandler()

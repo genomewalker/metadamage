@@ -26,6 +26,9 @@ __pycache__/
 # remove PyPI wheels
 /dist/
 
+# old stuff
+/old/
+
 # log files
 /logs/
 /logs/*.txt

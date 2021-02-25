@@ -259,11 +259,14 @@ def compute_fit_results(
     fit_result["D_max_marginalized_mean"] = get_mean_of_variable(mcmc_PMD, "D_max")
 
     fit_result["N_alignments"] = group.N_alignments.iloc[0]
+
     fit_result["N_z1_forward"] = data["N"][0]
     fit_result["N_z1_reverse"] = data["N"][15]
+
     fit_result["N_sum_forward"] = data["N"][:15].sum()
     fit_result["N_sum_reverse"] = data["N"][15:].sum()
     fit_result["N_sum_total"] = data["N"].sum()
+
     fit_result["y_sum_forward"] = data["y"][:15].sum()
     fit_result["y_sum_reverse"] = data["y"][15:].sum()
     fit_result["y_sum_total"] = data["y"].sum()

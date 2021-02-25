@@ -302,6 +302,15 @@ class FitResults:
             "<extra></extra>"
         )
 
+        # if "y_sum_total" in self.columns:
+        #     self.has_y_sum_total = True
+        # else:
+        #     self.custom_data_columns.remove("y_sum_total")
+        #     self.hovertemplate = self.hovertemplate.replace(
+        #         "    y sum total: %{customdata[12]:6.3s} <br>", ""
+        #     )
+        #     self.has_y_sum_total = False
+
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
     def _set_dimensions(self):
@@ -352,6 +361,8 @@ class FitResults:
             "y_sum": r"$\large y_\mathrm{sum}$",
             "normalized_noise": r"$\large \mathrm{noise}$",
         }
+        # if not self.has_y_sum_total:
+        #     self.dimensions_forward_reverse.pop("y_sum")
 
     def iterate_over_dimensions_forward_reverse(self, N_cols):
         showlegend = True
