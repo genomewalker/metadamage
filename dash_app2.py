@@ -487,36 +487,6 @@ def update_tab_layout(active_tab, button_n, data):
 #%%
 
 
-# @app.callback(
-#     Output("graph_mismatch", "figure"),
-#     Input("main_graph", "clickData"),
-#     Input("tabs", "active_tab"),
-# )
-# def update_mismatch_plot(click_data, active_tab):
-
-#     if click_data is None:
-#         if active_tab == "fig_histograms":
-#             s = "Does not work for binned data"
-#             return mydash.figures.create_empty_figure(s=s)
-#         else:
-#             return mydash.figures.create_empty_figure()
-
-#     try:
-#         taxid = fit_results.parse_click_data(click_data, variable="taxid")
-#         name = fit_results.parse_click_data(click_data, variable="name")
-#         group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-#         fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
-#         chosen_mismatch_columns = ["C→T", "G→A"]
-#         fig = mydash.figures.plot_mismatch_fractions(
-#             group, chosen_mismatch_columns, fit
-#         )
-#         return fig
-
-#     # when selecting histogram without customdata
-#     except KeyError:
-#         raise PreventUpdate
-
-
 @app.callback(
     Output("graph_mismatch", "figure"),
     Input("tabs", "active_tab"),
@@ -598,8 +568,7 @@ def get_taxid_options_based_on_filename(name, df_string="df_fit_results"):
     Output("dropdown_mismatch_taxid", "options"),
     Input("dropdown_mismatch_filename", "value"),
 )
-def update_date_dropdown(name):
-    # return get_taxid_options_based_on_filename(name, df_string='fit_results')
+def update_dropdown_taxid_options(name):
     return get_taxid_options_based_on_filename(name, df_string="mismatch")
 
 
@@ -608,9 +577,12 @@ def update_date_dropdown(name):
     Input("dropdown_mismatch_taxid", "value"),
     Input("main_graph", "clickData"),
 )
-def set_display_children(taxid, click_data):
+def update_click_data_text(taxid, click_data):
     if click_data is not None:
-        taxid = fit_results.parse_click_data(click_data, variable="taxid")
+        try:
+            taxid = fit_results.parse_click_data(click_data, variable="taxid")
+        except KeyError:
+            raise PreventUpdate
     return "you have selected Tax ID {}".format(taxid)
 
 
@@ -621,9 +593,12 @@ def set_display_children(taxid, click_data):
 )
 def update_dropdowns_based_on_click_data(click_data):
     if click_data is not None:
-        taxid = fit_results.parse_click_data(click_data, variable="taxid")
-        name = fit_results.parse_click_data(click_data, variable="name")
-        return name, taxid
+        try:
+            taxid = fit_results.parse_click_data(click_data, variable="taxid")
+            name = fit_results.parse_click_data(click_data, variable="name")
+            return name, taxid
+        except KeyError:
+            raise PreventUpdate
     else:
         raise PreventUpdate
 
@@ -642,25 +617,23 @@ if __name__ == "__main__" and not is_ipython():
 else:
 
     name = "KapK-198A-Ext-55-Lib-55-Index1"
-    taxid = 1
+    name = "SJArg-1-Nit"
+    taxid = 33969
 
-    # fit_results.names
+    df_fit_results = fit_results.filter(
+        {"taxid": taxid, "name": name}, df="df_fit_results"
+    )
 
-    # df_mismatch = fit_results.filter({"taxid": taxid, "name": name}, df="df_mismatch")
-    # df_fit_results = fit_results.filter(
-    #     {"taxid": taxid, "name": name}, df="df_fit_results"
-    # )
+    group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+    fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
 
-    # group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-    # fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
-
-    # chosen_mismatch_columns = ["C→T", "G→A"]
+    chosen_mismatch_columns = ["C→T", "G→A"]
 
     # #%%
 
-    # fig = mydash.figures.plot_mismatch_fractions(
-    #     df_mismatch, chosen_mismatch_columns, fit=fit
-    # )
-    # fig
+    fig = mydash.figures.plot_mismatch_fractions(
+        group, chosen_mismatch_columns, fit=fit
+    )
+    fig
 
-    # df_mismatch[["position", "CT", "C"]]
+    group[["position", "CT", "C"]]

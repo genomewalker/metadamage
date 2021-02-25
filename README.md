@@ -150,6 +150,19 @@ $ pip install metadamage --upgrade
 
 ---
 
+## <a name="dev_branch"></a> Development Branch:
+
+You can also use a newer version directly from Github:
+```console
+$ poetry add git+https://github.com/ChristianMichelsen/metadamage.git
+```
+or a specific branch (named `BRANCH`):
+```console
+$ poetry add git+https://github.com/ChristianMichelsen/metadamage.git#BRANCH
+```
+
+---
+
 ## Conda:
 
 If you prefer using Conda, you can also install `metadamage` (via pip). First create a folder:
