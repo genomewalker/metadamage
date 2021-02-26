@@ -9,7 +9,7 @@ import webbrowser
 
 # Third Party
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State, MATCH, ALL
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
@@ -46,7 +46,362 @@ app = dash.Dash(
         "MathJax.js?config=TeX-MML-AM_CHTML",
     ],
     suppress_callback_exceptions=True,
+    title="Metadamage",
+    update_title="Updating...",
 )
+
+# to allow custom css
+app.scripts.config.serve_locally = True
+
+
+graph_kwargs = dict(
+    config={
+        "displaylogo": False,
+        "doubleClick": "reset",
+        "showTips": True,
+        "modeBarButtonsToRemove": [
+            "select2d",
+            "lasso2d",
+            "autoScale2d",
+            "hoverClosestCartesian",
+            "hoverCompareCartesian",
+            "toggleSpikelines",
+        ],
+    },
+    # https://css-tricks.com/fun-viewport-units/
+    style={"width": "100%", "height": "55vh"},
+)
+
+
+#%%
+
+tabs_kwargs = [
+    dict(label="Overview", tab_id="fig_fit_results"),
+    dict(label="Histograms", tab_id="fig_histograms"),
+    dict(label="Scatter Matrix", tab_id="fig_scatter_matrix"),
+    dict(label="Forward / Reverse", tab_id="fig_forward_reverse"),
+]
+
+tabs = dbc.Tabs(
+    [dbc.Tab(**tab) for tab in tabs_kwargs],
+    id="tabs",
+    active_tab="fig_fit_results",
+)
+
+card_tabs = dbc.Card(
+    [tabs],
+    body=True,
+)
+
+#%%
+
+mismatch_dropdown_filenames = dbc.FormGroup(
+    [
+        dbc.Label("Filenames:", className="mr-2"),
+        html.Div(
+            dcc.Dropdown(
+                id="dropdown_mismatch_filename",
+                options=[{"label": name, "value": name} for name in fit_results.names],
+                clearable=False,
+            ),
+            style={"min-width": "250px"},
+        ),
+    ],
+    className="mr-5",
+)
+
+mismatch_dropdown_taxids = dbc.FormGroup(
+    [
+        dbc.Label("Tax IDs:", className="mr-2"),
+        html.Div(
+            dcc.Dropdown(id="dropdown_mismatch_taxid", clearable=True),
+            style={"min-width": "150px"},
+        ),
+    ],
+    className="mr-3",
+)
+
+
+mismatch_dropdowns = dbc.Card(
+    [
+        dbc.Form(
+            [
+                mismatch_dropdown_filenames,
+                mismatch_dropdown_taxids,
+            ],
+            inline=True,
+        ),
+    ],
+    body=True,
+)
+
+
+card_mismatch_dropdowns_and_graph = dbc.Card(
+    [
+        dbc.Row(
+            dbc.Col(mismatch_dropdowns, width=10),
+            justify="center",
+        ),
+        dcc.Graph(
+            figure=mydash.figures.create_empty_figure(),
+            id="graph_mismatch",
+            **graph_kwargs,
+        ),
+    ],
+    body=True,
+)
+
+
+#%%
+
+card_datatable = dbc.Card(
+    [
+        html.H3("Datatable", className="card-title"),
+        DataTable(**mydash.datatable.get_data_table_keywords(id="data_table")),
+    ],
+    body=True,
+)
+
+
+#%%
+
+form_dropdown = dbc.FormGroup(
+    [
+        dbc.Label("Dropdown"),
+        mydash.elements.get_dropdown_file_selection(
+            id="dropdown_file_selection",
+            fit_results=fit_results,
+        ),
+    ]
+)
+
+form_range_slider_N_alignments = dbc.FormGroup(
+    [
+        dbc.Label("Range Slider N_alignments"),
+        dcc.RangeSlider(
+            id="range_slider_N_alignments",
+            **mydash.elements.get_range_slider_keywords(
+                fit_results,
+                column="N_alignments",
+                N_steps=100,
+            ),
+        ),
+    ]
+)
+
+
+form_range_slider_D_max = dbc.FormGroup(
+    [
+        dbc.Label("Range Slider D max"),
+        dcc.RangeSlider(
+            id="range_slider_D_max",
+            **mydash.elements.get_range_slider_keywords(
+                fit_results,
+                column="D_max",
+                N_steps=100,
+            ),
+        ),
+    ]
+)
+
+card_filter = dbc.Card(
+    [
+        html.H3("Filters", className="card-title"),
+        dbc.Form(
+            [form_dropdown, form_range_slider_N_alignments, form_range_slider_D_max]
+        ),
+    ],
+    body=True,  # spacing before border
+)
+
+#%%
+
+
+form_overview_marker_size = dbc.FormGroup(
+    [
+        dbc.Label("Marker Size", className="mr-2"),
+        # dbc.Col(
+        html.Div(
+            dcc.Slider(
+                # id="slider_overview_marker_size",
+                # possible fix for ReferenceError
+                id={"type": "slider_overview_marker_size", "index": 0},
+                **mydash.elements.get_slider_keywords(),
+            ),
+            style={"min-width": "300px"},
+        )
+        # width=5,
+        # ),
+    ],
+    className="mr-6",
+)
+
+
+form_overview_marker_transformation = dbc.FormGroup(
+    [
+        dbc.Label("Marker Transformation", className="mr-2"),
+        # dbc.Col(
+        dcc.Dropdown(
+            # id="dropdown_overview_marker_transformation",
+            # possible fix for ReferenceError
+            id={"type": "dropdown_overview_marker_transformation", "index": 0},
+            options=[
+                {"label": "Identity", "value": "identity"},
+                {"label": "Sqrt", "value": "sqrt"},
+                {"label": "Log", "value": "log10"},
+                {"label": "Constant", "value": "constant"},
+            ],
+            value="sqrt",
+            searchable=False,
+            clearable=False,
+            style={"min-width": "100px"},
+            # ),
+            # width=5,
+        ),
+    ],
+    className="mr-6",
+)
+
+button_reset = dbc.FormGroup(
+    [
+        dbc.Label("", className="mr-5"),
+        dbc.Button(
+            "Reset",
+            id={"type": "button_reset", "index": 0},
+            color="primary",
+        ),
+    ],
+    className="mr-6",
+)
+
+
+card_overview_marker = dbc.Card(
+    [
+        # html.H3("Markers", className="card-title"),
+        dbc.Form(
+            [
+                form_overview_marker_size,
+                form_overview_marker_transformation,
+                button_reset,
+            ],
+            inline=True,
+        ),
+    ],
+    body=True,  # spacing before border
+    # className="mr-6",
+)
+
+
+#%%
+
+
+def get_figure_from_df_and_tab(df_fit_results_filtered, active_tab):
+    if active_tab == "fig_fit_results":
+        fig = mydash.figures.plot_fit_results(fit_results, df_fit_results_filtered)
+    elif active_tab == "fig_histograms":
+        fig = mydash.figures.plot_histograms(fit_results, df_fit_results_filtered)
+    elif active_tab == "fig_scatter_matrix":
+        fig = mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_filtered)
+    elif active_tab == "fig_forward_reverse":
+        fig = mydash.figures.plot_forward_reverse(fit_results, df_fit_results_filtered)
+    else:
+        print("got here: get_figure_from_df_and_tab")
+    return fig
+
+
+def get_main_figure(data_or_df, active_tab="fig_fit_results"):
+    if data_or_df is None:
+        return mydash.figures.create_empty_figure(s="")
+
+    if isinstance(data_or_df, list):
+        df = pd.DataFrame.from_records(data_or_df)
+    elif isinstance(data_or_df, pd.DataFrame):
+        df = data_or_df
+    else:
+        raise AssertionError(f"Got wrong type for data_or_df: {type(data_or_df)}")
+    return get_figure_from_df_and_tab(df, active_tab)
+
+
+def make_tab_from_data(data_or_df=None, active_tab="fig_fit_results"):
+
+    figure = get_main_figure(data_or_df, active_tab)
+    main_graph = dcc.Graph(figure=figure, id="main_graph", **graph_kwargs)
+
+    if active_tab == "fig_fit_results" or active_tab == "overview":
+
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                    dbc.Row(
+                        dbc.Col(card_overview_marker, width=10),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    elif active_tab == "fig_histograms":
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    elif active_tab == "fig_scatter_matrix":
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    elif active_tab == "fig_forward_reverse":
+        return (
+            dbc.Container(
+                [
+                    dbc.Row(
+                        dbc.Col(main_graph, width=12),
+                        justify="center",
+                    ),
+                ],
+            ),
+        )
+
+    else:
+        print("got here: make_tab_from_data")
+
+
+#%%
+
+card_graph = dbc.Card(
+    [
+        html.Div(
+            make_tab_from_data(active_tab="overview"),  # main_graph
+            id="main_graph_div",
+            className="loader-fade",
+        ),
+    ],
+    body=True,  # spacing before border
+    # style={"height": "50vh"},
+)
+
+
+#%%
+
+import time
 
 app.layout = dbc.Container(
     [
@@ -54,317 +409,234 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(
             [
-                dbc.Col(html.H1("Fit Results"), md=2),
-                dbc.Col(
-                    dbc.Tabs(
-                        [
-                            dbc.Tab(label="Overview", tab_id="fig_fit_results"),
-                            dbc.Tab(label="Histograms", tab_id="fig_histograms"),
-                            dbc.Tab(
-                                label="Scatter Matrix", tab_id="fig_scatter_matrix"
-                            ),
-                            dbc.Tab(
-                                label="Forward / Reverse", tab_id="fig_forward_reverse"
-                            ),
-                        ],
-                        id="tabs",
-                        active_tab="fig_fit_results",
-                    ),
-                ),
+                dbc.Col(card_filter, width=2),
+                dbc.Col([card_tabs, card_graph], width=6),
+                dbc.Col(card_mismatch_dropdowns_and_graph, width=4),
             ],
+            justify="center",
+            # className="h-75",
         ),
-        # html.Hr(),
-        # html.Br(),
+        html.Hr(),
         dbc.Row(
-            [
-                dbc.Col(
-                    mydash.elements.get_card_filter_and_dropdown_file_selection(
-                        fit_results
-                    ),
-                    md=2,
-                ),
-                dbc.Col(mydash.elements.get_card_main_plot(fit_results), md=8),
-                # dbc.Col(mydash.elements.get_card_mismatch_figure(fit_results), md=3),
-            ],
+            [dbc.Col(card_datatable, width=12)],
+            justify="center",
+            # className="h-25",
         ),
-        mydash.elements.get_card_datatable(fit_results),
     ],
-    fluid=True,
+    fluid=True,  # fill available horizontal space and resize fluidly
+    # style={"height": "90vh"},
 )
 
-
-@app.callback(
-    Output("range-slider-N-alignments-output", "children"),
-    Input("range-slider-N-alignments", "drag_value"),
-)
-def update_markdown_N_alignments(slider_range):
-
-    print(slider_range)
-
-    low, high = slider_range
-    low = mydash.utils.transform_slider(low)
-    high = mydash.utils.transform_slider(high)
-
-    # https://tex-image-link-generator.herokuapp.com/
-    latex = (
-        r"![\large N_\mathrm{alignments}](https://render.githubusercontent.com/render/"
-        + r"math?math=%5Cdisplaystyle+%5Clarge+N_%5Cmathrm%7Balignments%7D)"
-    )
-    return latex + fr": \[{utils.human_format(low)}, {utils.human_format(high)}\]"
+#%%
 
 
-@app.callback(
-    Output("range-slider-D-max-output", "children"),
-    Input("range-slider-D-max", "drag_value"),
-)
-def update_markdown_D_max(slider_range):
-    low, high = slider_range
-
-    # https://tex-image-link-generator.herokuapp.com/
-    latex = (
-        r"![\large D_\mathrm{max}](https://render.githubusercontent.com/render/"
-        + r"math?math=%5Cdisplaystyle+%5Clarge+D_%5Cmathrm%7Bmax%7D)"
-    )
-    return latex + f": \[{low:.2f}, {high:.2f}\]"
-
-
-@app.callback(
-    Output("slider-marker-size-output", "children"),
-    Input("slider-marker-size", "drag_value"),
-)
-def update_markdown_marker_size(slider):
-    return f"Max Size: {slider}"
-
-
-@app.callback(
-    Output("data_table", "data"),
-    Input("graph", "clickData"),
-)
-def make_clickData_table(clickData):
-    """"""
-    if clickData is not None:
-        index_taxid = fit_results.custom_data_columns.index("taxid")
-        index_name = fit_results.custom_data_columns.index("name")
-        try:
-            name = clickData["points"][0]["customdata"][index_name]
-            taxid = clickData["points"][0]["customdata"][index_taxid]
-            # df_filtered = fit_results.filter({"name": name, "taxid": taxid})
-            df_filtered = fit_results.df.query(f"taxid == {taxid} & name == '{name}'")
-            return df_filtered.to_dict("records")
-
-        # when selecting histogram without customdata
-        except KeyError:
-            s = "Does not work for binned data (histograms)"
-            return mydash.datatable.create_empty_dataframe_for_datatable(s).to_dict(
-                "records"
-            )
-
-    else:
-        return mydash.datatable.create_empty_dataframe_for_datatable().to_dict(
-            "records"
-        )
-
-
-# @app.callback(
-#     Output("mismatch_figure-div", "children"),
-#     Input("graph", "clickData"),
-# )
-# def make_clickData_mismatch_fractions(clickData):
-#     """"""
-
-#     # print("make_clickData_mismatch_fractions")
-#     # print(clickData)
-
-#     if clickData is not None:
-#         index_taxid = fit_results.custom_data_columns.index("taxid")
-#         index_name = fit_results.custom_data_columns.index("name")
-#         try:
-#             name = clickData["points"][0]["customdata"][index_name]
-#             taxid = clickData["points"][0]["customdata"][index_taxid]
-
-#             print(name, taxid)
-
-#             group = fit_results.get_mismatch_group(name, taxid)
-#             fit = fit_results.get_fit_predictions(name, taxid)
-
-#             chosen_mismatch_columns = ["C→T", "G→A"]
-
-#             fig_mismatch_fractions = mydash.figures.plot_mismatch_fractions(
-#                 group,
-#                 fit,
-#                 chosen_mismatch_columns,
-#             )
-
-#             print("make_clickData_mismatch_fractions")
-#             # print(group)
-#             # print(fit)
-#             # print(fig_mismatch_fractions)
-
-#             # return fig_mismatch_fractions
-
-#             kwargs = dict(
-#                 id="graph-mismatch-figure",
-#                 config={
-#                     "displaylogo": False,
-#                     "doubleClick": "reset",
-#                     "showTips": True,
-#                     "modeBarButtonsToRemove": [
-#                         "select2d",
-#                         "lasso2d",
-#                         "autoScale2d",
-#                         "hoverClosestCartesian",
-#                         "hoverCompareCartesian",
-#                         "toggleSpikelines",
-#                     ],
-#                 },
-#                 # https://css-tricks.com/fun-viewport-units/
-#                 style={"width": "90%", "height": "78vh"},
-#             )
-
-#             return dcc.Graph(figure=fig_mismatch_fractions, **kwargs)
-
-#         # when selecting histogram without customdata
-#         except KeyError:
-#             s = "Does not work for binned data (histograms)"
-#             print(s)
-
-#     else:
-#         print("Got here")
-#         # return None
-
-
-@app.callback(
-    Output("tab_figure", "children"),
-    Input("tabs", "active_tab"),
-    Input("store", "data"),
-)
-def render_tab_figure(active_tab, data):
-    """
-    This callback takes the 'active_tab' property as input, as well as the
-    stored graphs, and renders the tab content depending on what the value of
-    'active_tab' is.
-    """
-
-    kwargs = dict(
-        id="graph",
-        config={
-            "displaylogo": False,
-            "doubleClick": "reset",
-            "showTips": True,
-            "modeBarButtonsToRemove": [
-                "select2d",
-                "lasso2d",
-                "autoScale2d",
-                "hoverClosestCartesian",
-                "hoverCompareCartesian",
-                "toggleSpikelines",
-            ],
-        },
-        # https://css-tricks.com/fun-viewport-units/
-        style={"width": "90%", "height": "78vh"},
-    )
-
-    if active_tab and data is not None:
-        if active_tab == "fig_fit_results":
-            return dcc.Graph(figure=data["fig_fit_results"], **kwargs)
-        elif active_tab == "fig_histograms":
-            return dcc.Graph(figure=data["fig_histograms"], **kwargs)
-        elif active_tab == "fig_scatter_matrix":
-            return dcc.Graph(figure=data["fig_scatter_matrix"], **kwargs)
-        elif active_tab == "fig_forward_reverse":
-            return dcc.Graph(figure=data["fig_forward_reverse"], **kwargs)
-
-    print("Got here", active_tab, data)
-    return "No tab selected"
+from dash.exceptions import PreventUpdate
 
 
 @app.callback(
     Output("store", "data"),
-    Input("range-slider-N-alignments", "value"),
-    Input("range-slider-D-max", "value"),
     Input("dropdown_file_selection", "value"),
-    Input("dropdown_marker_transformation", "value"),
-    Input("slider-marker-size", "value"),
-    # Input("tab_figure", "restyleData"),
+    Input("range_slider_N_alignments", "value"),
+    Input("range_slider_D_max", "value"),
+    Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
+    Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
 )
-def generate_all_figures(
-    slider_N_alignments,
-    slider_D_max,
-    dropdown_names,
-    dropdown_marker_transformation,
+def filter_fit_results(
+    dropdown_file_selection,
+    range_slider_N_alignments,
+    range_slider_D_max,
     marker_size_max,
-    # restyleData,
+    marker_transformation,
 ):
-    """
-    This callback generates the three graphs (figures) based on the filter
-    and stores in the DCC store for faster change of tabs.
-    """
 
-    # print(restyleData)
+    # if no files selected
+    if not dropdown_file_selection:
+        raise PreventUpdate
 
-    height = 800
-    width = 1100
-
-    if dropdown_names is None or len(dropdown_names) == 0:
-        fig_empty = mydash.figures.create_empty_figures(width=width, height=height)
-        return {
-            "fig_fit_results": fig_empty,
-            "fig_histograms": fig_empty,
-            "fig_scatter_matrix": fig_empty,
-            "fig_forward_reverse": fig_empty,
+    fit_results.set_marker_size(marker_transformation, marker_size_max)
+    df_fit_results_filtered = fit_results.filter(
+        {
+            "N_alignments": range_slider_N_alignments,
+            "D_max": range_slider_D_max,
+            "names": dropdown_file_selection,
         }
+    )
 
-    # important step before filter
-    fit_results.set_marker_size(dropdown_marker_transformation)
+    return df_fit_results_filtered.to_dict("records")
 
-    with about_time() as t:
-        df_filtered = fit_results.filter(
-            {
-                "N_alignments": slider_N_alignments,
-                "D_max": slider_D_max,
-                "names": dropdown_names,
-            }
+
+@app.callback(
+    Output("main_graph", "figure"),
+    Input("store", "data"),
+    Input("tabs", "active_tab"),
+)
+def update_main_graph(data, active_tab):
+    if active_tab is None:
+        print("update_main_graph got active_tab == None")
+    if data is None:
+        print("update_main_graph got data == None")
+
+    figure = get_main_figure(data, active_tab)
+
+    # allows to size of marker to change without loosing zoom level
+    if active_tab == "fig_fit_results":
+        figure["layout"]["uirevision"] = True
+
+    return figure
+
+
+@app.callback(
+    Output("main_graph_div", "children"),
+    Input("tabs", "active_tab"),
+    Input({"type": "button_reset", "index": ALL}, "n_clicks"),
+    State("store", "data"),
+)
+def update_tab_layout(active_tab, button_n, data):
+    if active_tab is None:
+        print("update_tab_layout got active_tab == None")
+    if data is None:
+        # print("update_tab_layout got data == None")
+        raise PreventUpdate
+
+    return make_tab_from_data(data, active_tab)
+
+
+#%%
+
+
+@app.callback(
+    Output("graph_mismatch", "figure"),
+    Input("tabs", "active_tab"),
+    Input("dropdown_mismatch_taxid", "value"),
+    Input("dropdown_mismatch_filename", "value"),
+)
+def update_mismatch_plot(active_tab, dropdown_mismatch_taxid, dropdown_name):
+
+    if dropdown_mismatch_taxid is None:
+        if active_tab == "fig_histograms":
+            s = "Does not work for binned data"
+            return mydash.figures.create_empty_figure(s=s)
+        else:
+            return mydash.figures.create_empty_figure()
+
+    try:
+        group = fit_results.get_mismatch_group(
+            name=dropdown_name,
+            taxid=dropdown_mismatch_taxid,
         )
-
-        print("")
-        print(t.duration_human, "Filter")
-
-    with about_time() as t:
-        fig_fit_results = mydash.figures.create_fit_results_figure(
-            fit_results,
-            df_filtered,
-            marker_size_max,
+        fit = fit_results.get_fit_predictions(
+            name=dropdown_name,
+            taxid=dropdown_mismatch_taxid,
         )
-        print(t.duration_human, "Fit Results")
-
-    with about_time() as t:
-        fig_histograms = mydash.figures.create_histograms_figure(
-            fit_results,
-            df_filtered,
+        chosen_mismatch_columns = ["C→T", "G→A"]
+        fig = mydash.figures.plot_mismatch_fractions(
+            group,
+            chosen_mismatch_columns,
+            fit,
         )
-        print(t.duration_human, "Histograms")
+        return fig
 
-    with about_time() as t:
-        fig_scatter_matrix = mydash.figures.create_scatter_matrix_figure(
-            fit_results,
-            df_filtered,
-        )
-        print(t.duration_human, "Scatter Matrix")
+    # when selecting histogram without customdata
+    except KeyError:
+        raise PreventUpdate
 
-    with about_time() as t:
-        fig_forward_reverse = mydash.figures.create_forward_reverse_figure(
-            fit_results,
-            df_filtered,
-        )
-        print(t.duration_human, "Forward Reverse")
 
-    # save figures in a dictionary for sending to the dcc.Store
-    return {
-        "fig_fit_results": fig_fit_results,
-        "fig_histograms": fig_histograms,
-        "fig_scatter_matrix": fig_scatter_matrix,
-        "fig_forward_reverse": fig_forward_reverse,
-    }
+#%%
+
+
+@app.callback(
+    Output("data_table", "data"),
+    Input("main_graph", "clickData"),
+    Input("tabs", "active_tab"),
+)
+def update_data_table(click_data, active_tab):
+    if click_data is None:
+        if active_tab == "fig_histograms":
+            s = "Does not work for binned data (histograms)"
+            ds = mydash.datatable.create_empty_dataframe_for_datatable(s)
+        else:
+            ds = mydash.datatable.create_empty_dataframe_for_datatable()
+        return ds.to_dict("records")
+
+    try:
+        taxid = fit_results.parse_click_data(click_data, variable="taxid")
+        name = fit_results.parse_click_data(click_data, variable="name")
+        df_fit_results_filtered = fit_results.filter({"name": name, "taxid": taxid})
+        return df_fit_results_filtered.to_dict("records")
+
+    # when selecting histogram without customdata
+    except KeyError:
+        raise PreventUpdate
+
+
+#%%
+
+
+def get_taxid_options_based_on_filename(name, df_string="df_fit_results"):
+    """df_string is a string, eg. df_fit_results or  df_mismatch.
+    The 'df_' part is optional
+    """
+    taxids = sorted(fit_results.filter({"name": name}, df="mismatch")["taxid"].unique())
+    options = [{"label": i, "value": i} for i in taxids]
+    return options
+
+
+@app.callback(
+    Output("dropdown_mismatch_taxid", "options"),
+    Input("dropdown_mismatch_filename", "value"),
+)
+def update_dropdown_taxid_options(name):
+    # if name is None:
+    # print("update_dropdown_taxid_options got name==None")
+    return get_taxid_options_based_on_filename(name, df_string="mismatch")
+
+
+# @app.callback(
+#     Output("display-selected-values", "children"),
+#     Input("dropdown_mismatch_taxid", "value"),
+#     Input("main_graph", "clickData"),
+#     State("tabs", "active_tab"),
+# )
+# def update_click_data_text(taxid, click_data, active_tab):
+#     if click_data is not None:
+#         if active_tab == "fig_histograms":
+#             # print("update_click_data_text got here")
+#             raise PreventUpdate
+#         try:
+#             taxid = fit_results.parse_click_data(click_data, variable="taxid")
+#             return "you have selected Tax ID {}".format(taxid)
+
+#         except KeyError:
+#             # print("update_click_data_text had KeyError")
+#             return "Cannot select binned data (histograms)."
+
+#     if active_tab == "fig_histograms":
+#         return "Cannot select binned data (histograms)."
+#     return "Please select a point."
+
+
+@app.callback(
+    Output("dropdown_mismatch_filename", "value"),
+    Output("dropdown_mismatch_taxid", "value"),
+    Input("main_graph", "clickData"),
+    State("tabs", "active_tab"),
+)
+def update_dropdowns_based_on_click_data(click_data, active_tab):
+    if click_data is not None:
+        if active_tab == "fig_histograms":
+            # print("update_dropdowns_based_on_click_data got here")
+            raise PreventUpdate
+        try:
+            taxid = fit_results.parse_click_data(click_data, variable="taxid")
+            name = fit_results.parse_click_data(click_data, variable="name")
+            return name, taxid
+        except KeyError:
+            # print("update_dropdowns_based_on_click_data got KeyError")
+            raise PreventUpdate
+            # return None, None
+    else:
+        # print("update_dropdowns_based_on_click_data got click_data == None")
+        raise PreventUpdate
 
 
 #%%
@@ -375,49 +647,29 @@ def is_ipython():
 
 
 if __name__ == "__main__" and not is_ipython():
-    # Timer(1, open_browser).start()
     app.run_server(debug=True)
 
-#%%
-else:
-    df = fit_results.df
-    fig_fit_results = mydash.figures.create_fit_results_figure(fit_results, df)
-    fig_fit_results
 
-    name = "SJArg-1-Nit__number_..."
+else:
+
+    name = "KapK-198A-Ext-55-Lib-55-Index1"
+    name = "SJArg-1-Nit"
     taxid = 33969
 
-    # group = fit_results.df_mismatch.query(f"taxid == {taxid}")
+    df_fit_results = fit_results.filter(
+        {"taxid": taxid, "name": name}, df="df_fit_results"
+    )
 
-    group = fit_results.get_mismatch_group(name, taxid)
-    fit = fit_results.get_fit_predictions(name, taxid)
+    group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+    fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
 
     chosen_mismatch_columns = ["C→T", "G→A"]
 
-    fig_mismatch_fractions = mydash.figures.plot_mismatch_fractions(
-        group,
-        fit,
-        chosen_mismatch_columns,
+    # #%%
+
+    fig = mydash.figures.plot_mismatch_fractions(
+        group, chosen_mismatch_columns, fit=fit
     )
+    fig
 
-    # %%
-
-
-#%%
-
-# name = "KapK-198A-Ext-55-Lib..."
-# taxid = 1
-# group = df.query(f"name == '{name}' & taxid == {taxid}")
-
-
-#%%
-
-
-# %%
-
-# ACTG = ["A", "C", "G", "T"]
-# all_mismatch_columns = []
-# for ref in ACTG:
-#     for obs in ACTG:
-#         if ref != obs:
-#             all_mismatch_columns.append(f"{ref}→{obs}")
+    group[["position", "CT", "C"]]
