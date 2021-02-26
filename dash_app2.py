@@ -69,7 +69,7 @@ graph_kwargs = dict(
         ],
     },
     # https://css-tricks.com/fun-viewport-units/
-    # style={"width": "90%", "height": "70vh"},
+    style={"width": "100%", "height": "55vh"},
 )
 
 
