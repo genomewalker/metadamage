@@ -2,6 +2,7 @@
 import webbrowser
 
 # Third Party
+from PIL import ImageColor
 import plotly.graph_objects as go
 import plotly.io as pio
 
@@ -51,8 +52,6 @@ def open_browser():
 
 
 #%%
-
-from PIL import ImageColor
 
 
 def hex_to_rgb(hex_string, opacity=1):

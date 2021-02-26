@@ -6,8 +6,8 @@ import pandas as pd
 from pathlib import Path
 
 # Third Party
-import plotly.express as px
 import dill
+import plotly.express as px
 
 # First Party
 from metadamage import mydash, utils

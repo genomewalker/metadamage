@@ -47,6 +47,16 @@ $ metadamage --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt
 $ metadamage --max-fits 10 --max-cores 2 ./data/input/*.txt
 ```
 
+## <a name="dash"></a> Dashboard:
+
+To make use of the new, interactive dashboard introduced in version `0.2`, run the following command (after having [fitted](#cli) the files):
+
+```console
+$ python dash_app.py
+```
+
+And then open a browser and go to `127.0.0.1:8050`.
+
 ## <a name="options"></a> Metadamage CLI Options:
 
 The `metadamage` CLI has the following options.

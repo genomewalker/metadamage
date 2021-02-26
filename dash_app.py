@@ -3,13 +3,17 @@ import numpy as np
 import pandas as pd
 
 # Standard Library
+from importlib import reload
 from pathlib import Path
 from threading import Timer
+import time
 import webbrowser
 
 # Third Party
+from about_time import about_time
 import dash
-from dash.dependencies import Input, Output, State, MATCH, ALL
+from dash.dependencies import ALL, Input, MATCH, Output, State
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
@@ -19,13 +23,9 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-from importlib import reload
-
 # First Party
 from metadamage import mydash, utils
 
-
-from about_time import about_time
 
 #%%
 
@@ -401,7 +401,6 @@ card_graph = dbc.Card(
 
 #%%
 
-import time
 
 app.layout = dbc.Container(
     [
@@ -428,9 +427,6 @@ app.layout = dbc.Container(
 )
 
 #%%
-
-
-from dash.exceptions import PreventUpdate
 
 
 @app.callback(
