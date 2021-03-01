@@ -86,7 +86,8 @@ _publish = "poetry publish"
 _git_push_with_tags = "git push --follow-tags"
 git_release = ["_git_push_with_tags"]
 
-test_and_lint = ["test", "isort", "black"]
+lint = ["isort", "black"]
+test_and_lint = ["test", "lint"]
 
 # poe release
 release = ["test", "isort", "black", "clean", "build", "_publish", "git_release"]

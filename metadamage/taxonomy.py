@@ -1,7 +1,8 @@
-from ete3 import NCBITaxa
+# Standard Library
 from pathlib import Path
 
-# from functools import lru_cache
+# Third Party
+from ete3 import NCBITaxa
 from joblib import Memory
 
 

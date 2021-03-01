@@ -1,5 +1,4 @@
 # Scientific Library
-from typing import Container
 import numpy as np
 import pandas as pd
 
@@ -8,6 +7,7 @@ from importlib import reload
 from pathlib import Path
 from threading import Timer
 import time
+from typing import Container
 import webbrowser
 
 # Third Party
@@ -25,7 +25,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import mydash, utils, taxonomy
+from metadamage import mydash, taxonomy, utils
 
 
 #%%
@@ -556,7 +556,7 @@ def filter_fit_results(
 
     df_fit_results_filtered = fit_results.filter(d_filter)
 
-    print(df_fit_results_filtered.shape)
+    # print(df_fit_results_filtered.shape)
 
     return df_fit_results_filtered.to_dict("records")
 
