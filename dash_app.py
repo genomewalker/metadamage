@@ -105,7 +105,7 @@ mismatch_dropdown_filenames = dbc.FormGroup(
                 options=[{"label": name, "value": name} for name in fit_results.names],
                 clearable=False,
             ),
-            style={"min-width": "250px"},
+            style={"min-width": "300px"},
         ),
     ],
     className="mr-5",
@@ -759,6 +759,8 @@ else:
     # name = "SJArg-1-Nit"
     taxid = 33969
 
+    df_fit_results_all = fit_results.df_fit_results
+
     df_fit_results = fit_results.filter(
         {"taxid": taxid, "name": name}, df="df_fit_results"
     )
@@ -780,8 +782,10 @@ else:
     reload(taxonomy)
     tax_name = "Ursus"
     tax_name = "Mammalia"
-    tax_name = "Chordata"
+    # tax_name = "Chordata"
     # tax_name = "Salmon"
     taxids = taxonomy.extract_descendant_taxids(tax_name)
 
     df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
+
+    # fig = mydash.figures.plot_histograms(fit_results, df_fit_results_all)

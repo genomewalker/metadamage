@@ -156,8 +156,10 @@ class FitResults:
         self.df_mismatch = df
 
     def _get_range_of_column(self, column, spacing):
-        range_min = self.df_fit_results[column].min()
-        range_max = self.df_fit_results[column].max()
+        array = self.df_fit_results[column]
+        array = array[np.isfinite(array) & array.notnull()]
+        range_min = array.min()
+        range_max = array.max()
         delta = range_max - range_min
         ranges = [range_min - delta / spacing, range_max + delta / spacing]
         return ranges
