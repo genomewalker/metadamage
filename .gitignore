@@ -17,6 +17,9 @@ __pycache__/
 !/data/input/data_ancient.txt
 !/data/input/data_control.txt
 
+# NCBI taxonomy
+taxdump.tar.gz
+
 # ignore figures
 /figures/
 

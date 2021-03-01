@@ -34,7 +34,6 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
     df = fit_results.df_fit_results
 
     if column == "N_alignments":
-
         range_log = np.log10(df[column])
         range_min = np.floor(range_log.min())
         range_max = np.ceil(range_log.max())

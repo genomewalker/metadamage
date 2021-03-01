@@ -65,7 +65,9 @@ class FitResults:
         df = pd.concat(dfs, axis=0, ignore_index=True)
         df["N_alignments_log10"] = np.log10(df["N_alignments"])
         df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-        df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
+        with np.errstate(divide="ignore", invalid="ignore"):
+            df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
+
         self.df_fit_results = df
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
@@ -220,6 +222,9 @@ class FitResults:
 
             elif dimension == "taxid":
                 query += f"(taxid == {filter}) & "
+
+            elif dimension == "taxids":
+                query += f"(taxid in {filter}) & "
 
             else:
                 low, high = filter

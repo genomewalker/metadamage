@@ -1,4 +1,5 @@
 # Scientific Library
+from typing import Container
 import numpy as np
 import pandas as pd
 
@@ -24,7 +25,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import mydash, utils
+from metadamage import mydash, utils, taxonomy
 
 
 #%%
@@ -165,7 +166,77 @@ card_datatable = dbc.Card(
 
 #%%
 
-form_dropdown = dbc.FormGroup(
+
+filter_taxid_input = dbc.Row(
+    [
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dbc.Input(
+                        id="taxid_filter_input",
+                        placeholder="Input goes here...",
+                        type="text",
+                        autoComplete=False,
+                    ),
+                ]
+            ),
+        ),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dbc.Checklist(
+                        options=[
+                            {"label": "Subspecies", "value": True},
+                        ],
+                        value=[True],
+                        id="taxid_filter_subspecies",
+                    ),
+                ]
+            ),
+            width=3,
+        ),
+    ],
+    justify="between",
+    form=True,
+)
+
+
+filter_taxid_plot_button = dbc.Row(
+    [
+        dbc.Col(
+            html.P(id="taxid_filter_counts_output"),
+        ),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dbc.Button(
+                        "Plot",
+                        id="taxid_plot_button",
+                        color="primary",
+                        block=True,
+                    ),
+                ]
+            ),
+            width=3,
+        ),
+    ],
+    justify="between",
+    form=True,
+)
+
+
+filter_taxid = html.Div(
+    [
+        dbc.Row(dbc.Col(html.H6("Tax ID Filter"), width=12)),
+        filter_taxid_input,
+        filter_taxid_plot_button,
+    ]
+)
+
+
+#%%
+
+filter_dropdown_file = dbc.FormGroup(
     [
         dbc.Label("Dropdown"),
         mydash.elements.get_dropdown_file_selection(
@@ -175,7 +246,7 @@ form_dropdown = dbc.FormGroup(
     ]
 )
 
-form_range_slider_N_alignments = dbc.FormGroup(
+filter_range_slider_N_alignments = dbc.FormGroup(
     [
         dbc.Label("Range Slider N_alignments"),
         dcc.RangeSlider(
@@ -190,7 +261,7 @@ form_range_slider_N_alignments = dbc.FormGroup(
 )
 
 
-form_range_slider_D_max = dbc.FormGroup(
+filter_range_slider_D_max = dbc.FormGroup(
     [
         dbc.Label("Range Slider D max"),
         dcc.RangeSlider(
@@ -204,11 +275,19 @@ form_range_slider_D_max = dbc.FormGroup(
     ]
 )
 
-card_filter = dbc.Card(
+
+filter_card = dbc.Card(
     [
         html.H3("Filters", className="card-title"),
         dbc.Form(
-            [form_dropdown, form_range_slider_N_alignments, form_range_slider_D_max]
+            [
+                filter_dropdown_file,
+                html.Hr(),
+                filter_taxid,
+                html.Hr(),
+                filter_range_slider_N_alignments,
+                filter_range_slider_D_max,
+            ]
         ),
     ],
     body=True,  # spacing before border
@@ -408,7 +487,7 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(
             [
-                dbc.Col(card_filter, width=2),
+                dbc.Col(filter_card, width=2),
                 dbc.Col([card_tabs, card_graph], width=6),
                 dbc.Col(card_mismatch_dropdowns_and_graph, width=4),
             ],
@@ -427,22 +506,42 @@ app.layout = dbc.Container(
 )
 
 #%%
+#
+
+
+def apply_taxid_filter(d_filter, tax_name, taxid_filter_subspecies):
+    if tax_name is None:
+        return None
+
+    taxids = taxonomy.extract_descendant_taxids(
+        tax_name,
+        include_subspecies=include_subspecies(taxid_filter_subspecies),
+    )
+    N_taxids = len(taxids)
+    if N_taxids != 0:
+        d_filter["taxids"] = taxids
 
 
 @app.callback(
     Output("store", "data"),
     Input("dropdown_file_selection", "value"),
+    Input("taxid_plot_button", "n_clicks"),
     Input("range_slider_N_alignments", "value"),
     Input("range_slider_D_max", "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
+    State("taxid_filter_input", "value"),
+    State("taxid_filter_subspecies", "value"),
 )
 def filter_fit_results(
     dropdown_file_selection,
+    taxid_button,
     range_slider_N_alignments,
     range_slider_D_max,
     marker_size_max,
     marker_transformation,
+    taxid_filter_input,
+    taxid_filter_subspecies,
 ):
 
     # if no files selected
@@ -450,13 +549,16 @@ def filter_fit_results(
         raise PreventUpdate
 
     fit_results.set_marker_size(marker_transformation, marker_size_max)
-    df_fit_results_filtered = fit_results.filter(
-        {
-            "N_alignments": range_slider_N_alignments,
-            "D_max": range_slider_D_max,
-            "names": dropdown_file_selection,
-        }
-    )
+
+    d_filter = {
+        "names": dropdown_file_selection,
+        "N_alignments": range_slider_N_alignments,
+        "D_max": range_slider_D_max,
+    }
+
+    apply_taxid_filter(d_filter, taxid_filter_input, taxid_filter_subspecies)
+
+    df_fit_results_filtered = fit_results.filter(d_filter)
 
     return df_fit_results_filtered.to_dict("records")
 
@@ -587,30 +689,6 @@ def update_dropdown_taxid_options(name):
     return get_taxid_options_based_on_filename(name, df_string="mismatch")
 
 
-# @app.callback(
-#     Output("display-selected-values", "children"),
-#     Input("dropdown_mismatch_taxid", "value"),
-#     Input("main_graph", "clickData"),
-#     State("tabs", "active_tab"),
-# )
-# def update_click_data_text(taxid, click_data, active_tab):
-#     if click_data is not None:
-#         if active_tab == "fig_histograms":
-#             # print("update_click_data_text got here")
-#             raise PreventUpdate
-#         try:
-#             taxid = fit_results.parse_click_data(click_data, variable="taxid")
-#             return "you have selected Tax ID {}".format(taxid)
-
-#         except KeyError:
-#             # print("update_click_data_text had KeyError")
-#             return "Cannot select binned data (histograms)."
-
-#     if active_tab == "fig_histograms":
-#         return "Cannot select binned data (histograms)."
-#     return "Please select a point."
-
-
 @app.callback(
     Output("dropdown_mismatch_filename", "value"),
     Output("dropdown_mismatch_taxid", "value"),
@@ -638,6 +716,37 @@ def update_dropdowns_based_on_click_data(click_data, active_tab):
 #%%
 
 
+def include_subspecies(subspecies):
+    if len(subspecies) == 1:
+        return True
+    return False
+
+
+@app.callback(
+    Output("taxid_filter_counts_output", "children"),
+    # Input("taxid_filter_button", "n_clicks"),
+    Input("taxid_filter_input", "value"),
+    Input("taxid_filter_subspecies", "value"),
+)
+def update_taxid_filter_counts(tax_name, subspecies):
+
+    if tax_name is None or tax_name == "":
+        return f"No specific Tax IDs selected, defaults to ALL."
+        # raise PreventUpdate
+
+    taxids = taxonomy.extract_descendant_taxids(
+        tax_name,
+        include_subspecies=include_subspecies(subspecies),
+    )
+    N_taxids = len(taxids)
+    if N_taxids == 0:
+        return f"Couldn't find any Tax IDs for {tax_name}"
+    return f"Found {utils.human_format(N_taxids)} Tax IDs for {tax_name}"
+
+
+#%%
+
+
 def is_ipython():
     return hasattr(__builtins__, "__IPYTHON__")
 
@@ -649,7 +758,7 @@ if __name__ == "__main__" and not is_ipython():
 else:
 
     name = "KapK-198A-Ext-55-Lib-55-Index1"
-    name = "SJArg-1-Nit"
+    # name = "SJArg-1-Nit"
     taxid = 33969
 
     df_fit_results = fit_results.filter(
@@ -669,3 +778,11 @@ else:
     fig
 
     group[["position", "CT", "C"]]
+
+    reload(taxonomy)
+    tax_name = "Ursus"
+    tax_name = "Salmonidae"
+    tax_name = "Salmon"
+    taxids = taxonomy.extract_descendant_taxids(tax_name)
+
+    df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
