@@ -176,7 +176,7 @@ filter_taxid_input = dbc.Row(
                         id="taxid_filter_input",
                         placeholder="Input goes here...",
                         type="text",
-                        autoComplete=False,
+                        autoComplete="off",
                     ),
                 ]
             ),
@@ -301,9 +301,7 @@ form_overview_marker_size = dbc.FormGroup(
         dbc.Label("Marker Size", className="mr-2"),
         # dbc.Col(
         html.Div(
-            dcc.Slider(
-                # id="slider_overview_marker_size",
-                # possible fix for ReferenceError
+            dcc.Slider(  # possible fix for ReferenceError
                 id={"type": "slider_overview_marker_size", "index": 0},
                 **mydash.elements.get_slider_keywords(),
             ),
@@ -320,9 +318,7 @@ form_overview_marker_transformation = dbc.FormGroup(
     [
         dbc.Label("Marker Transformation", className="mr-2"),
         # dbc.Col(
-        dcc.Dropdown(
-            # id="dropdown_overview_marker_transformation",
-            # possible fix for ReferenceError
+        dcc.Dropdown(  # possible fix for ReferenceError
             id={"type": "dropdown_overview_marker_transformation", "index": 0},
             options=[
                 {"label": "Identity", "value": "identity"},
@@ -560,6 +556,8 @@ def filter_fit_results(
 
     df_fit_results_filtered = fit_results.filter(d_filter)
 
+    print(df_fit_results_filtered.shape)
+
     return df_fit_results_filtered.to_dict("records")
 
 
@@ -740,8 +738,8 @@ def update_taxid_filter_counts(tax_name, subspecies):
     )
     N_taxids = len(taxids)
     if N_taxids == 0:
-        return f"Couldn't find any Tax IDs for {tax_name}"
-    return f"Found {utils.human_format(N_taxids)} Tax IDs for {tax_name}"
+        return f"Couldn't find any Tax IDs for {tax_name} in NCBI"
+    return f"Found {utils.human_format(N_taxids)} Tax IDs for {tax_name} in NCBI"
 
 
 #%%
@@ -781,8 +779,9 @@ else:
 
     reload(taxonomy)
     tax_name = "Ursus"
-    tax_name = "Salmonidae"
-    tax_name = "Salmon"
+    tax_name = "Mammalia"
+    tax_name = "Chordata"
+    # tax_name = "Salmon"
     taxids = taxonomy.extract_descendant_taxids(tax_name)
 
     df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")

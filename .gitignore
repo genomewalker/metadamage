@@ -20,6 +20,9 @@ __pycache__/
 # NCBI taxonomy
 taxdump.tar.gz
 
+# memoization
+/memoization/
+
 # ignore figures
 /figures/
 

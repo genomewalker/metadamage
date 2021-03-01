@@ -1,9 +1,15 @@
 from ete3 import NCBITaxa
 from pathlib import Path
-from functools import lru_cache
+
+# from functools import lru_cache
+from joblib import Memory
 
 
-@lru_cache
+cachedir = "memoization"
+memory = Memory(cachedir, verbose=0)
+
+# @lru_cache
+@memory.cache
 def extract_descendant_taxids(tax, include_subspecies=True):
     """Given either taxid or tax_name, extract all the descendants' taxIDs.
     Subspecies are automatically included, but can be disables with
