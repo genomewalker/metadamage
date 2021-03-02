@@ -33,7 +33,8 @@ class Log:
             log_dir = "../logs"
 
         else:
-            raise AssertionError(f"Could not figure out logging dir")
+            log_dir = "./logs"
+            # raise AssertionError(f"Could not figure out logging dir")
 
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         filename = f"{log_dir}/log--{self.start_time}.txt"
