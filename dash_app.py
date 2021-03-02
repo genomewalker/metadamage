@@ -37,7 +37,7 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 fit_results = mydash.fit_results.FitResults()
 
-#%%
+#%%BOOTSTRAP
 
 app = dash.Dash(
     __name__,
@@ -170,7 +170,11 @@ card_datatable = dbc.Card(
 filter_taxid = dbc.Row(
     [
         dbc.Col(
-            html.H6("Tax ID Filter"),
+            html.Br(),
+            width=12,
+        ),
+        dbc.Col(
+            html.H3("Filter based on specific Taxas"),
             width=12,
         ),
         dbc.Col(
@@ -228,10 +232,11 @@ filter_taxid = dbc.Row(
 filters_collapse_taxid = html.Div(
     [
         dbc.Button(
-            "TaxIDs",
+            "Filter TaxIDs",
             id="filters_toggle_taxids_button",
-            className="mb-3",
-            color="primary",
+            color="secondary",
+            block=True,
+            outline=True,
         ),
         dbc.Collapse(
             filter_taxid,
@@ -246,6 +251,11 @@ filters_collapse_taxid = html.Div(
 filter_dropdown_file = dbc.FormGroup(
     [
         # dbc.Label("Dropdown"),
+        html.Br(),
+        dbc.Col(
+            html.H3("Filter based on input samples"),
+            width=12,
+        ),
         mydash.elements.get_dropdown_file_selection(
             id="dropdown_file_selection",
             fit_results=fit_results,
@@ -257,10 +267,11 @@ filter_dropdown_file = dbc.FormGroup(
 filters_collapse_files = html.Div(
     [
         dbc.Button(
-            "Toggle Files",
+            "Filter Files",
             id="filters_toggle_files_button",
-            className="mb-3",
-            color="primary",
+            color="secondary",
+            block=True,
+            outline=True,
         ),
         dbc.Collapse(
             filter_dropdown_file,
@@ -289,13 +300,19 @@ def make_range_slider_filter(column, N_steps=100):
 filters_collapse_ranges = html.Div(
     [
         dbc.Button(
-            "Toggle Ranges",
+            "Filter Fit Results",
             id="filters_toggle_ranges_button",
-            className="mb-3",
-            color="primary",
+            color="secondary",
+            block=True,
+            outline=True,
         ),
         dbc.Collapse(
             [
+                html.Br(),
+                dbc.Col(
+                    html.H3("Filter based on fit results"),
+                    width=12,
+                ),
                 #
                 make_range_slider_filter("n_sigma"),
                 make_range_slider_filter("D_max"),
