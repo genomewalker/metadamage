@@ -29,6 +29,21 @@ def get_dropdown_file_selection(id, fit_results):
 #%%
 
 
+def _insert_mark_values(mark_values):
+    # https://github.com/plotly/dash-core-components/issues/159
+    # work-around bug reported in https://github.com/plotly/dash-core-components/issues/159
+    # if mark keys happen to fall on integers, cast them to int
+
+    mark_labels = {}
+    for mark_val in mark_values:
+        # close enough to an int for my use case
+        if abs(mark_val - round(mark_val)) < 1e-3:
+            mark_val = int(mark_val)
+        # mark_labels[mark_val] = {"label": utils.human_format(mark_val)}
+        mark_labels[mark_val] = utils.human_format(mark_val)
+    return mark_labels
+
+
 def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
 
     df = fit_results.df_fit_results
@@ -54,14 +69,40 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
         range_min = 0.0
         range_max = 1.0
         marks = {
-            # 0: "0.0",
             0.25: "0.25",
             0.5: "0.5",
             0.75: "0.75",
-            # 1: "1.0",
         }
         marks[0] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
         marks[1] = {"label": "No Max.", "style": {"color": "#a3ada9"}}
+
+    else:
+
+        array = df[column]
+        array = array[np.isfinite(array) & array.notnull()]
+
+        range_min = np.min(array)
+        range_max = np.max(array)
+
+        if range_max - range_min > 1:
+            range_min = np.floor(range_min)
+            range_max = np.ceil(range_max)
+            mark_values = np.linspace(range_min, range_max, 5, dtype=int)
+            marks = _insert_mark_values(mark_values[1:-1])
+
+        else:
+            decimals = abs(int(np.floor(np.log10(range_max - range_min))))
+            range_min = np.around(range_min, decimals=decimals)
+            range_max = np.around(range_max, decimals=decimals)
+
+            mark_values = np.linspace(range_min, range_max, 5)
+            marks = {float(val): str(val) for val in mark_values[1:-1]}
+
+        marks[int(mark_values[0])] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
+        marks[int(mark_values[-1])] = {
+            "label": "No Max.",
+            "style": {"color": "#a3ada9"},
+        }
 
     step = (range_max - range_min) / N_steps
 
@@ -74,6 +115,10 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
         allowCross=False,
         updatemode="mouseup",
         included=True,
+        # tooltip=dict(
+        #     always_visible=False,
+        #     placement="bottom",
+        # ),
     )
 
 

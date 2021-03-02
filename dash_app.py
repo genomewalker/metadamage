@@ -167,8 +167,12 @@ card_datatable = dbc.Card(
 #%%
 
 
-filter_taxid_input = dbc.Row(
+filter_taxid = dbc.Row(
     [
+        dbc.Col(
+            html.H6("Tax ID Filter"),
+            width=12,
+        ),
         dbc.Col(
             dbc.FormGroup(
                 [
@@ -180,31 +184,26 @@ filter_taxid_input = dbc.Row(
                     ),
                 ]
             ),
+            width=12,
         ),
         dbc.Col(
             dbc.FormGroup(
                 [
                     dbc.Checklist(
                         options=[
-                            {"label": "Subspecies", "value": True},
+                            {"label": "Include subspecies", "value": True},
                         ],
                         value=[True],
                         id="taxid_filter_subspecies",
                     ),
                 ]
             ),
-            width=3,
+            width=12,
         ),
-    ],
-    justify="between",
-    form=True,
-)
-
-
-filter_taxid_plot_button = dbc.Row(
-    [
         dbc.Col(
             html.P(id="taxid_filter_counts_output"),
+            # xl=9,
+            width=12,
         ),
         dbc.Col(
             dbc.FormGroup(
@@ -217,7 +216,8 @@ filter_taxid_plot_button = dbc.Row(
                     ),
                 ]
             ),
-            width=3,
+            # xl=3,
+            width=12,
         ),
     ],
     justify="between",
@@ -225,11 +225,18 @@ filter_taxid_plot_button = dbc.Row(
 )
 
 
-filter_taxid = html.Div(
+filters_collapse_taxid = html.Div(
     [
-        dbc.Row(dbc.Col(html.H6("Tax ID Filter"), width=12)),
-        filter_taxid_input,
-        filter_taxid_plot_button,
+        dbc.Button(
+            "TaxIDs",
+            id="filters_toggle_taxids_button",
+            className="mb-3",
+            color="primary",
+        ),
+        dbc.Collapse(
+            filter_taxid,
+            id="filters_dropdown_taxids",
+        ),
     ]
 )
 
@@ -238,7 +245,7 @@ filter_taxid = html.Div(
 
 filter_dropdown_file = dbc.FormGroup(
     [
-        dbc.Label("Dropdown"),
+        # dbc.Label("Dropdown"),
         mydash.elements.get_dropdown_file_selection(
             id="dropdown_file_selection",
             fit_results=fit_results,
@@ -246,31 +253,60 @@ filter_dropdown_file = dbc.FormGroup(
     ]
 )
 
-filter_range_slider_N_alignments = dbc.FormGroup(
+
+filters_collapse_files = html.Div(
     [
-        dbc.Label("Range Slider N_alignments"),
-        dcc.RangeSlider(
-            id="range_slider_N_alignments",
-            **mydash.elements.get_range_slider_keywords(
-                fit_results,
-                column="N_alignments",
-                N_steps=100,
-            ),
+        dbc.Button(
+            "Toggle Files",
+            id="filters_toggle_files_button",
+            className="mb-3",
+            color="primary",
+        ),
+        dbc.Collapse(
+            filter_dropdown_file,
+            id="filters_dropdown_files",
         ),
     ]
 )
 
 
-filter_range_slider_D_max = dbc.FormGroup(
-    [
-        dbc.Label("Range Slider D max"),
-        dcc.RangeSlider(
-            id="range_slider_D_max",
-            **mydash.elements.get_range_slider_keywords(
-                fit_results,
-                column="D_max",
-                N_steps=100,
+def make_range_slider_filter(column, N_steps=100):
+    return dbc.FormGroup(
+        [
+            dbc.Label(f"Range Slider {column}"),
+            dcc.RangeSlider(
+                id=f"range_slider_{column}",
+                **mydash.elements.get_range_slider_keywords(
+                    fit_results,
+                    column=column,
+                    N_steps=N_steps,
+                ),
             ),
+        ]
+    )
+
+
+filters_collapse_ranges = html.Div(
+    [
+        dbc.Button(
+            "Toggle Ranges",
+            id="filters_toggle_ranges_button",
+            className="mb-3",
+            color="primary",
+        ),
+        dbc.Collapse(
+            [
+                #
+                make_range_slider_filter("n_sigma"),
+                make_range_slider_filter("D_max"),
+                make_range_slider_filter("q_mean"),
+                make_range_slider_filter("concentration_mean"),
+                #
+                make_range_slider_filter("N_alignments"),
+                make_range_slider_filter("y_sum_total"),
+                make_range_slider_filter("N_sum_total"),
+            ],
+            id="filters_dropdown_ranges",
         ),
     ]
 )
@@ -279,17 +315,18 @@ filter_range_slider_D_max = dbc.FormGroup(
 filter_card = dbc.Card(
     [
         html.H3("Filters", className="card-title"),
+        html.Hr(),
         dbc.Form(
             [
-                filter_dropdown_file,
+                filters_collapse_files,
                 html.Hr(),
-                filter_taxid,
+                filters_collapse_taxid,
                 html.Hr(),
-                filter_range_slider_N_alignments,
-                filter_range_slider_D_max,
+                filters_collapse_ranges,
             ]
         ),
     ],
+    style={"maxHeight": "800px", "overflow": "auto"},
     body=True,  # spacing before border
 )
 
@@ -501,6 +538,34 @@ app.layout = dbc.Container(
     # style={"height": "90vh"},
 )
 
+
+# app.layout = dbc.Container(
+#     [
+#         dbc.Row(
+#             [
+#                 dbc.Col(
+#                     html.Div(
+#                         html.H1("Scrollbars", className="text-center"),
+#                         className="p-3 gradient",
+#                     ),
+#                     width=6,
+#                     style={"overflow": "auto", "height": "400px"},
+#                 ),
+#                 dbc.Col(
+#                     html.Div(
+#                         html.H1("No scrollbars", className="text-center"),
+#                         className="p-3 gradient",
+#                     ),
+#                     width=6,
+#                     style={"overflow": "auto", "height": "400px"},
+#                     className="no-scrollbars",
+#                 ),
+#             ]
+#         )
+#     ]
+# )
+
+
 #%%
 #
 
@@ -523,6 +588,7 @@ def apply_taxid_filter(d_filter, tax_name, taxid_filter_subspecies):
     Input("dropdown_file_selection", "value"),
     Input("taxid_plot_button", "n_clicks"),
     Input("range_slider_N_alignments", "value"),
+    Input("range_slider_n_sigma", "value"),
     Input("range_slider_D_max", "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
@@ -533,6 +599,7 @@ def filter_fit_results(
     dropdown_file_selection,
     taxid_button,
     range_slider_N_alignments,
+    range_slider_n_sigma,
     range_slider_D_max,
     marker_size_max,
     marker_transformation,
@@ -549,6 +616,7 @@ def filter_fit_results(
     d_filter = {
         "names": dropdown_file_selection,
         "N_alignments": range_slider_N_alignments,
+        "n_sigma": range_slider_n_sigma,
         "D_max": range_slider_D_max,
     }
 
@@ -745,6 +813,42 @@ def update_taxid_filter_counts(tax_name, subspecies):
 #%%
 
 
+@app.callback(
+    Output("filters_dropdown_files", "is_open"),
+    [Input("filters_toggle_files_button", "n_clicks")],
+    [State("filters_dropdown_files", "is_open")],
+)
+def toggle_collapse_files(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("filters_dropdown_taxids", "is_open"),
+    [Input("filters_toggle_taxids_button", "n_clicks")],
+    [State("filters_dropdown_taxids", "is_open")],
+)
+def toggle_collapse_taxids(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("filters_dropdown_ranges", "is_open"),
+    [Input("filters_toggle_ranges_button", "n_clicks")],
+    [State("filters_dropdown_ranges", "is_open")],
+)
+def toggle_collapse_ranges(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+
+#%%
+
+
 def is_ipython():
     return hasattr(__builtins__, "__IPYTHON__")
 
@@ -754,38 +858,50 @@ if __name__ == "__main__" and not is_ipython():
 
 
 else:
+    pass
 
-    name = "KapK-198A-Ext-55-Lib-55-Index1"
-    # name = "SJArg-1-Nit"
-    taxid = 33969
+    # mydash.elements.get_range_slider_keywords(
+    #     fit_results,
+    #     column="D_max",
+    #     N_steps=100,
+    # )
+    # mydash.elements.get_range_slider_keywords(
+    #     fit_results,
+    #     column="n_sigma",
+    #     N_steps=100,
+    # )
 
-    df_fit_results_all = fit_results.df_fit_results
+    # name = "KapK-198A-Ext-55-Lib-55-Index1"
+    # # name = "SJArg-1-Nit"
+    # taxid = 33969
 
-    df_fit_results = fit_results.filter(
-        {"taxid": taxid, "name": name}, df="df_fit_results"
-    )
+    # df_fit_results_all = fit_results.df_fit_results
 
-    group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-    fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+    # df_fit_results = fit_results.filter(
+    #     {"taxid": taxid, "name": name}, df="df_fit_results"
+    # )
 
-    chosen_mismatch_columns = ["C→T", "G→A"]
+    # group = fit_results.get_mismatch_group(name=name, taxid=taxid)
+    # fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
 
-    # #%%
+    # chosen_mismatch_columns = ["C→T", "G→A"]
 
-    fig = mydash.figures.plot_mismatch_fractions(
-        group, chosen_mismatch_columns, fit=fit
-    )
-    fig
+    # # #%%
 
-    group[["position", "CT", "C"]]
+    # fig = mydash.figures.plot_mismatch_fractions(
+    #     group, chosen_mismatch_columns, fit=fit
+    # )
+    # fig
 
-    reload(taxonomy)
-    tax_name = "Ursus"
-    tax_name = "Mammalia"
-    # tax_name = "Chordata"
-    # tax_name = "Salmon"
-    taxids = taxonomy.extract_descendant_taxids(tax_name)
+    # group[["position", "CT", "C"]]
 
-    df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
+    # reload(taxonomy)
+    # tax_name = "Ursus"
+    # tax_name = "Mammalia"
+    # # tax_name = "Chordata"
+    # # tax_name = "Salmon"
+    # taxids = taxonomy.extract_descendant_taxids(tax_name)
 
-    # fig = mydash.figures.plot_histograms(fit_results, df_fit_results_all)
+    # df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
+
+    # # fig = mydash.figures.plot_histograms(fit_results, df_fit_results_all)
