@@ -221,7 +221,13 @@ filter_taxid = dbc.Row(
                 ]
             ),
             # xl=3,
-            width=12,
+            # offset=3,
+            # width=6,
+            xs={"size": 11, "offset": 1},
+            sm={"size": 11, "offset": 1},
+            md={"size": 10, "offset": 2},
+            lg={"size": 9, "offset": 3},
+            width={"size": 6, "offset": 6},
         ),
     ],
     justify="between",
@@ -237,6 +243,7 @@ filters_collapse_taxid = html.Div(
             color="secondary",
             block=True,
             outline=True,
+            size="lg",
         ),
         dbc.Collapse(
             filter_taxid,
@@ -272,6 +279,7 @@ filters_collapse_files = html.Div(
             color="secondary",
             block=True,
             outline=True,
+            size="lg",
         ),
         dbc.Collapse(
             filter_dropdown_file,
@@ -305,6 +313,7 @@ filters_collapse_ranges = html.Div(
             color="secondary",
             block=True,
             outline=True,
+            size="lg",
         ),
         dbc.Collapse(
             [
@@ -331,7 +340,7 @@ filters_collapse_ranges = html.Div(
 
 filter_card = dbc.Card(
     [
-        html.H3("Filters", className="card-title"),
+        html.H1("Select filters:", className="card-title"),
         html.Hr(),
         dbc.Form(
             [
