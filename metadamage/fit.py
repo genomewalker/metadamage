@@ -350,7 +350,7 @@ def add_assymetry_results_to_fit_results(
 
 def add_noise_estimates(group, fit_result):
 
-    base_columns = cols = [
+    base_columns = [
         col for col in group.columns if len(col) == 2 and col[0] != col[1]
     ]
 
