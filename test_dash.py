@@ -12,7 +12,7 @@ app = dash.Dash(
 app.layout = html.Div(
     [
         html.Div("Dash To-Do list"),
-        dcc.Input(id="input"),
+        dcc.Input(id="input", autoComplete="off"),
         html.Button("Add", id="add_button"),
         html.Button("Clear Done", id="clear_button"),
         html.Div(id="item_list_out"),
@@ -41,19 +41,40 @@ style_done.update(style_todo)
         State({"index": ALL, "type": "done"}, "value"),
     ],
 )
-def edit_list(add, add2, clear, new_item, items, items_done):
+def edit_list(
+    add,
+    input_enter,
+    clear,
+    new_item,
+    items,
+    items_done,
+):
+    print("")
+
+    # print(dash.callback_context.triggered)
     triggered = [t["prop_id"] for t in dash.callback_context.triggered]
+    print(f"{triggered=}")
+
     adding = len(
         [1 for i in triggered if i in ("add_button.n_clicks", "input.n_submit")]
     )
+    print(f"{adding=}")
+
     clearing = len([1 for i in triggered if i == "clear_button.n_clicks"])
+    print(f"{clearing=}")
+
     new_spec = [
         (text, done) for text, done in zip(items, items_done) if not (clearing and done)
     ]
+    print(f"{new_spec=}")
+
     if adding:
         new_spec.append((new_item, []))
-    new_list = [
-        html.Div(
+
+    new_list = []
+    for i, (text, done) in enumerate(new_spec):
+        print(f"{i=}", f"{text=}", f"{done=}")
+        div = html.Div(
             [
                 dcc.Checklist(
                     id={"index": i, "type": "done"},
@@ -68,16 +89,21 @@ def edit_list(add, add2, clear, new_item, items, items_done):
             ],
             style={"clear": "both"},
         )
-        for i, (text, done) in enumerate(new_spec)
-    ]
-    return [new_list, "" if adding else new_item]
+        new_list.append(div)
+
+    print(f"{new_list=}")
+
+    list_out = [new_list, "" if adding else new_item]
+    print(f"{list_out=}")
+
+    return list_out
 
 
 @app.callback(
     Output({"index": MATCH}, "style"),
     Input({"index": MATCH, "type": "done"}, "value"),
 )
-def mark_done(done):
+def change_style_for_done(done):
     return style_done if done else style_todo
 
 
@@ -85,12 +111,12 @@ def mark_done(done):
     Output("summary_out", "children"),
     Input({"index": ALL, "type": "done"}, "value"),
 )
-def show_summary_out(done):
+def update_summary_out(done):
     count_all = len(done)
     count_done = len([d for d in done if d])
-    result = "{} of {} items completed".format(count_done, count_all)
+    result = f"{count_done} of {count_all} items completed"
     if count_all:
-        result += " - {}%".format(int(100 * count_done / count_all))
+        result += f" - {count_done / count_all:.0%}"
     return result
 
 
