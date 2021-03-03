@@ -362,9 +362,10 @@ def add_noise_estimates(group, fit_result):
     f_mean = f_ij.mean(axis=0)
     noise_z = f_ij / f_mean
 
-    fit_result["normalized_noise"] = np.nanstd(noise_z.values)
-    fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
-    fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        fit_result["normalized_noise"] = np.nanstd(noise_z.values)
+        fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
+        fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
 
 
 #%%
