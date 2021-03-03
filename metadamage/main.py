@@ -131,6 +131,7 @@ if utils.is_ipython():
         df = pd.read_parquet(filename_parquet)
         taxid = 115547
         taxid = 3745
+        taxid = 395312
         group = utils.get_specific_taxid(df, taxid)  # get very first group
 
 
