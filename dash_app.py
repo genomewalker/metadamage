@@ -7,7 +7,6 @@ from importlib import reload
 from pathlib import Path
 from threading import Timer
 import time
-from typing import Container
 import webbrowser
 
 # Third Party
