@@ -43,7 +43,7 @@ def model_PMD(z, N, y=None, phi_prior=1 / 1000):
     c = numpyro.sample("c", dist.Beta(1, 9))  # mean = 0.1, shape = 10
     # Dz = numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c)
     Dz = jnp.clip(numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c), 0, 1)
-    D_max = numpyro.deterministic("D_max", A + c) # pylint: disable=unused-variable
+    D_max = numpyro.deterministic("D_max", A + c)  # pylint: disable=unused-variable
 
     delta = numpyro.sample("delta", dist.Exponential(phi_prior))
     phi = numpyro.deterministic("phi", delta + 2)
