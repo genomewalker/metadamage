@@ -579,6 +579,20 @@ app.layout = dbc.Container(
             justify="center",
             # className="h-25",
         ),
+        dbc.Modal(
+            [
+                dbc.ModalHeader("Filtering Error"),
+                dbc.ModalBody(
+                    "Too restrictive filtering, no points left to plot. "
+                    "Please choose a less restrictive filtering."
+                ),
+                dbc.ModalFooter(
+                    dbc.Button("Close", id="modal_close_button", className="ml-auto")
+                ),
+            ],
+            centered=True,
+            id="modal",
+        ),
     ],
     fluid=True,  # fill available horizontal space and resize fluidly
     # style={"height": "90vh"},
@@ -604,14 +618,17 @@ def apply_taxid_filter(d_filter, tax_name, taxid_filter_subspecies):
 
 @app.callback(
     Output("store", "data"),
+    Output("modal", "is_open"),
     Input("dropdown_file_selection", "value"),
     Input("taxid_plot_button", "n_clicks"),
     Input({"type": "dynamic-slider", "index": ALL}, "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
+    Input("modal_close_button", "n_clicks"),
     State("taxid_filter_input", "value"),
     State("taxid_filter_subspecies", "value"),
     State({"type": "dynamic-slider", "index": ALL}, "id"),
+    State("modal", "is_open"),
 )
 def filter_fit_results(
     dropdown_file_selection,
@@ -619,11 +636,17 @@ def filter_fit_results(
     slider_values,
     marker_size_max,
     marker_transformation,
+    n_clicks_modal,
     taxid_filter_input,
     taxid_filter_subspecies,
     slider_ids,
+    modal_is_open,
     prevent_initial_call=True,
 ):
+
+    # if modal is open and the "close" button is clicked, close down modal
+    if n_clicks_modal and modal_is_open:
+        return dash.no_update, False
 
     # if no files selected
     if not dropdown_file_selection:
@@ -640,7 +663,11 @@ def filter_fit_results(
 
     df_fit_results_filtered = fit_results.filter(d_filter)
 
-    return df_fit_results_filtered.to_dict("records")
+    # raise modal warning if no results due to too restrictive filtering
+    if len(df_fit_results_filtered) == 0:
+        return dash.no_update, True
+
+    return df_fit_results_filtered.to_dict("records"), dash.no_update
 
 
 #%%
