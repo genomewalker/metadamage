@@ -1,6 +1,8 @@
+# Scientific Library
+import numpy as np
+
 # Standard Library
 import webbrowser
-import numpy as np
 
 # Third Party
 from PIL import ImageColor

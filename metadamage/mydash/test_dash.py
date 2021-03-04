@@ -1,10 +1,14 @@
-import dash
-import dash_core_components as dcc
-import dash_bootstrap_components as dbc
-import dash_html_components as html
-from dash.dependencies import Input, Output, State, MATCH, ALL
-from dash.exceptions import PreventUpdate
+# Standard Library
 import json
+
+# Third Party
+import dash
+from dash.dependencies import ALL, Input, MATCH, Output, State
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import dash_html_components as html
+
 
 #%%
 
