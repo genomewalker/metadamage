@@ -247,6 +247,7 @@ filters_collapse_taxid = html.Div(
         dbc.Collapse(
             filter_taxid,
             id="filters_dropdown_taxids",
+            is_open=False,
         ),
     ]
 )
@@ -283,6 +284,7 @@ filters_collapse_files = html.Div(
         dbc.Collapse(
             filter_dropdown_file,
             id="filters_dropdown_files",
+            is_open=False,
         ),
     ]
 )
@@ -350,6 +352,7 @@ filters_collapse_ranges = html.Div(
                 ),
             ],
             id="filters_dropdown_ranges",
+            is_open=False,
         ),
     ]
 )
@@ -369,7 +372,7 @@ filter_card = dbc.Card(
             ]
         ),
     ],
-    style={"maxHeight": "1000px", "overflow": "auto"},
+    # style={"maxHeight": "1000px", "overflow": "auto"},
     body=True,  # spacing before border
 )
 
@@ -928,35 +931,40 @@ def update_taxid_filter_counts(tax_name, subspecies):
 
 @app.callback(
     Output("filters_dropdown_files", "is_open"),
-    [Input("filters_toggle_files_button", "n_clicks")],
-    [State("filters_dropdown_files", "is_open")],
+    Output("filters_toggle_files_button", "outline"),
+    Input("filters_toggle_files_button", "n_clicks"),
+    State("filters_dropdown_files", "is_open"),
 )
 def toggle_collapse_files(n, is_open):
+    # after click
     if n:
-        return not is_open
-    return is_open
+        return not is_open, is_open
+    # initial setup
+    return is_open, True
 
 
 @app.callback(
     Output("filters_dropdown_taxids", "is_open"),
-    [Input("filters_toggle_taxids_button", "n_clicks")],
-    [State("filters_dropdown_taxids", "is_open")],
+    Output("filters_toggle_taxids_button", "outline"),
+    Input("filters_toggle_taxids_button", "n_clicks"),
+    State("filters_dropdown_taxids", "is_open"),
 )
 def toggle_collapse_taxids(n, is_open):
     if n:
-        return not is_open
-    return is_open
+        return not is_open, is_open
+    return is_open, True
 
 
 @app.callback(
     Output("filters_dropdown_ranges", "is_open"),
-    [Input("filters_toggle_ranges_button", "n_clicks")],
-    [State("filters_dropdown_ranges", "is_open")],
+    Output("filters_toggle_ranges_button", "outline"),
+    Input("filters_toggle_ranges_button", "n_clicks"),
+    State("filters_dropdown_ranges", "is_open"),
 )
 def toggle_collapse_ranges(n, is_open):
     if n:
-        return not is_open
-    return is_open
+        return not is_open, is_open
+    return is_open, True
 
 
 #%%
