@@ -304,6 +304,16 @@ def make_range_slider_filter(column, N_steps=100):
     )
 
 
+slider_names = [
+    "n_sigma",
+    "D_max",
+    "q_mean",
+    "concentration_mean",
+    "N_alignments",
+    "y_sum_total",
+    "N_sum_total",
+]
+
 filters_collapse_ranges = html.Div(
     [
         dbc.Button(
@@ -321,15 +331,23 @@ filters_collapse_ranges = html.Div(
                     html.H3("Filter based on fit results"),
                     width=12,
                 ),
-                #
-                make_range_slider_filter("n_sigma"),
-                make_range_slider_filter("D_max"),
-                make_range_slider_filter("q_mean"),
-                make_range_slider_filter("concentration_mean"),
-                #
-                make_range_slider_filter("N_alignments"),
-                make_range_slider_filter("y_sum_total"),
-                make_range_slider_filter("N_sum_total"),
+                dbc.Col(
+                    dcc.Dropdown(
+                        id="dropdown_slider",
+                        options=[
+                            {"label": name, "value": name} for name in slider_names
+                        ],
+                        value=[],
+                        multi=True,
+                        placeholder="Select a variable to filter on...",
+                    ),
+                    width=12,
+                ),
+                dbc.Col(
+                    id="dynamic-slider-container",
+                    children=[],
+                    width=12,
+                ),
             ],
             id="filters_dropdown_ranges",
         ),
@@ -351,7 +369,7 @@ filter_card = dbc.Card(
             ]
         ),
     ],
-    style={"maxHeight": "800px", "overflow": "auto"},
+    style={"maxHeight": "1000px", "overflow": "auto"},
     body=True,  # spacing before border
 )
 
@@ -545,9 +563,9 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(
             [
-                dbc.Col(filter_card, width=2),
+                dbc.Col(filter_card, width=3),
                 dbc.Col([card_tabs, card_graph], width=6),
-                dbc.Col(card_mismatch_dropdowns_and_graph, width=4),
+                dbc.Col(card_mismatch_dropdowns_and_graph, width=3),
             ],
             justify="center",
             # className="h-75",
@@ -562,33 +580,6 @@ app.layout = dbc.Container(
     fluid=True,  # fill available horizontal space and resize fluidly
     # style={"height": "90vh"},
 )
-
-
-# app.layout = dbc.Container(
-#     [
-#         dbc.Row(
-#             [
-#                 dbc.Col(
-#                     html.Div(
-#                         html.H1("Scrollbars", className="text-center"),
-#                         className="p-3 gradient",
-#                     ),
-#                     width=6,
-#                     style={"overflow": "auto", "height": "400px"},
-#                 ),
-#                 dbc.Col(
-#                     html.Div(
-#                         html.H1("No scrollbars", className="text-center"),
-#                         className="p-3 gradient",
-#                     ),
-#                     width=6,
-#                     style={"overflow": "auto", "height": "400px"},
-#                     className="no-scrollbars",
-#                 ),
-#             ]
-#         )
-#     ]
-# )
 
 
 #%%
@@ -612,24 +603,23 @@ def apply_taxid_filter(d_filter, tax_name, taxid_filter_subspecies):
     Output("store", "data"),
     Input("dropdown_file_selection", "value"),
     Input("taxid_plot_button", "n_clicks"),
-    Input("range_slider_N_alignments", "value"),
-    Input("range_slider_n_sigma", "value"),
-    Input("range_slider_D_max", "value"),
+    Input({"type": "dynamic-slider", "index": ALL}, "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
     State("taxid_filter_input", "value"),
     State("taxid_filter_subspecies", "value"),
+    State({"type": "dynamic-slider", "index": ALL}, "id"),
 )
 def filter_fit_results(
     dropdown_file_selection,
     taxid_button,
-    range_slider_N_alignments,
-    range_slider_n_sigma,
-    range_slider_D_max,
+    slider_values,
     marker_size_max,
     marker_transformation,
     taxid_filter_input,
     taxid_filter_subspecies,
+    slider_ids,
+    prevent_initial_call=True,
 ):
 
     # if no files selected
@@ -638,20 +628,118 @@ def filter_fit_results(
 
     fit_results.set_marker_size(marker_transformation, marker_size_max)
 
-    d_filter = {
-        "names": dropdown_file_selection,
-        "N_alignments": range_slider_N_alignments,
-        "n_sigma": range_slider_n_sigma,
-        "D_max": range_slider_D_max,
-    }
+    d_filter = {"names": dropdown_file_selection}
+    slider_names = [id["index"] for id in slider_ids]
+    for name, values in zip(slider_names, slider_values):
+        d_filter[name] = values
 
     apply_taxid_filter(d_filter, taxid_filter_input, taxid_filter_subspecies)
 
     df_fit_results_filtered = fit_results.filter(d_filter)
 
-    # print(df_fit_results_filtered.shape)
-
     return df_fit_results_filtered.to_dict("records")
+
+
+#%%
+
+
+def list_is_none_or_empty(l):
+    return l is None or len(l) == 0
+
+
+def get_id_dict(child):
+    return child["props"]["id"]
+
+
+def find_index_in_children(children, id_type, search_index):
+    for i, child in enumerate(children):
+        d_id = get_id_dict(child)
+        if d_id["type"] == id_type and d_id["index"] == search_index:
+            return i
+
+
+def get_current_names(current_ids):
+    return [x["index"] for x in current_ids if x]
+
+
+def slider_is_added(current_names, dropdown_names):
+    "Returns True if a new slider is added, False otherwise"
+    return set(current_names).issubset(dropdown_names)
+
+
+def get_name_of_added_slider(current_names, dropdown_names):
+    return list(set(dropdown_names).difference(current_names))[0]
+
+
+def get_name_of_removed_slider(current_names, dropdown_names):
+    return list(set(current_names).difference(dropdown_names))[0]
+
+
+def remove_name_from_children(name, children, id_type):
+    " Given a name, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=name)
+    children.pop(index)
+
+
+def make_new_slider(name, id_type, N_steps=100):
+    return dbc.Container(
+        [
+            dbc.Row(html.Br()),
+            dbc.Row(html.P(name), justify="center"),
+            dbc.Row(
+                dbc.Col(
+                    dcc.RangeSlider(
+                        id={
+                            "type": "dynamic-slider",
+                            "index": name,
+                        },
+                        **mydash.elements.get_range_slider_keywords(
+                            fit_results,
+                            column=name,
+                            N_steps=N_steps,
+                        ),
+                    ),
+                    width=12,
+                ),
+            ),
+        ],
+        id={"type": id_type, "index": name},
+    )
+
+
+@app.callback(
+    Output("dynamic-slider-container", "children"),
+    Input("dropdown_slider", "value"),
+    State("dynamic-slider-container", "children"),
+    State({"type": "dynamic-slider", "index": ALL}, "id"),
+    prevent_initial_call=True,
+)
+def add_or_remove_slider(
+    dropdown_names,
+    children,
+    current_ids,
+):
+
+    # id_type = "div"
+    id_type = "dbc"
+
+    current_names = get_current_names(current_ids)
+
+    # add new slider
+    if slider_is_added(current_names, dropdown_names):
+        name = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(name, id_type=id_type)
+        children.append(new_element)
+
+    # remove selected slider
+    else:
+        name = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(name, children, id_type=id_type)
+
+    return children
+
+
+#%%
 
 
 @app.callback(

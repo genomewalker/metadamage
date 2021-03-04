@@ -1,5 +1,6 @@
 # Standard Library
 import webbrowser
+import numpy as np
 
 # Third Party
 from PIL import ImageColor
@@ -42,8 +43,8 @@ def set_custom_theme():
 #%%
 
 
-def transform_slider(x):
-    return 10 ** x
+def log_transform_slider(x):
+    return np.where(x < 0, 0, 10 ** np.clip(x, 0, a_max=None))
 
 
 def open_browser():

@@ -48,18 +48,26 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
 
     df = fit_results.df_fit_results
 
-    if column == "N_alignments":
-        range_log = np.log10(df[column])
+    if column in ["N_alignments", "y_sum_total", "N_sum_total"]:
+
+        x = df[column]
+
+        range_log = np.log10(x[x > 0])
         range_min = np.floor(range_log.min())
         range_max = np.ceil(range_log.max())
-
         marks_steps = np.arange(range_min, range_max + 1)
+
+        # if x contains 0-values
+        if (x <= 0).sum() != 0:
+            range_min = -1
+            marks_steps = np.insert(marks_steps, 0, -1)
+
         if len(marks_steps) > 6:
             marks_steps = (
                 [marks_steps[0]] + [x for x in marks_steps[1:-1:2]] + [marks_steps[-1]]
             )
 
-        f = lambda x: utils.human_format(mydash.utils.transform_slider(x))
+        f = lambda x: utils.human_format(mydash.utils.log_transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
         marks[marks_steps[0]] = {"label": "No Min.", "style": {"color": "#a3ada9"}}

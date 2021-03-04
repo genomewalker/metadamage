@@ -230,9 +230,9 @@ class FitResults:
 
             else:
                 low, high = filter
-                if dimension == "N_alignments":
-                    low = mydash.utils.transform_slider(low)
-                    high = mydash.utils.transform_slider(high)
+                if dimension in ["N_alignments", "y_sum_total", "N_sum_total"]:
+                    low = mydash.utils.log_transform_slider(low)
+                    high = mydash.utils.log_transform_slider(high)
                 query += f"({low} <= {dimension} <= {high}) & "
 
         query = query[:-2]
