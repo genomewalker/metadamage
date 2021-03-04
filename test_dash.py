@@ -3,122 +3,237 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, MATCH, ALL
+from dash.exceptions import PreventUpdate
+import json
+
+#%%
 
 app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.SLATE],
+    # prevent_initial_callbacks=True,
 )
+
+N_steps = 10
+
+slider_kw_args = {
+    "A": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.1,
+        "marks": {
+            0.25: "0.25",
+            0.5: "0.5",
+            0.75: "0.75",
+            0: {"label": "No Min.", "style": {"color": "#a3ada9"}},
+            1: {"label": "No Max.", "style": {"color": "#a3ada9"}},
+        },
+        "value": [0.0, 1.0],
+        "allowCross": False,
+        "updatemode": "mouseup",
+        "included": True,
+    },
+    "B": {
+        "min": 0.0,
+        "max": 100.0,
+        "step": 10.0,
+        "marks": {
+            25: "25",
+            50: "50",
+            75: "75",
+            0: {"label": "No Min.", "style": {"color": "#a3ada9"}},
+            100: {"label": "No Max.", "style": {"color": "#a3ada9"}},
+        },
+        "value": [0.0, 100.0],
+        "allowCross": False,
+        "updatemode": "mouseup",
+        "included": True,
+    },
+}
+
+#%%
 
 app.layout = html.Div(
     [
-        html.Div("Dash To-Do list"),
-        dcc.Input(id="input", autoComplete="off"),
-        html.Button("Add", id="add_button"),
-        html.Button("Clear Done", id="clear_button"),
-        html.Div(id="item_list_out"),
-        html.Div(id="summary_out"),
+        html.Div("Dash Test"),
+        dcc.Dropdown(
+            id="dropdown",
+            options=[{"label": name, "value": name} for name in slider_kw_args.keys()],
+            value=[],
+            multi=True,
+            placeholder="Select a variable to filter on...",
+        ),
+        html.Div(id="dynamic-slider-container", children=[]),
+        html.Hr(),
+        html.Div(id="dynamic-slider-summary", children=[]),
     ]
 )
 
-style_todo = {"display": "inline", "margin": "10px"}
-style_done = {"textDecoration": "line-through", "color": "#888"}
-style_done.update(style_todo)
+
+#%%
 
 
-@app.callback(
-    [
-        Output("item_list_out", "children"),
-        Output("input", "value"),
-    ],
-    [
-        Input("add_button", "n_clicks"),
-        Input("input", "n_submit"),
-        Input("clear_button", "n_clicks"),
-    ],
-    [
-        State("input", "value"),
-        State({"index": ALL}, "children"),
-        State({"index": ALL, "type": "done"}, "value"),
-    ],
-)
-def edit_list(
-    add,
-    input_enter,
-    clear,
-    new_item,
-    items,
-    items_done,
-):
-    print("")
+def list_is_none_or_empty(l):
+    return l is None or len(l) == 0
 
-    # print(dash.callback_context.triggered)
-    triggered = [t["prop_id"] for t in dash.callback_context.triggered]
-    print(f"{triggered=}")
 
-    adding = len(
-        [1 for i in triggered if i in ("add_button.n_clicks", "input.n_submit")]
+def get_id_dict(child):
+    return child["props"]["id"]
+
+
+def find_index_in_children(children, id_type, search_index):
+    for i, child in enumerate(children):
+        d_id = get_id_dict(child)
+        if d_id["type"] == id_type and d_id["index"] == search_index:
+            return i
+
+
+def get_current_names(current_ids):
+    return [x["index"] for x in current_ids if x]
+
+
+def slider_is_added(current_names, dropdown_names):
+    "Returns True if a new slider is added, False otherwise"
+    return set(current_names).issubset(dropdown_names)
+
+
+def get_name_of_added_slider(current_names, dropdown_names):
+    return list(set(dropdown_names).difference(current_names))[0]
+
+
+def get_name_of_removed_slider(current_names, dropdown_names):
+    return list(set(current_names).difference(dropdown_names))[0]
+
+
+def remove_name_from_children(name, children, id_type):
+    " Given a name, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=name)
+    children.pop(index)
+
+
+#%%
+
+
+def make_new_slider(name, id_type):
+    return html.Div(
+        [
+            html.Div(
+                id={
+                    "type": "dynamic-output",
+                    "index": name,
+                }
+            ),
+            dcc.RangeSlider(
+                id={
+                    "type": "dynamic-slider",
+                    "index": name,
+                },
+                **slider_kw_args[name],
+            ),
+        ],
+        id={"type": id_type, "index": name},
     )
-    print(f"{adding=}")
-
-    clearing = len([1 for i in triggered if i == "clear_button.n_clicks"])
-    print(f"{clearing=}")
-
-    new_spec = [
-        (text, done) for text, done in zip(items, items_done) if not (clearing and done)
-    ]
-    print(f"{new_spec=}")
-
-    if adding:
-        new_spec.append((new_item, []))
-
-    new_list = []
-    for i, (text, done) in enumerate(new_spec):
-        print(f"{i=}", f"{text=}", f"{done=}")
-        div = html.Div(
-            [
-                dcc.Checklist(
-                    id={"index": i, "type": "done"},
-                    options=[{"label": "", "value": "done"}],
-                    value=done,
-                    style={"display": "inline"},
-                    labelStyle={"display": "inline"},
-                ),
-                html.Div(
-                    text, id={"index": i}, style=style_done if done else style_todo
-                ),
-            ],
-            style={"clear": "both"},
-        )
-        new_list.append(div)
-
-    print(f"{new_list=}")
-
-    list_out = [new_list, "" if adding else new_item]
-    print(f"{list_out=}")
-
-    return list_out
 
 
 @app.callback(
-    Output({"index": MATCH}, "style"),
-    Input({"index": MATCH, "type": "done"}, "value"),
+    Output("dynamic-slider-container", "children"),
+    Input("dropdown", "value"),
+    State("dynamic-slider-container", "children"),
+    State({"type": "dynamic-slider", "index": ALL}, "id"),
+    prevent_initial_call=True,
 )
-def change_style_for_done(done):
-    return style_done if done else style_todo
+def add_or_remove_slider(
+    dropdown_names,
+    children,
+    current_ids,
+):
+
+    id_type = "div"
+
+    current_names = get_current_names(current_ids)
+
+    # add new slider
+    if slider_is_added(current_names, dropdown_names):
+        name = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(name, id_type=id_type)
+        children.append(new_element)
+
+    # remove selected slider
+    else:
+        name = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(name, children, id_type=id_type)
+
+    return children
 
 
 @app.callback(
-    Output("summary_out", "children"),
-    Input({"index": ALL, "type": "done"}, "value"),
+    Output({"type": "dynamic-output", "index": MATCH}, "children"),
+    Input({"type": "dynamic-slider", "index": MATCH}, "value"),
+    State({"type": "dynamic-slider", "index": MATCH}, "id"),
 )
-def update_summary_out(done):
-    count_all = len(done)
-    count_done = len([d for d in done if d])
-    result = f"{count_done} of {count_all} items completed"
-    if count_all:
-        result += f" - {count_done / count_all:.0%}"
-    return result
+def update_slider_title(value, id):
+    return html.Div(f"Dropdown {id['index']} = {value}")
 
+
+@app.callback(
+    Output("dynamic-slider-summary", "children"),
+    Input({"type": "dynamic-slider", "index": ALL}, "value"),
+    State({"type": "dynamic-slider", "index": ALL}, "id"),
+)
+def update_slider_summary(slider_values, ids):
+    if list_is_none_or_empty(slider_values):
+        return "No sliders yet"
+    names = [id["index"] for id in ids]
+    s = ""
+    for name, slider in zip(names, slider_values):
+        s += f"Name {name} = {slider} \n"
+    return s
+
+
+#%%
 
 if __name__ == "__main__":
     app.run_server(debug=True)
+
+#%%
+
+
+# def get_recursively(search_dict, field):
+#     """
+#     Takes a dict with nested lists and dicts,
+#     and searches all dicts for a key of the field
+#     provided.
+#     """
+#     fields_found = []
+
+#     for key, value in search_dict.items():
+
+#         if key == field:
+#             fields_found.append(value)
+
+#         elif isinstance(value, dict):
+#             results = get_recursively(value, field)
+#             for result in results:
+#                 fields_found.append(result)
+
+#         elif isinstance(value, (list, tuple)):
+#             for item in value:
+#                 if isinstance(item, dict):
+#                     more_results = get_recursively(item, field)
+#                     for another_result in more_results:
+#                         fields_found.append(another_result)
+
+#     return fields_found
+
+
+# def find_index_in_children(children, id_type, search_index):
+#     for i, child in enumerate(children):
+#         d_id = find_id_dict(child)
+#         if d_id["type"] == id_type and d_id["index"] == search_index:
+#             return i
+
+#         # indices = get_recursively(child, "index")
+#         # if len(set(indices)) != 1:
+#         #     raise AssertionError("Something fishy here")
+#         # if search_index in set(indices):
+#         #     return i

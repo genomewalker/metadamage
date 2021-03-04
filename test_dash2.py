@@ -11,6 +11,7 @@ import json
 app = dash.Dash(
     __name__,
     external_stylesheets=[dbc.themes.SLATE],
+    # prevent_initial_callbacks=True,
 )
 
 N_steps = 10
@@ -50,23 +51,21 @@ slider_kw_args = {
     },
 }
 
+#%%
 
 app.layout = html.Div(
     [
         html.Div("Dash Test"),
-        # dcc.Input(id="input", autoComplete="off"),
         dcc.Dropdown(
             id="dropdown",
-            # id={"type": "dropdown", "index": 0},
             options=[{"label": name, "value": name} for name in slider_kw_args.keys()],
-            # value=["A"],
             value=[],
             multi=True,
+            placeholder="Select a variable to filter on...",
         ),
-        # dbc.Container(
-        #     id="sliders",
-        # ),
         html.Div(id="dynamic-slider-container", children=[]),
+        html.Hr(),
+        html.Div(id="dynamic-slider-summary", children=[]),
     ]
 )
 
@@ -74,72 +73,18 @@ app.layout = html.Div(
 #%%
 
 
-# def get_title(name, minval, maxval):
-#     return name + f": [{minval}, {maxval}]"
+def list_is_none_or_empty(l):
+    return l is None or len(l) == 0
 
 
-# def iteratively_search_for_index(d):
-
-#     if d is None:
-#         return d
-
-#     if "index" in d:
-#         return d["index"]
-
-#     if "id" in d:
-#         return iteratively_search_for_index(d["id"])
-
-#     if "props" in d:
-#         return iteratively_search_for_index(d["props"])
-
-#     if "children" in d:
-#         return iteratively_search_for_index(d["children"])
-
-#     return None
+def get_id_dict(child):
+    return child["props"]["id"]
 
 
-# def find_all_sliders(children):
-#     if children is None:
-#         return {}
-#     out = {iteratively_search_for_index(child) for child in children}
-#     out.remove(None)
-#     return out
-
-
-def get_recursively(search_dict, field):
-    """
-    Takes a dict with nested lists and dicts,
-    and searches all dicts for a key of the field
-    provided.
-    """
-    fields_found = []
-
-    for key, value in search_dict.items():
-
-        if key == field:
-            fields_found.append(value)
-
-        elif isinstance(value, dict):
-            results = get_recursively(value, field)
-            for result in results:
-                fields_found.append(result)
-
-        elif isinstance(value, (list, tuple)):
-            for item in value:
-                if isinstance(item, dict):
-                    more_results = get_recursively(item, field)
-                    for another_result in more_results:
-                        fields_found.append(another_result)
-
-    return fields_found
-
-
-def find_index_in_children(children, search_index):
+def find_index_in_children(children, id_type, search_index):
     for i, child in enumerate(children):
-        indices = get_recursively(child, "index")
-        if len(set(indices)) != 1:
-            raise AssertionError("Something fishy here")
-        if search_index in set(indices):
+        d_id = get_id_dict(child)
+        if d_id["type"] == id_type and d_id["index"] == search_index:
             return i
 
 
@@ -147,66 +92,78 @@ def get_current_names(current_ids):
     return [x["index"] for x in current_ids if x]
 
 
+def slider_is_added(current_names, dropdown_names):
+    "Returns True if a new slider is added, False otherwise"
+    return set(current_names).issubset(dropdown_names)
+
+
+def get_name_of_added_slider(current_names, dropdown_names):
+    return list(set(dropdown_names).difference(current_names))[0]
+
+
+def get_name_of_removed_slider(current_names, dropdown_names):
+    return list(set(current_names).difference(dropdown_names))[0]
+
+
+def remove_name_from_children(name, children, id_type):
+    " Given a name, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=name)
+    children.pop(index)
+
+
+#%%
+
+
+def make_new_slider(name, id_type):
+    return html.Div(
+        [
+            html.Div(
+                id={
+                    "type": "dynamic-output",
+                    "index": name,
+                }
+            ),
+            dcc.RangeSlider(
+                id={
+                    "type": "dynamic-slider",
+                    "index": name,
+                },
+                **slider_kw_args[name],
+            ),
+        ],
+        id={"type": id_type, "index": name},
+    )
+
+
 @app.callback(
     Output("dynamic-slider-container", "children"),
     Input("dropdown", "value"),
     State("dynamic-slider-container", "children"),
     State({"type": "dynamic-slider", "index": ALL}, "id"),
+    prevent_initial_call=True,
 )
-def add_slider(
+def add_or_remove_slider(
     dropdown_names,
     children,
     current_ids,
 ):
 
-    if dropdown_names is None or len(dropdown_names) == 0:
-        raise PreventUpdate
+    id_type = "div"
 
-    # print("")
-    # print("")
-    # print("")
-    # print("")
     current_names = get_current_names(current_ids)
-    # print(current_names)
-    # print("")
-    # print(dropdown_names)
-    # print("")
-    # print(children)
-    # print("")
 
-    if set(current_names).issubset(dropdown_names):
-
-        # name to add
-        name = list(set(dropdown_names).difference(current_names))[0]
-
-        new_element = html.Div(
-            [
-                html.Div(
-                    id={
-                        "type": "dynamic-output",
-                        "index": name,
-                    }
-                ),
-                dcc.RangeSlider(
-                    id={
-                        "type": "dynamic-slider",
-                        "index": name,
-                    },
-                    **slider_kw_args[name],
-                ),
-            ]
-        )
+    # add new slider
+    if slider_is_added(current_names, dropdown_names):
+        name = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(name, id_type=id_type)
         children.append(new_element)
-        # print(children)
-        return children
-    else:
 
-        # name to remove
-        name = list(set(current_names).difference(dropdown_names))[0]
-        # print(name)
-        index = find_index_in_children(children, search_index=name)
-        children.pop(index)
-        return children
+    # remove selected slider
+    else:
+        name = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(name, children, id_type=id_type)
+
+    return children
 
 
 @app.callback(
@@ -214,8 +171,23 @@ def add_slider(
     Input({"type": "dynamic-slider", "index": MATCH}, "value"),
     State({"type": "dynamic-slider", "index": MATCH}, "id"),
 )
-def display_output(value, id):
-    return html.Div("Dropdown {} = {}".format(id["index"], value))
+def update_slider_title(value, id):
+    return html.Div(f"Dropdown {id['index']} = {value}")
+
+
+@app.callback(
+    Output("dynamic-slider-summary", "children"),
+    Input({"type": "dynamic-slider", "index": ALL}, "value"),
+    State({"type": "dynamic-slider", "index": ALL}, "id"),
+)
+def update_slider_summary(slider_values, ids):
+    if list_is_none_or_empty(slider_values):
+        return "No sliders yet"
+    names = [id["index"] for id in ids]
+    s = ""
+    for name, slider in zip(names, slider_values):
+        s += f"Name {name} = {slider} \n"
+    return s
 
 
 #%%
@@ -223,8 +195,45 @@ def display_output(value, id):
 if __name__ == "__main__":
     app.run_server(debug=True)
 
-
 #%%
 
 
-# %%
+# def get_recursively(search_dict, field):
+#     """
+#     Takes a dict with nested lists and dicts,
+#     and searches all dicts for a key of the field
+#     provided.
+#     """
+#     fields_found = []
+
+#     for key, value in search_dict.items():
+
+#         if key == field:
+#             fields_found.append(value)
+
+#         elif isinstance(value, dict):
+#             results = get_recursively(value, field)
+#             for result in results:
+#                 fields_found.append(result)
+
+#         elif isinstance(value, (list, tuple)):
+#             for item in value:
+#                 if isinstance(item, dict):
+#                     more_results = get_recursively(item, field)
+#                     for another_result in more_results:
+#                         fields_found.append(another_result)
+
+#     return fields_found
+
+
+# def find_index_in_children(children, id_type, search_index):
+#     for i, child in enumerate(children):
+#         d_id = find_id_dict(child)
+#         if d_id["type"] == id_type and d_id["index"] == search_index:
+#             return i
+
+#         # indices = get_recursively(child, "index")
+#         # if len(set(indices)) != 1:
+#         #     raise AssertionError("Something fishy here")
+#         # if search_index in set(indices):
+#         #     return i
