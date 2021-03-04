@@ -53,19 +53,25 @@ slider_kw_args = {
 
 #%%
 
-app.layout = html.Div(
+app.layout = dbc.Container(
     [
-        html.Div("Dash Test"),
-        dcc.Dropdown(
-            id="dropdown",
-            options=[{"label": name, "value": name} for name in slider_kw_args.keys()],
-            value=[],
-            multi=True,
-            placeholder="Select a variable to filter on...",
+        dbc.Row("Dash Test"),
+        dbc.Row(
+            dbc.Col(
+                dcc.Dropdown(
+                    id="dropdown",
+                    options=[
+                        {"label": name, "value": name} for name in slider_kw_args.keys()
+                    ],
+                    value=[],
+                    multi=True,
+                    placeholder="Select a variable to filter on...",
+                ),
+                width=12,
+            ),
         ),
-        html.Div(id="dynamic-slider-container", children=[]),
-        html.Hr(),
-        html.Div(id="dynamic-slider-summary", children=[]),
+        dbc.Row(dbc.Col(id="dynamic-slider-container", children=[], width=12)),
+        dbc.Row(dbc.Col(id="dynamic-slider-summary", children=[], width=12)),
     ]
 )
 
@@ -115,20 +121,25 @@ def remove_name_from_children(name, children, id_type):
 
 
 def make_new_slider(name, id_type):
-    return html.Div(
+    return dbc.Row(
         [
-            html.Div(
-                id={
-                    "type": "dynamic-output",
-                    "index": name,
-                }
+            dbc.Col(
+                html.Div(
+                    id={
+                        "type": "dynamic-output",
+                        "index": name,
+                    }
+                ),
             ),
-            dcc.RangeSlider(
-                id={
-                    "type": "dynamic-slider",
-                    "index": name,
-                },
-                **slider_kw_args[name],
+            dbc.Col(
+                dcc.RangeSlider(
+                    id={
+                        "type": "dynamic-slider",
+                        "index": name,
+                    },
+                    **slider_kw_args[name],
+                ),
+                width=12,
             ),
         ],
         id={"type": id_type, "index": name},
@@ -148,7 +159,8 @@ def add_or_remove_slider(
     current_ids,
 ):
 
-    id_type = "div"
+    # id_type = "div"
+    id_type = "dbc"
 
     current_names = get_current_names(current_ids)
 
@@ -194,46 +206,3 @@ def update_slider_summary(slider_values, ids):
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-
-#%%
-
-
-# def get_recursively(search_dict, field):
-#     """
-#     Takes a dict with nested lists and dicts,
-#     and searches all dicts for a key of the field
-#     provided.
-#     """
-#     fields_found = []
-
-#     for key, value in search_dict.items():
-
-#         if key == field:
-#             fields_found.append(value)
-
-#         elif isinstance(value, dict):
-#             results = get_recursively(value, field)
-#             for result in results:
-#                 fields_found.append(result)
-
-#         elif isinstance(value, (list, tuple)):
-#             for item in value:
-#                 if isinstance(item, dict):
-#                     more_results = get_recursively(item, field)
-#                     for another_result in more_results:
-#                         fields_found.append(another_result)
-
-#     return fields_found
-
-
-# def find_index_in_children(children, id_type, search_index):
-#     for i, child in enumerate(children):
-#         d_id = find_id_dict(child)
-#         if d_id["type"] == id_type and d_id["index"] == search_index:
-#             return i
-
-#         # indices = get_recursively(child, "index")
-#         # if len(set(indices)) != 1:
-#         #     raise AssertionError("Something fishy here")
-#         # if search_index in set(indices):
-#         #     return i
