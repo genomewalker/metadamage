@@ -20,6 +20,8 @@ import numpyro
 from numpyro import distributions as dist
 from numpyro.infer import log_likelihood, MCMC, NUTS, Predictive
 from tqdm.auto import tqdm
+import timeout_decorator
+from timeout_decorator import TimeoutError
 
 # First Party
 from metadamage import fileloader, utils
@@ -31,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 #%%
 
+timeout_patient = 5 * 60  # 5 minutes
+timeout_busy = 60  # 1 minute
 
 #%%
 
@@ -411,10 +415,12 @@ def group_to_numpyro_data(group, cfg):
 
 
 def match_taxid_order_in_df_fit_results(df_fit_results, df):
-    return df_fit_results.loc[pd.unique(df.taxid)]
+    taxids_all = pd.unique(df.taxid)
+    ordered = [taxid for taxid in taxids_all if taxid in df_fit_results.index]
+    return df_fit_results.loc[ordered]
 
 
-def fit_single_group(
+def fit_single_group_without_timeout(
     group,
     cfg,
     mcmc_PMD,
@@ -422,6 +428,11 @@ def fit_single_group(
     mcmc_PMD_forward_reverse,
     mcmc_null_forward_reverse,
 ):
+
+    import time
+
+    if group["taxid"].iloc[0] == 115547:
+        time.sleep(10000)
 
     data = group_to_numpyro_data(group, cfg)
     fit_mcmc(mcmc_PMD, data)
@@ -458,7 +469,12 @@ def fit_single_group(
     return d_fit
 
 
-def fit_not_parallel(df, mcmc_kwargs, cfg):
+def get_fit_single_group_with_timeout(timeout=60):
+    # timeout in seconds
+    return timeout_decorator.timeout(timeout)(fit_single_group_without_timeout)
+
+
+def fit_seriel(df, mcmc_kwargs, cfg):
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
@@ -467,6 +483,9 @@ def fit_not_parallel(df, mcmc_kwargs, cfg):
 
     groupby = df.groupby("taxid", sort=False, observed=True)
     d_fits = {}
+
+    fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
+    fit_single_group_busy = get_fit_single_group_with_timeout(timeout_busy)
 
     with progress:
         task_fit = progress.add_task(
@@ -477,18 +496,27 @@ def fit_not_parallel(df, mcmc_kwargs, cfg):
             total=len(groupby),
         )
 
-        for taxid, group in groupby:
+        for i, (taxid, group) in enumerate(groupby):
 
-            d_fit = fit_single_group(
-                group,
-                cfg,
-                mcmc_PMD,
-                mcmc_null,
-                mcmc_PMD_forward_reverse,
-                mcmc_null_forward_reverse,
-            )
+            if i == 0:
+                fit_single_group = fit_single_group_patient
+            else:
+                fit_single_group = fit_single_group_busy
 
-            d_fits[taxid] = d_fit
+            try:
+                d_fit = fit_single_group(
+                    group,
+                    cfg,
+                    mcmc_PMD,
+                    mcmc_null,
+                    mcmc_PMD_forward_reverse,
+                    mcmc_null_forward_reverse,
+                )
+
+                d_fits[taxid] = d_fit
+
+            except TimeoutError:
+                logger.warning(f"Fit: Timeout at taxid {taxid}")
 
             progress.advance(task_fit)
 
@@ -505,6 +533,12 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
+    fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
+    fit_single_group_busy = get_fit_single_group_with_timeout(timeout_busy)
+
+    # first run is patient
+    fit_single_group = fit_single_group_patient
+
     while True:
         # block=True means make a blocking call to wait for items in queue
         taxid_group = queue_in.get(block=True)
@@ -512,16 +546,23 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
             break
         taxid, group = taxid_group
 
-        d_fit = fit_single_group(
-            group,
-            cfg,
-            mcmc_PMD,
-            mcmc_null,
-            mcmc_PMD_forward_reverse,
-            mcmc_null_forward_reverse,
-        )
+        try:
+            d_fit = fit_single_group(
+                group,
+                cfg,
+                mcmc_PMD,
+                mcmc_null,
+                mcmc_PMD_forward_reverse,
+                mcmc_null_forward_reverse,
+            )
 
-        queue_out.put((taxid, d_fit))
+            queue_out.put((taxid, d_fit))
+
+        except TimeoutError:
+            logger.warning(f"Fit: Timeout at taxid {taxid}")
+            queue_out.put((taxid, None))
+
+        fit_single_group = fit_single_group_busy
 
 
 def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
@@ -568,7 +609,8 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
                 s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
                 logger.debug(s)
             taxid, d_fit = queue_out.get()
-            d_fits[taxid] = d_fit
+            if d_fit is not None:
+                d_fits[taxid] = d_fit
             progress.advance(task_fit)
         logger.debug(f"Received {i+1} elements from queue_out out of {N_groupby}")
 
@@ -615,7 +657,7 @@ def compute_fits(df, cfg, mcmc_kwargs):
     groupby = df.groupby("taxid", sort=False, observed=True)
 
     if cfg.num_cores == 1 or len(groupby) < 10:
-        return fit_not_parallel(df, mcmc_kwargs, cfg)
+        return fit_seriel(df, mcmc_kwargs, cfg)
 
     # utils.avoid_fontconfig_warning()
     d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)

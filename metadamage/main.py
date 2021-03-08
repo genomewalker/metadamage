@@ -28,7 +28,7 @@ def main(filenames, cfg):
 
     utils.initial_print(filenames, cfg)
 
-    all_fit_results = {}
+    # all_fit_results = {}
     N_files = len(filenames)
     bad_files = 0
 
@@ -54,19 +54,21 @@ def main(filenames, cfg):
             cfg.name = name
 
             df = fileloader.load_dataframe(cfg)
+            # print(len(pd.unique(df.taxid)))
+            # continue
             # group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
 
             if not utils.is_df_accepted(df, cfg):
                 continue
 
             if cfg.do_make_fits:
-                # cfg.set_number_of_fits(df)
+                cfg.set_number_of_fits(df)
                 d_fits, df_results = fit.get_fits(df, cfg)
-                all_fit_results[cfg.name] = df_results
+                # all_fit_results[cfg.name] = df_results
 
-                if cfg.do_make_plots:
-                    # plot.set_style()
-                    plot.plot_error_rates(cfg, df, d_fits, df_results)
+                # if cfg.do_make_plots:
+                #     # plot.set_style()
+                #     plot.plot_error_rates(cfg, df, d_fits, df_results)
 
             progress.refresh()
             progress.advance(task_id_overall)
@@ -76,10 +78,10 @@ def main(filenames, cfg):
     if bad_files == N_files:
         raise Exception("All files were bad!")
 
-    if len(all_fit_results) >= 1 and cfg.do_make_plots:
-        # plot.set_style()
-        N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
-        plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
+    # if len(all_fit_results) >= 1 and cfg.do_make_plots:
+    #     # plot.set_style()
+    #     N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
+    #     plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
 
 if utils.is_ipython():
@@ -99,8 +101,8 @@ if utils.is_ipython():
         max_position=15,
         # min_damage=None,
         # min_sigma=None,
-        min_alignments=1,
-        min_y_sum=1,
+        min_alignments=10,
+        min_y_sum=10,
         # sort_by=utils.SortBy.alignments.value,
         substitution_bases_forward=utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=utils.SubstitutionBases.GA.value,
@@ -119,8 +121,8 @@ if utils.is_ipython():
     os.chdir(path)
 
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
-    filename = filenames[1]
-    filename = filenames[-1]
+    filename = filenames[2]
+    filename = filenames[3]
 
     if False:
         # if True:
