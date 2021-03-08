@@ -19,9 +19,9 @@ from joblib import delayed, Parallel
 import numpyro
 from numpyro import distributions as dist
 from numpyro.infer import log_likelihood, MCMC, NUTS, Predictive
-from tqdm.auto import tqdm
 import timeout_decorator
 from timeout_decorator import TimeoutError
+from tqdm.auto import tqdm
 
 # First Party
 from metadamage import fileloader, utils
@@ -429,6 +429,7 @@ def fit_single_group_without_timeout(
     mcmc_null_forward_reverse,
 ):
 
+    # Standard Library
     import time
 
     if group["taxid"].iloc[0] == 115547:

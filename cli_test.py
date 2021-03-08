@@ -1,4 +1,6 @@
+# Third Party
 import typer
+
 
 # Init CLI
 cli = typer.Typer()
