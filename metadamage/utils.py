@@ -41,24 +41,25 @@ logger = logging.getLogger(__name__)
 class Config:
     # filenames: List[Path]
     max_fits: Optional[int]
-    max_plots: Optional[int]
+    # max_plots: Optional[int]
     max_cores: int
     max_position: Optional[int]
     #
-    min_damage: Optional[int]
-    min_sigma: Optional[int]
+    # min_damage: Optional[int]
+    # min_sigma: Optional[int]
     min_alignments: int
+    min_y_sum: int
     #
-    sort_by: str
+    # sort_by: str
     substitution_bases_forward: str
     substitution_bases_reverse: str
     #
     # verbose: bool
     #
-    force_reload_files: bool
+    # force_reload_files: bool
     force_fits: bool
-    force_plots: bool
-    force_no_plots: bool
+    # force_plots: bool
+    # force_no_plots: bool
     version: str
     #
     filename: Optional[str] = None
@@ -69,7 +70,7 @@ class Config:
 
     def __post_init__(self):
         self._set_num_cores()
-        self._check_force_plots_conflicts()
+        # self._check_force_plots_conflicts()
 
     def _set_num_cores(self):
         available_cores = cpu_count(logical=True)
@@ -88,10 +89,10 @@ class Config:
         else:
             self.num_cores = self.max_cores
 
-    def _check_force_plots_conflicts(self):
-        if self.force_plots and self.force_no_plots:
-            s = f"force_plots and force_no_plots cannot be set at the same time"
-            raise AssertionError(s)
+    # def _check_force_plots_conflicts(self):
+    #     if self.force_plots and self.force_no_plots:
+    #         s = f"force_plots and force_no_plots cannot be set at the same time"
+    #         raise AssertionError(s)
 
     def set_number_of_fits(self, df):
         N_all_taxids = len(pd.unique(df.taxid))
@@ -100,24 +101,24 @@ class Config:
             self.number_of_fits = min(self.max_fits, N_all_taxids)
         else:  # use all TaxIDs available
             self.number_of_fits = N_all_taxids
-        self.set_number_of_plots()
+        # self.set_number_of_plots()
         logger.info(f"Setting number_of_fits to {self.number_of_fits}")
 
-    def set_number_of_plots(self):
-        if self.force_no_plots:
-            self.number_of_plots = 0
-            return None
+    # def set_number_of_plots(self):
+    #     if self.force_no_plots:
+    #         self.number_of_plots = 0
+    #         return None
 
-        if self.max_plots is None or self.max_plots < 0:
-            self.number_of_plots = self.number_of_fits
-        else:
-            self.number_of_plots = self.max_plots
+    #     if self.max_plots is None or self.max_plots < 0:
+    #         self.number_of_plots = self.number_of_fits
+    #     else:
+    #         self.number_of_plots = self.max_plots
 
-        # do not allow number of plots to be larger than number of fits
-        if (self.number_of_fits is not None) and (
-            self.number_of_plots > self.number_of_fits
-        ):
-            self.number_of_plots = self.number_of_fits
+    #     # do not allow number of plots to be larger than number of fits
+    #     if (self.number_of_fits is not None) and (
+    #         self.number_of_plots > self.number_of_fits
+    #     ):
+    #         self.number_of_plots = self.number_of_fits
 
     @property
     def do_make_fits(self):
@@ -125,14 +126,14 @@ class Config:
             return True
         return False
 
-    @property
-    def do_make_plots(self):
-        if (self.max_plots is not None and self.max_plots <= 0) or self.force_no_plots:
-            return False
-        return True
-        # if (self.max_plots is None or self.max_plots > 0) and not self.force_no_plots:
-        #     return True
-        # return False
+    # @property
+    # def do_make_plots(self):
+    #     if (self.max_plots is not None and self.max_plots <= 0) or self.force_no_plots:
+    #         return False
+    #     return True
+    #     # if (self.max_plots is None or self.max_plots > 0) and not self.force_no_plots:
+    #     #     return True
+    #     # return False
 
     # FILENAMES BASED ON CFG
 
@@ -165,30 +166,30 @@ class Config:
             + ".csv"
         )
 
-    @property
-    def filename_plot_error_rates(self):
-        return (
-            f"./figures/error_rates__{self.name}"
-            f"__sort_by__{self.sort_by}"
-            f"__number_of_plots__{self.number_of_plots}"
-            + self._get_substitution_bases_name()
-            + f".pdf"
-        )
+    # @property
+    # def filename_plot_error_rates(self):
+    #     return (
+    #         f"./figures/error_rates__{self.name}"
+    #         f"__sort_by__{self.sort_by}"
+    #         f"__number_of_plots__{self.number_of_plots}"
+    #         + self._get_substitution_bases_name()
+    #         + f".pdf"
+    #     )
 
-    @property
-    def filename_plot_fit_results(self):
-        return (
-            f"./figures/all_fit_results"
-            f"__number_of_fits__{self.number_of_fits}"
-            + self._get_substitution_bases_name()
-            + ".pdf"
-        )
+    # @property
+    # def filename_plot_fit_results(self):
+    #     return (
+    #         f"./figures/all_fit_results"
+    #         f"__number_of_fits__{self.number_of_fits}"
+    #         + self._get_substitution_bases_name()
+    #         + ".pdf"
+    #     )
 
 
-class SortBy(str, Enum):
-    alignments = "alignments"
-    damage = "damage"
-    sigma = "sigma"
+# class SortBy(str, Enum):
+#     alignments = "alignments"
+#     damage = "damage"
+#     sigma = "sigma"
 
 
 class SubstitutionBases(str, Enum):
@@ -215,10 +216,6 @@ class SubstitutionBases(str, Enum):
 def find_style_file():
     with importlib_resources.path("metadamage", "style.mplstyle") as path:
         return path
-
-
-class AllFiledWereBad(Exception):
-    pass
 
 
 def is_ipython():
@@ -342,16 +339,16 @@ def is_pdf_valid(filename, forced=False, N_pages=None):
 #%%
 
 
-def get_num_cores(cfg):
+# def get_num_cores(cfg):
 
-    if cfg.num_cores > 0:
-        num_cores = cfg.num_cores
-    else:
-        N_cores = cpu_count(logical=True)
-        num_cores = N_cores - abs(cfg.num_cores)
-        if num_cores < 1:
-            num_cores = 1
-    return num_cores
+#     if cfg.num_cores > 0:
+#         num_cores = cfg.num_cores
+#     else:
+#         N_cores = cpu_count(logical=True)
+#         num_cores = N_cores - abs(cfg.num_cores)
+#         if num_cores < 1:
+#             num_cores = 1
+#     return num_cores
 
 
 #%%

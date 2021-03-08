@@ -231,6 +231,33 @@ def replace_nans_with_zeroes(df):
     return df.fillna(0)
 
 
+def compute_y_sum_total(group, cfg):
+    y_sum_total = 0
+    forward_bases = (
+        cfg.substitution_bases_forward[0] + cfg.substitution_bases_forward[1]
+    )
+    y_sum_total += group[group.position > 0][forward_bases].sum()
+    reverse_bases = (
+        cfg.substitution_bases_reverse[0] + cfg.substitution_bases_reverse[1]
+    )
+    y_sum_total += group[group.position < 0][reverse_bases].sum()
+    return y_sum_total
+
+
+def filter_taxids_passing_y_sum_cut(df, cfg):
+
+    ds = df.groupby("taxid").apply(compute_y_sum_total, cfg)
+    accepted_taxids = ds[ds > cfg.min_y_sum].index
+
+    if isinstance(df, dask.dataframe.DataFrame):
+        length = len(df) // (cfg.max_position * 2)
+        df_accepted = df[df["taxid"].isin(delayed_list(accepted_taxids, length=length))]
+
+    else:
+        df_accepted = df[df["taxid"].isin(accepted_taxids)]
+    return df_accepted
+
+
 def get_top_max_fits(df, number_of_fits):
     if number_of_fits is not None and number_of_fits > 0:
         return df.pipe(extract_top_max_fits, number_of_fits)
@@ -268,29 +295,27 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
                 names=columns,
                 # blocksize=50e6,  # chunksize 50mb
             )
-            # .rename(columns=columns_name_mapping)
-            # .pipe(set_column_names)
-            # .pipe(convert_dtypes)
             .pipe(remove_taxids_with_too_few_alignments, cfg)
             # compute error rates
             .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
             .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+            # error rates forward
             .pipe(
                 add_error_rates,
                 ref=cfg.substitution_bases_forward[0],
                 obs=cfg.substitution_bases_forward[1],
             )
+            # error rates reverse
             .pipe(
                 add_error_rates,
                 ref=cfg.substitution_bases_reverse[0],
                 obs=cfg.substitution_bases_reverse[1],
             )
-            # .pipe(add_error_rates_other)
             # add other information
             .pipe(make_position_1_indexed)
             .pipe(make_reverse_position_negative)
-            # .pipe(keep_only_base_columns, cfg)
             .pipe(replace_nans_with_zeroes)
+            .pipe(filter_taxids_passing_y_sum_cut, cfg=cfg)
             # turns dask dataframe into pandas dataframe
             .compute()
             # .pipe(cut_NANs_away)  # remove any taxids containing nans
@@ -338,3 +363,145 @@ def load_dataframe(cfg):
     df.to_parquet(filename_parquet, engine="pyarrow")
 
     return df
+
+
+#%%
+
+from about_time import about_time
+
+with about_time() as at1:  # <-- use it like a context manager!
+
+    df1 = (
+        # dd.read_csv(filename, sep="\t")
+        dd.read_csv(
+            filename,
+            sep="\t",
+            # sep=":|\t",
+            header=None,
+            names=columns,
+            # blocksize=50e6,  # chunksize 50mb
+        )
+        .pipe(remove_taxids_with_too_few_alignments, cfg)
+        # compute error rates
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+        # error rates forward
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_forward[0],
+            obs=cfg.substitution_bases_forward[1],
+        )
+        # error rates reverse
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_reverse[0],
+            obs=cfg.substitution_bases_reverse[1],
+        )
+        # add other information
+        .pipe(make_position_1_indexed)
+        .pipe(make_reverse_position_negative)
+        .pipe(replace_nans_with_zeroes)
+        # .pipe(filter_taxids_passing_y_sum_cut, cfg=cfg)
+        # turns dask dataframe into pandas dataframe
+        .compute()
+        # .pipe(cut_NANs_away)  # remove any taxids containing nans
+        .reset_index(drop=True)
+        .pipe(sort_by_alignments)
+        .reset_index(drop=True)
+    )
+
+    print(f"total: {at1.duration_human}")
+
+
+# %%
+
+
+with about_time() as at2:  # <-- use it like a context manager!
+
+    df2 = (
+        # dd.read_csv(filename, sep="\t")
+        dd.read_csv(
+            filename,
+            sep="\t",
+            # sep=":|\t",
+            header=None,
+            names=columns,
+            # blocksize=50e6,  # chunksize 50mb
+        )
+        .pipe(remove_taxids_with_too_few_alignments, cfg)
+        # compute error rates
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+        # error rates forward
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_forward[0],
+            obs=cfg.substitution_bases_forward[1],
+        )
+        # error rates reverse
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_reverse[0],
+            obs=cfg.substitution_bases_reverse[1],
+        )
+        # add other information
+        .pipe(make_position_1_indexed)
+        .pipe(make_reverse_position_negative)
+        .pipe(replace_nans_with_zeroes)
+        .pipe(filter_taxids_passing_y_sum_cut, cfg=cfg)
+        # turns dask dataframe into pandas dataframe
+        .compute()
+        # .pipe(cut_NANs_away)  # remove any taxids containing nans
+        .reset_index(drop=True)
+        .pipe(sort_by_alignments)
+        .reset_index(drop=True)
+    )
+
+    print(f"total: {at2.duration_human}")
+
+# %%
+
+with about_time() as at3:  # <-- use it like a context manager!
+
+    df3 = (
+        # dd.read_csv(filename, sep="\t")
+        dd.read_csv(
+            filename,
+            sep="\t",
+            # sep=":|\t",
+            header=None,
+            names=columns,
+            # blocksize=50e6,  # chunksize 50mb
+        )
+        .pipe(remove_taxids_with_too_few_alignments, cfg)
+        # compute error rates
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+        # error rates forward
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_forward[0],
+            obs=cfg.substitution_bases_forward[1],
+        )
+        # error rates reverse
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_reverse[0],
+            obs=cfg.substitution_bases_reverse[1],
+        )
+        # add other information
+        .pipe(make_position_1_indexed)
+        .pipe(make_reverse_position_negative)
+        .pipe(replace_nans_with_zeroes)
+        # turns dask dataframe into pandas dataframe
+        .compute()
+        # .pipe(cut_NANs_away)  # remove any taxids containing nans
+        .pipe(filter_taxids_passing_y_sum_cut, cfg=cfg)
+        .reset_index(drop=True)
+        .pipe(sort_by_alignments)
+        .reset_index(drop=True)
+    )
+
+    print(f"total: {at3.duration_human}")
+
+# %%

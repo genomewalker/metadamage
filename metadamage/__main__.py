@@ -1,5 +1,5 @@
 # First Party
-from metadamage.cli import main_cli
+from metadamage.cli import cli_main
 
 
-main_cli()
+cli_main()

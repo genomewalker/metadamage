@@ -27,7 +27,6 @@ class FitResults:
         self._set_dimensions_forward_reverse()
 
     def _load_df_fit_results(self):
-
         input_folder = "./data/input/"
         fit_results_folder = "./data/fits/"
         input_files = list(Path(input_folder).rglob("*.txt"))

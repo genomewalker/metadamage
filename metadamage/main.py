@@ -94,19 +94,20 @@ if utils.is_ipython():
 
     cfg = utils.Config(
         max_fits=10,
-        max_plots=0,
+        # max_plots=0,
         max_cores=-1,
         max_position=15,
-        min_damage=None,
-        min_sigma=None,
+        # min_damage=None,
+        # min_sigma=None,
         min_alignments=1,
-        sort_by=utils.SortBy.alignments.value,
+        min_y_sum=1,
+        # sort_by=utils.SortBy.alignments.value,
         substitution_bases_forward=utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=utils.SubstitutionBases.GA.value,
-        force_reload_files=False,
-        force_plots=False,
+        # force_reload_files=False,
+        # force_plots=False,
         force_fits=False,
-        force_no_plots=False,
+        # force_no_plots=False,
         version="0.0.0",
     )
 
