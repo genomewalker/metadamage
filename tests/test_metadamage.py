@@ -33,23 +33,24 @@ def test_extracting_name_from_path():
     assert result == "data_ancient"
 
 
-def test_cli_bad_file():
+def test_cli_fit_bad_file():
     # given
     runner = CliRunner()
     # when
-    result = runner.invoke(app, ["file_which_does_not_exist.txt"])
+    result = runner.invoke(app, ["fit", "file_which_does_not_exist.txt"])
     # then
     assert result.exit_code == 1
     assert isinstance(result.exception, Exception)
 
 
-def test_cli_bad_files():
+def test_cli_fit_bad_files():
     # given
     runner = CliRunner()
     # when
     result = runner.invoke(
         app,
         [
+            "fit",
             "file_which_does_not_exist.txt",
             "another_file_which_does_not_exist.txt",
         ],
@@ -58,11 +59,11 @@ def test_cli_bad_files():
     assert isinstance(result.exception, Exception)
 
 
-def test_cli_version():
+def test_cli_fit_version():
     # given
     runner = CliRunner()
     # when
-    result = runner.invoke(app, ["--version"])
+    result = runner.invoke(app, ["fit", "--version"])
     # then
     assert result.exit_code == 0
     assert "version" in result.stdout
