@@ -158,7 +158,7 @@ def cli_dashboard(string: str):
     \b
         $ metadamage dashboard
 
-    or by for two files:
+    or by for two files:   
 
     \b
         $ metadamage dashboard
