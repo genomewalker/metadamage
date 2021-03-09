@@ -12,6 +12,7 @@ from importlib.metadata import version
 import importlib.resources as importlib_resources
 import logging
 from pathlib import Path
+import platform
 import shutil
 from typing import List, Optional, Union
 
@@ -21,7 +22,6 @@ from click_help_colors import HelpColorsCommand, HelpColorsGroup
 import dill
 from joblib import Parallel
 from psutil import cpu_count
-import platform
 
 # First Party
 from metadamage.progressbar import console, progress
