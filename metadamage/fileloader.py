@@ -392,7 +392,7 @@ def load_dataframe(cfg):
             raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
-    df = compute_dataframe_with_dask(cfg, use_processes=True)
+    df = compute_dataframe_with_dask(cfg, use_processes=False)
     cfg.set_number_of_fits(df)
 
     logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
