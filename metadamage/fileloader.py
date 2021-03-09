@@ -304,6 +304,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
         n_workers=cfg.num_cores,
         processes=use_processes,
         silence_logs=logging.ERROR,
+        local_directory="./dask-worker-space",
     ):
 
         df = (
