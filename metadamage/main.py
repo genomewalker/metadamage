@@ -42,16 +42,20 @@ def main(filenames, cfg):
 
         for filename in filenames:
 
-            name = utils.extract_name(filename)
-
             if not utils.file_is_valid(filename):
-                logger.error(f"{name} is not a valid file. Skipping for now.")
+                exists = Path(filename).exists()
+                valid_size = Path(filename).stat().st_size > 0
+                logger.error(
+                    f"{filename} is not a valid file. "
+                    f"{exists=} and {valid_size=}. "
+                    f"Skipping for now."
+                )
                 bad_files += 1
                 continue
 
-            progress.add_task("task_name", progress_type="name", name=name)
-            cfg.filename = filename
-            cfg.name = name
+            cfg.add_filename(filename)
+
+            progress.add_task("task_name", progress_type="name", name=cfg.name)
 
             df = fileloader.load_dataframe(cfg)
             # print(len(pd.unique(df.taxid)))
@@ -61,14 +65,7 @@ def main(filenames, cfg):
             if not utils.is_df_accepted(df, cfg):
                 continue
 
-            if cfg.do_make_fits:
-                cfg.set_number_of_fits(df)
-                d_fits, df_results = fit.get_fits(df, cfg)
-                # all_fit_results[cfg.name] = df_results
-
-                # if cfg.do_make_plots:
-                #     # plot.set_style()
-                #     plot.plot_error_rates(cfg, df, d_fits, df_results)
+            df_fit_results, df_fit_predictions = fit.get_fits(df, cfg)
 
             progress.refresh()
             progress.advance(task_id_overall)
@@ -123,6 +120,7 @@ if utils.is_ipython():
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
     filename = filenames[2]
     filename = filenames[3]
+    filename = "data/input/n_sigma_test.txt"
 
     if False:
         # if True:

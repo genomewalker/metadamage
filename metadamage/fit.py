@@ -429,12 +429,6 @@ def fit_single_group_without_timeout(
     mcmc_null_forward_reverse,
 ):
 
-    # Standard Library
-    import time
-
-    if group["taxid"].iloc[0] == 115547:
-        time.sleep(10000)
-
     data = group_to_numpyro_data(group, cfg)
     fit_mcmc(mcmc_PMD, data)
     fit_mcmc(mcmc_null, data)
@@ -524,7 +518,9 @@ def fit_seriel(df, mcmc_kwargs, cfg):
     fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
-    return d_fits, df_fit_results
+
+    df_fit_predictions = make_df_fit_predictions_from_d_fits(d_fits, cfg)
+    return df_fit_results, df_fit_predictions
 
 
 def worker(queue_in, queue_out, mcmc_kwargs, cfg):
@@ -653,6 +649,36 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
     return d_fits
 
 
+def make_df_fit_predictions_from_d_fits(d_fits, cfg):
+
+    z = np.arange(cfg.max_position) + 1
+    position = np.concatenate([z, -z])
+
+    # d_fit_predictions = {}
+    d_fit_predictions = []
+    for key, d_val in d_fits.items():
+
+        median = d_val["median"]
+        hpdi = d_val["hpdi"]
+        taxid = key
+
+        data = {
+            "taxid": taxid,
+            "position": position,
+            "median": median,
+            "hdpi_lower": hpdi[0, :],
+            "hdpi_upper": hpdi[1, :],
+        }
+
+        df_tmp = pd.DataFrame(data=data)
+        # d_fit_predictions[key] = df_tmp
+        d_fit_predictions.append(df_tmp)
+
+    # df_fit_predictions = pd.concat(d_fit_predictions.values(), axis=0, keys=d_fit_predictions.keys())
+    df_fit_predictions = pd.concat(d_fit_predictions, axis="index", ignore_index=True)
+    return df_fit_predictions
+
+
 def compute_fits(df, cfg, mcmc_kwargs):
 
     groupby = df.groupby("taxid", sort=False, observed=True)
@@ -662,52 +688,42 @@ def compute_fits(df, cfg, mcmc_kwargs):
 
     # utils.avoid_fontconfig_warning()
     d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)
+
     fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
     df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
-    return d_fits, df_fit_results
+
+    df_fit_predictions = make_df_fit_predictions_from_d_fits(d_fits, cfg)
+    return df_fit_results, df_fit_predictions
 
 
 #%%
 
 
-def save_df_fit_results(df_fit_results, filename):
-    utils.init_parent_folder(filename)
-    df_fit_results.to_csv(filename)
-
-
-def _get_fit_filenames(cfg):
-    d_filename = {}
-    d_filename["df_fit_results"] = cfg.filename_fit_results
-    d_filename["d_fits"] = d_filename["df_fit_results"].replace(".csv", ".dill")
-    return d_filename
-
-
-def _load_fits(cfg):
-
-    d_filename = _get_fit_filenames(cfg)
-    d_fits, df_fit_results = utils.load_dill(d_filename["d_fits"])
-
-    if not utils.file_exists(d_filename["df_fit_results"]):
-        save_df_fit_results(df_fit_results, d_filename["df_fit_results"])
-
-    return d_fits, df_fit_results
-
-
 def get_fits(df, cfg):
 
-    cfg.set_number_of_fits(df)
+    # if file cfg.filename_out exists, use this
+    if utils.file_exists(cfg.filename_out, cfg.force_fits):
+        keys = utils.get_hdf5_keys(cfg.filename_out, ignore_subgroups=True)
+        if "fit_results" in keys and "fit_predictions" in keys:
+            logger.info(f"Loading fits from pregenerated file.")
 
-    d_filename = _get_fit_filenames(cfg)
+            df_fit_results = utils.load_from_hdf5(
+                filename=cfg.filename_out,
+                key="fit_results",
+            )
 
-    # if file d_fits exists, use this
-    if utils.file_exists(d_filename["d_fits"], cfg.force_fits):
-        logger.info(f"Loading fits from pregenerated file.")
-        return _load_fits(cfg)
+            df_fit_predictions = utils.load_from_hdf5(
+                filename=cfg.filename_out,
+                key="fit_predictions",
+            )
+
+            return df_fit_results, df_fit_predictions
+
 
     logger.info(f"Generating fits and saving to file.")
 
-    df_top_N = fileloader.get_top_max_fits(df, cfg.number_of_fits)
+    df_top_N = fileloader.get_top_max_fits(df, cfg.N_fits)
 
     mcmc_kwargs = dict(
         progress_bar=False,
@@ -717,12 +733,24 @@ def get_fits(df, cfg):
         chain_method="sequential",
     )
 
-    d_fits, df_fit_results = compute_fits(df_top_N, cfg, mcmc_kwargs)
+    df_fit_results, df_fit_predictions = compute_fits(df_top_N, cfg, mcmc_kwargs)
 
-    save_df_fit_results(df_fit_results, d_filename["df_fit_results"])
-    utils.save_dill(d_filename["d_fits"], [d_fits, df_fit_results])
+    utils.save_to_hdf5(
+        filename=cfg.filename_out,
+        key="fit_results",
+        value=df_fit_results,
+    )
+    df_fit_results.to_csv(cfg.filename_out.replace(".hdf5", "_fit_results.csv"))
 
-    return d_fits, df_fit_results
+    utils.save_to_hdf5(
+        filename=cfg.filename_out,
+        key="fit_predictions",
+        value=df_fit_predictions,
+    )
+    df_fit_predictions.to_csv(cfg.filename_out.replace(".hdf5", "_fit_predictions.csv"))
+
+
+    return df_fit_results, df_fit_predictions
 
 
 #%%

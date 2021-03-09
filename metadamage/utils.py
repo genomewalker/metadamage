@@ -36,41 +36,34 @@ logger = logging.getLogger(__name__)
 
 #%%
 
+from dataclasses import asdict
+
 
 @dataclass
 class Config:
-    # filenames: List[Path]
     max_fits: Optional[int]
-    # max_plots: Optional[int]
     max_cores: int
     max_position: Optional[int]
     #
-    # min_damage: Optional[int]
-    # min_sigma: Optional[int]
     min_alignments: int
     min_y_sum: int
     #
-    # sort_by: str
     substitution_bases_forward: str
     substitution_bases_reverse: str
     #
-    # verbose: bool
-    #
-    # force_reload_files: bool
     force_fits: bool
-    # force_plots: bool
-    # force_no_plots: bool
     version: str
     #
     filename: Optional[str] = None
     name: Optional[str] = None
-    number_of_fits: Optional[int] = None
+    filename_out: Optional[str] = None
+
+    N_fits: Optional[int] = None
 
     num_cores: int = field(init=False)
 
     def __post_init__(self):
         self._set_num_cores()
-        # self._check_force_plots_conflicts()
 
     def _set_num_cores(self):
         available_cores = cpu_count(logical=True)
@@ -89,52 +82,25 @@ class Config:
         else:
             self.num_cores = self.max_cores
 
+    def add_filename(self, filename):
+        self.filename = filename
+        self.name = extract_name(filename)
+        self.filename_out = f"./data/out/{self.name}.hdf5"
+
     def set_number_of_fits(self, df):
-        N_all_taxids = len(pd.unique(df.taxid))
+        self.N_taxids = len(pd.unique(df.taxid))
 
         if self.max_fits is not None and self.max_fits > 0:
-            self.number_of_fits = min(self.max_fits, N_all_taxids)
-        else:  # use all TaxIDs available
-            self.number_of_fits = N_all_taxids
-        # self.set_number_of_plots()
-        logger.info(f"Setting number_of_fits to {self.number_of_fits}")
+            self.N_fits = min(self.max_fits, self.N_taxids)
 
-    @property
-    def do_make_fits(self):
-        if self.max_fits is None or self.max_fits > 0:
-            return True
-        return False
-
-    # FILENAMES BASED ON CFG
-
-    def _get_substitution_bases_name(self):
-        if (
-            self.substitution_bases_forward == "CT"
-            and self.substitution_bases_reverse == "GA"
-        ):
-            return ""
+        # use all TaxIDs available
         else:
-            return (
-                f"__{self.substitution_bases_forward}"
-                f"__{self.substitution_bases_reverse}"
-            )
+            self.N_fits = self.N_taxids
 
-    @property
-    def filename_parquet(self):
-        return (
-            f"./data/parquet/{self.name}"
-            + self._get_substitution_bases_name()
-            + ".parquet"
-        )
+        logger.info(f"Setting number_of_fits to {self.N_fits}")
 
-    @property
-    def filename_fit_results(self):
-        return (
-            f"./data/fits/{self.name}"
-            f"__number_of_fits__{self.number_of_fits}"
-            + self._get_substitution_bases_name()
-            + ".csv"
-        )
+    def to_dict(self):
+        return asdict(self)
 
 
 class SubstitutionBases(str, Enum):
@@ -224,6 +190,89 @@ def save_dill(filename, x):
     init_parent_folder(filename)
     with open(filename, "wb") as file:
         dill.dump(x, file)
+
+
+def save_to_hdf5(filename, key, value):
+    with pd.HDFStore(filename, mode="a") as store:
+        store.put(key, value, data_columns=True, format="Table")
+
+
+def save_metadata_to_hdf5(filename, key, value, metadata):
+    with pd.HDFStore(filename, mode="a") as store:
+        store.get_storer(key).attrs.metadata = metadata
+
+
+def load_from_hdf5(filename, key):
+    with pd.HDFStore(filename, mode="r") as store:
+        df = store.get(key)
+    return df
+
+
+def load_metadata_from_hdf5(filename, key):
+    with pd.HDFStore(filename, mode="r") as store:
+        metadata = store.get_storer(key).attrs.metadata
+    return metadata
+
+
+def get_hdf5_keys(filename, ignore_subgroups=False):
+    with pd.HDFStore(filename, mode="r") as store:
+        keys = store.keys()
+
+    if ignore_subgroups:
+        keys = list(set([key.split("/")[1] for key in keys]))
+        return keys
+    else:
+        raise AssertionError(f"ignore_subgroups=False not implemented yet.")
+
+
+#%%
+
+
+def metadata_is_similar(cfg, key, include=None, exclude=None):
+    """ Compares the metadata in the hdf5 file (cfg.filename_out) with that in cfg"""
+
+    if include is not None and exclude is not None:
+        raise AssertionError(f"Cannot both include and exclude")
+
+    metadata_file = load_metadata_from_hdf5(filename=cfg.filename_out, key=key)
+    metadata_cfg = cfg.to_dict()
+
+    # the metadata is not similar if it contains different keys
+    if set(metadata_file.keys()) != set(metadata_cfg.keys()):
+        is_similar = False
+        return is_similar
+
+    if isinstance(include, (list, tuple)) and exclude is None:
+        # include = ['max_fits', 'max_position']
+        # exclude = None
+        is_similar = all([metadata_file[key] == metadata_cfg[key] for key in include])
+        return is_similar
+
+    elif isinstance(exclude, (list, tuple)) and include is None:
+        # include = None
+        # exclude = ['max_cores', 'num_cores']
+        all_keys = metadata_file.keys()
+        is_similar = all(
+            [
+                metadata_file[key] == metadata_cfg[key]
+                for key in all_keys
+                if key not in exclude
+            ]
+        )
+        return is_similar
+
+    elif include is None and exclude is None:
+        # include = None
+        # exclude = None
+        all_keys = metadata_file.keys()
+        is_similar = all({metadata_file[key] == metadata_cfg[key] for key in all_keys})
+        return is_similar
+
+    else:
+        raise AssertionError("Did not except to get here")
+
+
+#%%
 
 
 def avoid_fontconfig_warning():

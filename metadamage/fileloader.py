@@ -275,9 +275,9 @@ def add_y_sum_counts(df, cfg):
 #     return df_accepted
 
 
-def get_top_max_fits(df, number_of_fits):
-    if number_of_fits is not None and number_of_fits > 0:
-        return df.pipe(extract_top_max_fits, number_of_fits)
+def get_top_max_fits(df, N_fits):
+    if N_fits is not None and N_fits > 0:
+        return df.pipe(extract_top_max_fits, N_fits)
     else:
         return df
 
@@ -365,25 +365,43 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     for col in df2.select_dtypes(include=["float"]).columns:
         df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
 
-    return df2
+    query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
+    return df2.query(query)
 
 
 def load_dataframe(cfg):
 
-    filename_parquet = cfg.filename_parquet
+    key = "counts"
 
-    # if utils.file_exists(filename_parquet, cfg.force_reload_files):
-    if utils.file_exists(filename_parquet):
-        logger.info(f"Loading DataFrame from parquet-file.")
-        df = pd.read_parquet(filename_parquet)
+    if utils.file_exists(cfg.filename_out):
+        logger.info(f"Loading DataFrame from hdf5-file.")
 
-    else:
-        logger.info(f"Creating DataFrame, please wait.")
-        df = compute_dataframe_with_dask(cfg, use_processes=True)
+        # exclude = ["max_cores", "force_fits", "num_cores", "N_fits"]
+        include = [
+            "min_alignments",
+            "min_y_sum",
+            "substitution_bases_forward",
+            "substitution_bases_reverse",
+        ]
+        if utils.metadata_is_similar(cfg, key, include=include):
+            df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
+            return df
+        else:
+            raise AssertionError(f"Different metadata is not yet implemented")
 
-        logger.info(f"Saving DataFrame to file (in data/parquet/) for faster loading..")
-        utils.init_parent_folder(filename_parquet)
-        df.to_parquet(filename_parquet, engine="pyarrow")
+    logger.info(f"Creating DataFrame, please wait.")
+    df = compute_dataframe_with_dask(cfg, use_processes=True)
+    cfg.set_number_of_fits(df)
 
-    query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
-    return df.query(query)
+    logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
+    utils.init_parent_folder(cfg.filename_out)
+
+    utils.save_to_hdf5(filename=cfg.filename_out, key=key, value=df)
+    utils.save_metadata_to_hdf5(
+        filename=cfg.filename_out,
+        key=key,
+        value=df,
+        metadata=cfg.to_dict(),
+    )
+
+    return df
