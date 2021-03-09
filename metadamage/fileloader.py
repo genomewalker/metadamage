@@ -395,7 +395,8 @@ def load_dataframe(cfg):
             raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
-    use_processes = True if utils.is_macbook() else False
+    # use_processes = True if utils.is_macbook() else False
+    use_processes = cfg.processes
     df = compute_dataframe_with_dask(cfg, use_processes=use_processes)
     cfg.set_number_of_fits(df)
 

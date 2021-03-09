@@ -106,6 +106,8 @@ def cli_fit(
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
     ),
+    # XXX delete todo
+    processes: bool = typer.Option(False),
 ):
     """Fitting Ancient Damage.
 
@@ -138,6 +140,8 @@ def cli_fit(
         "force_fits": force_fits,
         #
         "version": "0.0.0",
+        # todo XXX
+        "processes": processes,
     }
 
     cfg = utils.Config(**d_cfg)
