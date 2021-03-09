@@ -120,7 +120,7 @@ if utils.is_ipython():
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
     filename = filenames[2]
     filename = filenames[3]
-    filename = "data/input/n_sigma_test.txt"
+    # filename = "data/input/n_sigma_test.txt"
 
     if False:
         # if True:

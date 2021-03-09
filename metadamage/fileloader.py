@@ -385,6 +385,7 @@ def load_dataframe(cfg):
         ]
         if utils.metadata_is_similar(cfg, key, include=include):
             df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
+            cfg.set_number_of_fits(df)
             return df
         else:
             raise AssertionError(f"Different metadata is not yet implemented")
