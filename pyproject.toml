@@ -39,6 +39,8 @@ ete3 = "^3.1.2"
 partd = "^1.1.0"
 timeout-decorator = "^0.5.0"
 dask = {version = "^2021.3.0", extras = ["complete"]}
+tornado = "^6.1"
+tables = "^3.6.1"
 
 
 [tool.poetry.dev-dependencies]

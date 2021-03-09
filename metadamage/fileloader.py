@@ -303,7 +303,11 @@ def compute_dataframe_with_dask(cfg, use_processes):
     with Client(
         n_workers=cfg.num_cores,
         processes=use_processes,
-        silence_logs=logging.ERROR,
+        # processes=True,
+        # silence_logs=logging.ERROR,
+        silence_logs=logging.CRITICAL,
+        # silence_logs=True,
+        # silence_logs=False,
         local_directory="./dask-worker-space",
         # asynchronous=False,
         # silence_logs=False,
@@ -352,7 +356,7 @@ def compute_dataframe_with_dask(cfg, use_processes):
 
     # client.shutdown()
     # cluster.close()
-    # clean_up_after_dask()
+    clean_up_after_dask()
 
     df2 = df.astype(
         {
@@ -396,8 +400,8 @@ def load_dataframe(cfg):
 
     logger.info(f"Creating DataFrame, please wait.")
     # use_processes = True if utils.is_macbook() else False
-    use_processes = cfg.processes
-    df = compute_dataframe_with_dask(cfg, use_processes=use_processes)
+    # use_processes = cfg.processes
+    df = compute_dataframe_with_dask(cfg, use_processes=True)
     cfg.set_number_of_fits(df)
 
     logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
