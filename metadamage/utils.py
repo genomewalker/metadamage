@@ -6,7 +6,7 @@ from scipy.stats import norm as sp_norm
 from scipy.stats.distributions import chi2 as sp_chi2
 
 # Standard Library
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from importlib.metadata import version
 import importlib.resources as importlib_resources
@@ -35,8 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 #%%
-
-from dataclasses import asdict
 
 
 @dataclass

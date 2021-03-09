@@ -720,7 +720,6 @@ def get_fits(df, cfg):
 
             return df_fit_results, df_fit_predictions
 
-
     logger.info(f"Generating fits and saving to file.")
 
     df_top_N = fileloader.get_top_max_fits(df, cfg.N_fits)
@@ -748,7 +747,6 @@ def get_fits(df, cfg):
         value=df_fit_predictions,
     )
     df_fit_predictions.to_csv(cfg.filename_out.replace(".hdf5", "_fit_predictions.csv"))
-
 
     return df_fit_results, df_fit_predictions
 

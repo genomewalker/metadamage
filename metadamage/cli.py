@@ -1,9 +1,11 @@
 # Standard Library
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Iterable, List, Literal, Optional, Union
 
 # Third Party
+import click
+from click import Context
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
 from rich.console import Console
 import typer
@@ -49,11 +51,6 @@ class ColorfulApp(typer.Typer):
         self, *args, cls=CustomHelpColorsCommand, **kwargs
     ) -> typer.Typer.command:
         return super().command(*args, cls=cls, **kwargs)
-
-
-import click
-from click import Context
-from typing import Iterable
 
 
 class OrderedCommands(click.Group):
@@ -158,7 +155,7 @@ def cli_dashboard(string: str):
     \b
         $ metadamage dashboard
 
-    or by for two files:   
+    or by for two files:
 
     \b
         $ metadamage dashboard
