@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
 import logging
+from pathlib import Path
 
 # Third Party
 import numpyro
