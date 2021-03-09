@@ -21,6 +21,7 @@ from click_help_colors import HelpColorsCommand, HelpColorsGroup
 import dill
 from joblib import Parallel
 from psutil import cpu_count
+import platform
 
 # First Party
 from metadamage.progressbar import console, progress
@@ -316,6 +317,13 @@ def is_pdf_valid(filename, forced=False, N_pages=None):
     except:
         pass
     return False
+
+
+def is_macbook():
+    return platform.system() == "Darwin"
+
+
+#%%
 
 
 # def get_percentile_as_lim(x, percentile_max=99):

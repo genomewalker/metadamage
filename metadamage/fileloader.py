@@ -290,14 +290,14 @@ def remove_taxids_with_too_few_y_sum_total(df, cfg):
     return df.query(f"y_sum_total >= {cfg.min_y_sum}")
 
 
-def compute_dataframe_with_dask(cfg, use_processes=True):
+def compute_dataframe_with_dask(cfg, use_processes):
 
     # Standard Library
 
     filename = cfg.filename
 
-    if cfg.num_cores == 1:
-        use_processes = False
+    # if cfg.num_cores == 1:
+    # use_processes = False
 
     # http://localhost:8787/status
     with Client(
@@ -305,6 +305,9 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
         processes=use_processes,
         silence_logs=logging.ERROR,
         local_directory="./dask-worker-space",
+        # asynchronous=False,
+        # silence_logs=False,
+        # processes=False,
     ):
 
         df = (
@@ -349,7 +352,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
 
     # client.shutdown()
     # cluster.close()
-    clean_up_after_dask()
+    # clean_up_after_dask()
 
     df2 = df.astype(
         {
@@ -392,7 +395,8 @@ def load_dataframe(cfg):
             raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
-    df = compute_dataframe_with_dask(cfg, use_processes=False)
+    use_processes = True if utils.is_macbook() else False
+    df = compute_dataframe_with_dask(cfg, use_processes=use_processes)
     cfg.set_number_of_fits(df)
 
     logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
