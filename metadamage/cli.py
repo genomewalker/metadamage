@@ -51,7 +51,17 @@ class ColorfulApp(typer.Typer):
         return super().command(*args, cls=cls, **kwargs)
 
 
-app = ColorfulApp()
+import click
+from click import Context
+from typing import Iterable
+
+
+class OrderedCommands(click.Group):
+    def list_commands(self, ctx: Context) -> Iterable[str]:
+        return self.commands.keys()
+
+
+app = ColorfulApp(cls=OrderedCommands)
 # app = ColorfulApp(chain=True)
 
 
@@ -77,15 +87,11 @@ def callback():
 def cli_fit(
     # input arguments (filenames)
     filenames: List[Path] = typer.Argument(...),
-    # maximum values
+    # Fit options
     max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
-    # max_plots: Optional[int] = typer.Option(0, help="[default: 0 (No plots)]"),
-    # max_plots: int = 0,
     max_cores: int = 1,
     max_position: int = typer.Option(15),
-    # minimum fit values (used for deciding what to plot)
-    # min_damage: Optional[float] = typer.Option(None, help="[default: None]"),
-    # min_sigma: Optional[float] = typer.Option(None, help="[default: None]"),
+    # Filters
     min_alignments: int = 10,
     min_y_sum: int = 10,
     #
@@ -98,10 +104,7 @@ def cli_fit(
         utils.SubstitutionBases.GA
     ),
     # boolean flags
-    # force_reload_files: bool = typer.Option(False, "--force-reload-files"),
     force_fits: bool = typer.Option(False, "--force-fits"),
-    # force_plots: bool = typer.Option(False, "--force-plots"),
-    # force_no_plots: bool = typer.Option(False, "--force-no-plots"),
     # version
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
@@ -125,24 +128,17 @@ def cli_fit(
 
     d_cfg = {
         "max_fits": max_fits,
-        # "max_plots": max_plots,
         "max_cores": max_cores,
         "max_position": max_position,
         #
-        # "min_damage": min_damage,
-        # "min_sigma": min_sigma,
         "min_alignments": min_alignments,
         "min_y_sum": min_y_sum,
         #
         # note: convert Enum to actual value
-        # "sort_by": sort_by.value,
         "substitution_bases_forward": substitution_bases_forward.value,
         "substitution_bases_reverse": substitution_bases_reverse.value,
         #
-        # "force_reload_files": force_reload_files,
         "force_fits": force_fits,
-        # "force_plots": force_plots,
-        # "force_no_plots": force_no_plots,
         #
         "version": "0.0.0",
     }
@@ -170,13 +166,6 @@ def cli_dashboard(string: str):
     """
 
     typer.echo(f"Dashboard, string={string}.")
-
-
-@app.command("test")
-def cli_test(string2: str):
-    """Test."""
-
-    typer.echo(f"Testing, string2={string2}.")
 
 
 def cli_main():
