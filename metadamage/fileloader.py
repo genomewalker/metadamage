@@ -290,10 +290,9 @@ def remove_taxids_with_too_few_y_sum_total(df, cfg):
     return df.query(f"y_sum_total >= {cfg.min_y_sum}")
 
 
-def compute_dataframe_with_dask(cfg, use_processes):
+def compute_dataframe_with_dask(cfg, use_processes=True):
 
     # Standard Library
-
     filename = cfg.filename
 
     # if cfg.num_cores == 1:
@@ -303,15 +302,8 @@ def compute_dataframe_with_dask(cfg, use_processes):
     with Client(
         n_workers=cfg.num_cores,
         processes=use_processes,
-        # processes=True,
-        # silence_logs=logging.ERROR,
         silence_logs=logging.CRITICAL,
-        # silence_logs=True,
-        # silence_logs=False,
         local_directory="./dask-worker-space",
-        # asynchronous=False,
-        # silence_logs=False,
-        # processes=False,
     ):
 
         df = (
@@ -399,8 +391,6 @@ def load_dataframe(cfg):
             raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
-    # use_processes = True if utils.is_macbook() else False
-    # use_processes = cfg.processes
     df = compute_dataframe_with_dask(cfg, use_processes=True)
     cfg.set_number_of_fits(df)
 

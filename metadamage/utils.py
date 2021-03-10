@@ -52,7 +52,6 @@ class Config:
     #
     force_fits: bool
     version: str
-    processes: bool
     #
     filename: Optional[str] = None
     name: Optional[str] = None

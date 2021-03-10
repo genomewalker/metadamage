@@ -9,7 +9,7 @@ from scipy.special import logsumexp
 # Standard Library
 import logging
 from multiprocessing import current_process, Manager, Pool, Process, Queue
-import os
+import warnings
 
 # Third Party
 import jax
@@ -365,7 +365,9 @@ def add_noise_estimates(group, fit_result):
     f_mean = f_ij.mean(axis=0)
     noise_z = f_ij / f_mean
 
-    with np.errstate(divide="ignore", invalid="ignore"):
+    # with np.errstate(divide="ignore", invalid="ignore"):
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", r"Degrees of freedom <= 0 for slice")
         fit_result["normalized_noise"] = np.nanstd(noise_z.values)
         fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
         fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
