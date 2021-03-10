@@ -102,6 +102,7 @@ def cli_fit(
     ),
     # boolean flags
     force_fits: bool = typer.Option(False, "--force-fits"),
+    ignore_metadata: bool = typer.Option(False, "--ignore-metadata"),
     # version
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
@@ -136,6 +137,7 @@ def cli_fit(
         "substitution_bases_reverse": substitution_bases_reverse.value,
         #
         "force_fits": force_fits,
+        "ignore_metadata": ignore_metadata,
         #
         "version": "0.0.0",
     }

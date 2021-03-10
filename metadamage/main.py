@@ -107,6 +107,7 @@ if utils.is_ipython():
         # force_reload_files=False,
         # force_plots=False,
         force_fits=False,
+        ignore_metadata=False,
         # force_no_plots=False,
         version="0.0.0",
     )
@@ -119,7 +120,7 @@ if utils.is_ipython():
     os.chdir(path)
 
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
-    filename = filenames[2]
+    filename = filenames[1]
     filename = filenames[3]
     # filename = "data/input/n_sigma_test.txt"
 

@@ -51,6 +51,7 @@ class Config:
     substitution_bases_reverse: str
     #
     force_fits: bool
+    ignore_metadata: bool
     version: str
     #
     filename: Optional[str] = None
@@ -237,11 +238,11 @@ def metadata_is_similar(cfg, key, include=None, exclude=None):
     metadata_file = load_metadata_from_hdf5(filename=cfg.filename_out, key=key)
     metadata_cfg = cfg.to_dict()
 
-    # the metadata is not similar if it contains different keys
-    if set(metadata_file.keys()) != set(metadata_cfg.keys()):
-        is_similar = False
-        logger.warning("metadata contains different keys")
-        return is_similar
+    # # the metadata is not similar if it contains different keys
+    # if set(metadata_file.keys()) != set(metadata_cfg.keys()):
+    #     is_similar = False
+    #     logger.warning("metadata contains different keys")
+    #     return is_similar
 
     if isinstance(include, (list, tuple)) and exclude is None:
         logger.info("include is list or tuple and exclude is None")
@@ -265,6 +266,11 @@ def metadata_is_similar(cfg, key, include=None, exclude=None):
         # include = None
         # exclude = None
         logger.info("both include and exclude is is None")
+
+        if set(metadata_file.keys()) != set(metadata_cfg.keys()):
+            logger.warning("metadata contains different keys")
+            return False
+
         all_keys = metadata_file.keys()
         is_similar = all({metadata_file[key] == metadata_cfg[key] for key in all_keys})
         return is_similar
