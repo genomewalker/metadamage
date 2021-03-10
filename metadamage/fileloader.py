@@ -390,6 +390,12 @@ def load_dataframe(cfg):
             cfg.set_number_of_fits(df)
             return df
         else:
+
+            filename = cfg.filename_out
+            metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
+            metadata_cfg = cfg.to_dict()
+            print("metadata file: ", metadata_file)
+            print("metadata cfg:  ", metadata_cfg)
             raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
