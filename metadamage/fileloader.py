@@ -389,8 +389,8 @@ def load_dataframe(cfg):
             df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
             cfg.set_number_of_fits(df)
             return df
-        else:
 
+        else:
             filename = cfg.filename_out
             metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
             metadata_cfg = cfg.to_dict()
@@ -414,3 +414,46 @@ def load_dataframe(cfg):
     )
 
     return df
+
+
+#%%
+
+metadata_file = {
+    "max_fits": 1000,
+    "max_cores": 40,
+    "max_position": 15,
+    "min_alignments": 10,
+    "min_y_sum": 10,
+    "substitution_bases_forward": "CT",
+    "substitution_bases_reverse": "GA",
+    "force_fits": False,
+    "version": "0.0.0",
+    "processes": True,
+    "filename": PosixPath(
+        "data/input/ugly/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.bdamage.gz.up.txt"
+    ),
+    "name": "EC-Ext-14-Lib-14-Index1",
+    "filename_out": "./data/out/EC-Ext-14-Lib-14-Index1.hdf5",
+    "N_fits": 633,
+    "num_cores": 40,
+}
+
+
+metadata_cfg = {
+    "max_fits": 1000,
+    "max_cores": 40,
+    "max_position": 15,
+    "min_alignments": 10,
+    "min_y_sum": 10,
+    "substitution_bases_forward": "CT",
+    "substitution_bases_reverse": "GA",
+    "force_fits": False,
+    "version": "0.0.0",
+    "filename": PosixPath(
+        "data/input/ugly/EC-Ext-14-Lib-14-Index1.col.sorted.sam.gz.bdamage.gz.up.txt"
+    ),
+    "name": "EC-Ext-14-Lib-14-Index1",
+    "filename_out": "./data/out/EC-Ext-14-Lib-14-Index1.hdf5",
+    "N_fits": None,
+    "num_cores": 40,
+}
