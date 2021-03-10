@@ -203,9 +203,19 @@ def save_metadata_to_hdf5(filename, key, value, metadata):
 
 
 def load_from_hdf5(filename, key):
-    with pd.HDFStore(filename, mode="r") as store:
-        df = store.get(key)
-    return df
+
+    if isinstance(key, str):
+        with pd.HDFStore(filename, mode="r") as store:
+            df = store.get(key)
+        return df
+
+    elif isinstance(key, (list, tuple)):
+        keys = key
+        out = []
+        with pd.HDFStore(filename, mode="r") as store:
+            for key in keys:
+                out.append(store.get(key))
+        return out
 
 
 def load_metadata_from_hdf5(filename, key):
@@ -223,6 +233,25 @@ def get_hdf5_keys(filename, ignore_subgroups=False):
         return keys
     else:
         raise AssertionError(f"ignore_subgroups=False not implemented yet.")
+
+
+#%%
+
+
+def downcast_dataframe(df, categories):
+
+    categories = [category for category in categories if category in df.columns]
+
+    d_categories = {category: "category" for category in categories}
+    df2 = df.astype(d_categories)
+
+    for col in df2.select_dtypes(include=["integer"]).columns:
+        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="integer")
+
+    for col in df2.select_dtypes(include=["float"]).columns:
+        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
+
+    return df2
 
 
 #%%

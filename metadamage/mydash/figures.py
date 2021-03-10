@@ -22,8 +22,8 @@ def plot_fit_results(fit_results, df_fit_results):
         x="n_sigma",
         y="D_max",
         size="size",
-        color="name",
-        hover_name="name",
+        color="filename",
+        hover_name="filename",
         # size_max=marker_size_max,
         opacity=0.2,
         color_discrete_map=fit_results.d_cmap,
@@ -64,7 +64,7 @@ def plot_fit_results(fit_results, df_fit_results):
 def plotly_histogram(
     fit_results,
     data,
-    name,
+    filename,
     dimension,
     bins=50,
     density=True,
@@ -77,13 +77,13 @@ def plotly_histogram(
         x=binned[1],
         y=binned[0],
         mode="lines",
-        name=name,
-        legendgroup=name,
+        name=filename,
+        legendgroup=filename,
         line_shape="hv",  # similar to 'mid' in matplotlib,
         showlegend=showlegend,
-        marker_color=fit_results.d_cmap[name],
+        marker_color=fit_results.d_cmap[filename],
         hovertemplate=(
-            "<b>" + f"{name}" + "</b><br><br>"
+            "<b>" + f"{filename}" + "</b><br><br>"
             f"{dimension}" + ": %{x:5.2f}<br>"
             "Counts: %{y}<br>"
             "<extra></extra>"
@@ -101,11 +101,11 @@ def plot_histograms(fit_results, df_fit_results):
 
     for dimension, row, column in fit_results.iterate_over_dimensions():
         highest_y_max = 0
-        for name, group in df_fit_results.groupby("name", sort=False):
+        for filename, group in df_fit_results.groupby("filename", sort=False):
             trace, y_max = plotly_histogram(
                 fit_results=fit_results,
                 data=group[dimension],
-                name=name,
+                filename=filename,
                 dimension=dimension,
                 bins=50,
                 density=False,
@@ -140,8 +140,8 @@ def plot_scatter_matrix(fit_results, df_fit_results):
     fig = px.scatter_matrix(
         df_fit_results,
         dimensions=fit_results.dimensions,
-        color="name",
-        hover_name="name",
+        color="filename",
+        hover_name="filename",
         size_max=10,
         color_discrete_map=fit_results.d_cmap,
         labels=fit_results.labels,
@@ -183,12 +183,12 @@ def plot_forward_reverse(fit_results, df_fit_results):
     for it in fit_results.iterate_over_dimensions_forward_reverse(N_cols):
         dimension, row, column, showlegend, forward, reverse = it
 
-        for name, group in df_fit_results.groupby("name", sort=False):
+        for filename, group in df_fit_results.groupby("filename", sort=False):
             kwargs = dict(
-                name=name,
+                name=filename,
                 mode="markers",
-                legendgroup=name,
-                marker=dict(color=fit_results.d_cmap[name], opacity=0.2),
+                legendgroup=filename,
+                marker=dict(color=fit_results.d_cmap[filename], opacity=0.2),
                 hovertemplate=fit_results.hovertemplate,
                 customdata=np.array(group[fit_results.custom_data_columns].values),
             )
@@ -381,7 +381,7 @@ def _plot_mismatch_fit_filled(
     fig.add_trace(
         go.Scatter(
             x=x[not_mask],
-            y=errors[1][not_mask],
+            y=errors[1, not_mask],
             mode="lines",
             line_width=0,
             showlegend=False,
@@ -394,7 +394,7 @@ def _plot_mismatch_fit_filled(
     fig.add_trace(
         go.Scatter(
             x=x[not_mask],
-            y=errors[0][not_mask],
+            y=errors[0, not_mask],
             line_width=0,
             mode="lines",
             fillcolor=green_color_transparent,
@@ -419,19 +419,19 @@ def _plot_mismatch_fit(
 
     customdata_errors = np.stack(
         [
-            fit["hdpi"][1] - fit["median"],
-            fit["median"] - fit["hdpi"][0],
+            fit["hdpi_upper"] - fit["median"],
+            fit["median"] - fit["hdpi_lower"],
         ]
     ).T
 
     if is_forward:
-        y = fit["median"][:15]
+        y = fit["median"][:15].values
         customdata_errors = customdata_errors[:15, :]
-        errors = fit["hdpi"][:, :15]
+        errors = fit[["hdpi_lower", "hdpi_upper"]].values.T[:, :15]
     else:
-        y = fit["median"][15:]
+        y = fit["median"][15:].values
         customdata_errors = customdata_errors[15:, :]
-        errors = fit["hdpi"][:, 15:]
+        errors = fit[["hdpi_lower", "hdpi_upper"]].values.T[:, 15:]
 
     green_color = "#2CA02C"
     green_color_transparent = mydash.utils.hex_to_rgb(green_color, opacity=0.2)
@@ -559,7 +559,8 @@ def _plot_count_fraction(
     )
 
 
-def plot_mismatch_fractions(group, chosen_mismatch_columns=None, fit=None):
+# def plot_mismatch_fractions(group, chosen_mismatch_columns=None, fit=None):
+def plot_count_fraction(group, chosen_mismatch_columns=None, fit=None):
 
     if chosen_mismatch_columns is None:
         chosen_mismatch_columns = ["C→T", "G→A"]

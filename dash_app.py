@@ -33,8 +33,15 @@ mydash.utils.set_custom_theme()
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 #%%
+#%%
+# x = x
 
-fit_results = mydash.fit_results.FitResults()
+#%%
+
+folder = "./data/out"
+verbose = True
+fit_results = mydash.fit_results.FitResults(folder, verbose=verbose)
+
 
 #%%BOOTSTRAP
 
@@ -101,7 +108,10 @@ mismatch_dropdown_filenames = dbc.FormGroup(
         html.Div(
             dcc.Dropdown(
                 id="dropdown_mismatch_filename",
-                options=[{"label": name, "value": name} for name in fit_results.names],
+                options=[
+                    {"label": filename, "value": filename}
+                    for filename in fit_results.filenames
+                ],
                 clearable=False,
             ),
             style={"min-width": "300px"},
@@ -266,6 +276,7 @@ filter_dropdown_file = dbc.FormGroup(
         mydash.elements.get_dropdown_file_selection(
             id="dropdown_file_selection",
             fit_results=fit_results,
+            filenames_to_show="all",
         ),
     ]
 )
@@ -337,7 +348,8 @@ filters_collapse_ranges = html.Div(
                     dcc.Dropdown(
                         id="dropdown_slider",
                         options=[
-                            {"label": name, "value": name} for name in slider_names
+                            {"label": filename, "value": filename}
+                            for filename in slider_names
                         ],
                         value=[],
                         multi=True,
@@ -654,10 +666,10 @@ def filter_fit_results(
 
     fit_results.set_marker_size(marker_transformation, marker_size_max)
 
-    d_filter = {"names": dropdown_file_selection}
+    d_filter = {"filenames": dropdown_file_selection}
     slider_names = [id["index"] for id in slider_ids]
-    for name, values in zip(slider_names, slider_values):
-        d_filter[name] = values
+    for filename, values in zip(slider_names, slider_values):
+        d_filter[filename] = values
 
     apply_taxid_filter(d_filter, taxid_filter_input, taxid_filter_subspecies)
 
@@ -705,27 +717,27 @@ def get_name_of_removed_slider(current_names, dropdown_names):
     return list(set(current_names).difference(dropdown_names))[0]
 
 
-def remove_name_from_children(name, children, id_type):
-    " Given a name, remove the corresponding child element from children"
-    index = find_index_in_children(children, id_type=id_type, search_index=name)
+def remove_name_from_children(filename, children, id_type):
+    " Given a filename, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=filename)
     children.pop(index)
 
 
-def make_new_slider(name, id_type, N_steps=100):
+def make_new_slider(filename, id_type, N_steps=100):
     return dbc.Container(
         [
             dbc.Row(html.Br()),
-            dbc.Row(html.P(name), justify="center"),
+            dbc.Row(html.P(filename), justify="center"),
             dbc.Row(
                 dbc.Col(
                     dcc.RangeSlider(
                         id={
                             "type": "dynamic-slider",
-                            "index": name,
+                            "index": filename,
                         },
                         **mydash.elements.get_range_slider_keywords(
                             fit_results,
-                            column=name,
+                            column=filename,
                             N_steps=N_steps,
                         ),
                     ),
@@ -733,7 +745,7 @@ def make_new_slider(name, id_type, N_steps=100):
                 ),
             ),
         ],
-        id={"type": id_type, "index": name},
+        id={"type": id_type, "index": filename},
     )
 
 
@@ -757,14 +769,14 @@ def add_or_remove_slider(
 
     # add new slider
     if slider_is_added(current_names, dropdown_names):
-        name = get_name_of_added_slider(current_names, dropdown_names)
-        new_element = make_new_slider(name, id_type=id_type)
+        filename = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(filename, id_type=id_type)
         children.append(new_element)
 
     # remove selected slider
     else:
-        name = get_name_of_removed_slider(current_names, dropdown_names)
-        remove_name_from_children(name, children, id_type=id_type)
+        filename = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(filename, children, id_type=id_type)
 
     return children
 
@@ -827,16 +839,16 @@ def update_mismatch_plot(active_tab, dropdown_mismatch_taxid, dropdown_name):
             return mydash.figures.create_empty_figure()
 
     try:
-        group = fit_results.get_mismatch_group(
-            name=dropdown_name,
+        group = fit_results.get_single_count_group(
+            filename=dropdown_name,
             taxid=dropdown_mismatch_taxid,
         )
-        fit = fit_results.get_fit_predictions(
-            name=dropdown_name,
+        fit = fit_results.get_single_fit_prediction(
+            filename=dropdown_name,
             taxid=dropdown_mismatch_taxid,
         )
         chosen_mismatch_columns = ["C→T", "G→A"]
-        fig = mydash.figures.plot_mismatch_fractions(
+        fig = mydash.figures.plot_count_fraction(
             group,
             chosen_mismatch_columns,
             fit,
@@ -867,8 +879,10 @@ def update_data_table(click_data, active_tab):
 
     try:
         taxid = fit_results.parse_click_data(click_data, variable="taxid")
-        name = fit_results.parse_click_data(click_data, variable="name")
-        df_fit_results_filtered = fit_results.filter({"name": name, "taxid": taxid})
+        filename = fit_results.parse_click_data(click_data, variable="filename")
+        df_fit_results_filtered = fit_results.filter(
+            {"filename": filename, "taxid": taxid}
+        )
         return df_fit_results_filtered.to_dict("records")
 
     # when selecting histogram without customdata
@@ -879,11 +893,13 @@ def update_data_table(click_data, active_tab):
 #%%
 
 
-def get_taxid_options_based_on_filename(name, df_string="df_fit_results"):
-    """df_string is a string, eg. df_fit_results or  df_mismatch.
+def get_taxid_options_based_on_filename(filename, df_string="df_fit_results"):
+    """df_string is a string, eg. df_fit_results or  df_counts.
     The 'df_' part is optional
     """
-    taxids = sorted(fit_results.filter({"name": name}, df="mismatch")["taxid"].unique())
+    taxids = sorted(
+        fit_results.filter({"filename": filename}, df="counts")["taxid"].unique()
+    )
     options = [{"label": i, "value": i} for i in taxids]
     return options
 
@@ -892,10 +908,10 @@ def get_taxid_options_based_on_filename(name, df_string="df_fit_results"):
     Output("dropdown_mismatch_taxid", "options"),
     Input("dropdown_mismatch_filename", "value"),
 )
-def update_dropdown_taxid_options(name):
-    # if name is None:
-    # print("update_dropdown_taxid_options got name==None")
-    return get_taxid_options_based_on_filename(name, df_string="mismatch")
+def update_dropdown_taxid_options(filename):
+    # if filename is None:
+    # print("update_dropdown_taxid_options got filename==None")
+    return get_taxid_options_based_on_filename(filename, df_string="counts")
 
 
 @app.callback(
@@ -911,8 +927,8 @@ def update_dropdowns_based_on_click_data(click_data, active_tab):
             raise PreventUpdate
         try:
             taxid = fit_results.parse_click_data(click_data, variable="taxid")
-            name = fit_results.parse_click_data(click_data, variable="name")
-            return name, taxid
+            filename = fit_results.parse_click_data(click_data, variable="filename")
+            return filename, taxid
         except KeyError:
             # print("update_dropdowns_based_on_click_data got KeyError")
             raise PreventUpdate
@@ -1006,50 +1022,56 @@ if __name__ == "__main__" and not is_ipython():
 
 
 else:
-    pass
 
-    # mydash.elements.get_range_slider_keywords(
-    #     fit_results,
-    #     column="D_max",
-    #     N_steps=100,
-    # )
-    # mydash.elements.get_range_slider_keywords(
-    #     fit_results,
-    #     column="n_sigma",
-    #     N_steps=100,
-    # )
+    mydash.elements.get_range_slider_keywords(
+        fit_results,
+        column="D_max",
+        N_steps=100,
+    )
+    mydash.elements.get_range_slider_keywords(
+        fit_results,
+        column="n_sigma",
+        N_steps=100,
+    )
 
-    # name = "KapK-198A-Ext-55-Lib-55-Index1"
-    # # name = "SJArg-1-Nit"
-    # taxid = 33969
+    filename = "KapK-12-1-33-Ext-10-Lib-10-Index2"
+    # filename = "SJArg-1-Nit"
+    taxid = 33090
 
-    # df_fit_results_all = fit_results.df_fit_results
+    df_fit_results_all = fit_results.df_fit_results
 
-    # df_fit_results = fit_results.filter(
-    #     {"taxid": taxid, "name": name}, df="df_fit_results"
-    # )
+    df_fit_results = fit_results.filter(
+        {"taxid": taxid, "filename": filename}, df="df_fit_results"
+    )
 
-    # group = fit_results.get_mismatch_group(name=name, taxid=taxid)
-    # fit = fit_results.get_fit_predictions(name=name, taxid=taxid)
+    group = fit_results.get_single_count_group(filename=filename, taxid=taxid)
+    fit = fit_results.get_single_fit_prediction(filename=filename, taxid=taxid)
 
-    # chosen_mismatch_columns = ["C→T", "G→A"]
+    chosen_mismatch_columns = ["C→T", "G→A"]
 
     # # #%%
 
-    # fig = mydash.figures.plot_mismatch_fractions(
-    #     group, chosen_mismatch_columns, fit=fit
-    # )
-    # fig
+    fig = mydash.figures.plot_count_fraction(group, chosen_mismatch_columns, fit=fit)
+    fig
 
-    # group[["position", "CT", "C"]]
+    group[["position", "CT", "C"]]
 
-    # reload(taxonomy)
-    # tax_name = "Ursus"
-    # tax_name = "Mammalia"
-    # # tax_name = "Chordata"
-    # # tax_name = "Salmon"
-    # taxids = taxonomy.extract_descendant_taxids(tax_name)
+    reload(taxonomy)
+    tax_name = "Ursus"
+    tax_name = "Mammalia"
+    # tax_name = "Chordata"
+    # tax_name = "Salmon"
+    taxids = taxonomy.extract_descendant_taxids(tax_name)
 
-    # df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
+    df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
 
-    # # fig = mydash.figures.plot_histograms(fit_results, df_fit_results_all)
+    fig2 = mydash.figures.plot_fit_results(fit_results, df_fit_results_all)
+    # mydash.figures.plot_histograms(fit_results, df_fit_results_all)
+    # mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_all)
+    # mydash.figures.plot_forward_reverse(fit_results, df_fit_results_all)
+
+    mydash.elements.get_dropdown_file_selection(
+        id="dropdown_file_selection",
+        fit_results=fit_results,
+        filenames_to_show="all",
+    )

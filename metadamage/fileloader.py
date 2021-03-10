@@ -352,20 +352,8 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     # cluster.close()
     clean_up_after_dask()
 
-    df2 = df.astype(
-        {
-            "taxid": "category",
-            "name": "category",
-            "rank": "category",
-            "strand": "category",
-        }
-    )
-
-    for col in df2.select_dtypes(include=["integer"]).columns:
-        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="integer")
-
-    for col in df2.select_dtypes(include=["float"]).columns:
-        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
+    categories = ["taxid",  "name", "rank", "strand"]
+    df2 = utils.downcast_dataframe(df, categories)
 
     query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
     return df2.query(query)
