@@ -3,18 +3,17 @@ import numpy as np
 import pandas as pd
 
 # Standard Library
+from functools import partial
 from pathlib import Path
 
 # Third Party
 import dill
+from joblib import Memory
 import plotly.express as px
 
 # First Party
 from metadamage import mydash, utils
 
-from functools import partial
-
-from joblib import Memory
 
 cachedir = "memoization"
 memory = Memory(cachedir, verbose=0)

@@ -352,7 +352,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     # cluster.close()
     clean_up_after_dask()
 
-    categories = ["taxid",  "name", "rank", "strand"]
+    categories = ["taxid", "name", "rank", "strand"]
     df2 = utils.downcast_dataframe(df, categories)
 
     query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
