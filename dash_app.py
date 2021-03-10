@@ -40,6 +40,7 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 folder = "./data/out"
 verbose = True
+
 fit_results = mydash.fit_results.FitResults(folder, verbose=verbose)
 
 

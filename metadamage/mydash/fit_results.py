@@ -12,16 +12,100 @@ import plotly.express as px
 # First Party
 from metadamage import mydash, utils
 
+from functools import partial
 
-#
+from joblib import Memory
+
+cachedir = "memoization"
+memory = Memory(cachedir, verbose=0)
+
+# @memory.cache
+
+#%%
+
+
+@memory.cache
+def load_dataframes_memoization(files):
+    df_counts = _load_df_counts(files)
+    df_fit_results = _load_df_fit_results(files)
+    df_fit_predictions = _load_df_fit_predictions(files)
+    return df_counts, df_fit_results, df_fit_predictions
+
+
+def _load_single_dataframe(files, key, ignore_index):
+    df_list = []
+    for filename in files:
+        cfg = utils.load_metadata_from_hdf5(filename, key="counts")
+        name = cfg["name"]
+        df = utils.load_from_hdf5(filename, key)
+        df["filename"] = name
+        df_list.append(df)
+
+    df = pd.concat(df_list, axis=0, ignore_index=ignore_index)
+    categories = ["taxid", "name", "rank", "strand", "filename"]
+    df = utils.downcast_dataframe(df, categories)
+    return df
+
+
+def _load_df_counts(files):
+    df_counts = _load_single_dataframe(
+        files=files,
+        key="counts",
+        ignore_index=True,
+    )
+    return df_counts
+
+
+def _load_df_fit_results(files):
+    df = _load_single_dataframe(
+        files=files,
+        key="fit_results",
+        ignore_index=False,
+    )
+    df["taxid"] = df.index
+    df = df.reset_index(drop=True)
+
+    df["N_alignments_log10"] = np.log10(df["N_alignments"])
+    df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
+
+    df_fit_results = df
+    return df_fit_results
+
+
+def _load_df_fit_predictions(files):
+    df_fit_predictions = _load_single_dataframe(
+        files=files,
+        key="fit_predictions",
+        ignore_index=True,
+    )
+    return df_fit_predictions
+
+
+def find_good_files(folder):
+    filenames = list(Path(folder).rglob("*.hdf5"))
+
+    good_files = []
+    for filename in filenames:
+        keys = utils.get_hdf5_keys(filename, ignore_subgroups=True)
+        if "counts" in keys and "fit_results" in keys and "fit_predictions" in keys:
+            good_files.append(filename)
+        else:
+            print(filename, keys)
+    return good_files
+
+
+#%%
 
 
 class FitResults:
-    def __init__(self, folder, verbose=False):
-        self._load_output_files(folder)
-        self._load_df_counts(verbose)
-        self._load_df_fit_results(verbose)
-        self._load_df_fit_predictions(verbose)
+    def __init__(self, folder, verbose=True):
+        self.verbose = verbose
+        self._load_dataframes(folder)
+        # self._load_df_counts(verbose)
+        # self._load_df_fit_results(verbose)
+        # self._load_df_fit_predictions(verbose)
         self._compute_ranges()
         self._set_cmap()
         self._set_hover_info()
@@ -29,55 +113,30 @@ class FitResults:
         self._set_labels()
         self._set_dimensions_forward_reverse()
 
-    def _load_output_files(self, folder):
+    #%%
+
+    def _load_dataframes(self, folder):
         self.folder = folder
-        self.filenames_hdf5 = list(Path(self.folder).rglob("*.hdf5"))
+        self.filenames_hdf5 = find_good_files(folder)
+
         if len(self.filenames_hdf5) == 0:
             raise AssertionError(f"No output files found in {self.folder}.")
 
-    def __load_file(self, key, ignore_index):
-        df_list = []
-        self.filenames = []
-        for filename in self.filenames_hdf5:
-            cfg = utils.load_metadata_from_hdf5(filename, key="counts")
-            name = cfg["name"]
-            df = utils.load_from_hdf5(filename, key)
-            df["filename"] = name
-            df_list.append(df)
-            self.filenames.append(name)
+        # unique_id = "".join([str(file) for file in self.filenames_hdf5])
+        filenames_hdf5 = tuple(str(file) for file in self.filenames_hdf5)
 
-        df = pd.concat(df_list, axis=0, ignore_index=ignore_index)
-        categories = ["taxid", "name", "rank", "strand", "filename"]
-        df = utils.downcast_dataframe(df, categories)
-        return df
+        dataframes = load_dataframes_memoization(filenames_hdf5)
+        df_counts, df_fit_results, df_fit_predictions = dataframes
 
-    def _load_df_counts(self, verbose):
-        if verbose:
-            print("_load_df_counts")
-        self.df_counts = self.__load_file(key="counts", ignore_index=True)
+        self.df_counts = df_counts
+        self.df_fit_results = df_fit_results
+        self.df_fit_predictions = df_fit_predictions
 
-    def _load_df_fit_results(self, verbose):
-        if verbose:
-            print("_load_df_fit_results")
-        df = self.__load_file(key="fit_results", ignore_index=False)
-        df["taxid"] = df.index
-        df = df.reset_index(drop=True)
-
-        df["N_alignments_log10"] = np.log10(df["N_alignments"])
-        df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-        with np.errstate(divide="ignore", invalid="ignore"):
-            df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
-
-        self.df_fit_results = df
+        self.filenames = list(self.df_counts.filename.unique())
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
 
-    def _load_df_fit_predictions(self, verbose):
-        if verbose:
-            print("_load_df_fit_predictions")
-        self.df_fit_predictions = self.__load_file(
-            key="fit_predictions", ignore_index=True
-        )
+    #%%
 
     def _get_range_of_column(self, column, spacing):
         array = self.df_fit_results[column]
