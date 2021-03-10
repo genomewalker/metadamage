@@ -299,24 +299,26 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     # use_processes = False
 
     # http://localhost:8787/status
-    with Client(
+    # with Client(
+    #     n_workers=cfg.num_cores,
+    #     processes=use_processes,
+    #     silence_logs=logging.CRITICAL,
+    #     local_directory="./dask-worker-space",
+    # ):
+
+    with LocalCluster(
         n_workers=cfg.num_cores,
         processes=use_processes,
         silence_logs=logging.CRITICAL,
-        local_directory="./dask-worker-space",
-    ):
+    ) as cluster, Client(cluster) as client:
 
         df = (
-            # dd.read_csv(filename, sep="\t")
             dd.read_csv(
                 filename,
                 sep="\t",
-                # sep=":|\t",
                 header=None,
                 names=columns,
-                # blocksize=50e6,  # chunksize 50mb
             )
-            # .pipe(remove_taxids_with_too_few_alignments, cfg)
             # compute error rates
             .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
             .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
