@@ -136,7 +136,6 @@ def cli_fit(
         "substitution_bases_reverse": substitution_bases_reverse.value,
         #
         "force_fits": force_fits,
-
         #
         "version": "0.0.0",
     }
