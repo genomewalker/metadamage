@@ -379,24 +379,24 @@ def load_dataframe(cfg):
         logger.info(f"Loading DataFrame from hdf5-file.")
 
         # exclude = ["max_cores", "force_fits", "num_cores", "N_fits"]
-        include = [
-            "min_alignments",
-            "min_y_sum",
-            "substitution_bases_forward",
-            "substitution_bases_reverse",
-        ]
-        if utils.metadata_is_similar(cfg, key, include=include):
-            df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
-            cfg.set_number_of_fits(df)
-            return df
+        # include = [
+        #     "min_alignments",
+        #     "min_y_sum",
+        #     "substitution_bases_forward",
+        #     "substitution_bases_reverse",
+        # ]
+        # if utils.metadata_is_similar(cfg, key, include=include): # XXX TODO
+        df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
+        cfg.set_number_of_fits(df)
+        return df
 
-        else:
-            filename = cfg.filename_out
-            metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
-            metadata_cfg = cfg.to_dict()
-            print("metadata file: ", metadata_file)
-            print("metadata cfg:  ", metadata_cfg)
-            raise AssertionError(f"Different metadata is not yet implemented")
+        # else:
+        #     filename = cfg.filename_out
+        #     metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
+        #     metadata_cfg = cfg.to_dict()
+        #     print("metadata file: ", metadata_file)
+        #     print("metadata cfg:  ", metadata_cfg)
+        #     raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
     df = compute_dataframe_with_dask(cfg, use_processes=True)
