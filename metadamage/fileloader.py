@@ -366,13 +366,13 @@ def load_dataframe(cfg):
 
     IO_HDF5().save(
         df=df,
-        filename="./data/out/hdf5/test.hdf5",
+        filename="./data/out/hdf5_test.hdf5",
         key=f"counts/{cfg.shortname}",
         metadata=cfg.to_dict(),
     )
 
     IO_Parquet().save(
-        filename="./data/out/parquet/test.parquet",
+        filename="./data/out/parquet_test.parquet",
         df=df,
         metadata=cfg.to_dict(),
         partition_cols="shortname",
