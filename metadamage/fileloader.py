@@ -366,7 +366,7 @@ def load_dataframe(cfg):
 
     IO_HDF5().save(
         df=df,
-        filename="./data/hdf5/test.hdf5",
+        filename="./data/out/hdf5/test.hdf5",
         key=f"counts/{cfg.shortname}",
         metadata=cfg.to_dict(),
     )

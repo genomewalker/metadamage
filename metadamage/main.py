@@ -55,10 +55,11 @@ def main(filenames, cfg):
                 continue
 
             cfg.add_filename(filename)
-            df = fileloader.compute_dataframe_with_dask(cfg, use_processes=True)
-            print(df)
-
-            progress.add_task("task_name", progress_type="name", name=cfg.name)
+            progress.add_task(
+                "task_name",
+                progress_type="shortname",
+                shortname=cfg.shortname,
+            )
 
             df = fileloader.load_dataframe(cfg)
             # print(len(pd.unique(df.taxid)))
@@ -68,7 +69,7 @@ def main(filenames, cfg):
             if not utils.is_df_accepted(df, cfg):
                 continue
 
-            df_fit_results, df_fit_predictions = fit.get_fits(df, cfg)
+            # df_fit_results, df_fit_predictions = fit.get_fits(df, cfg)
 
             progress.refresh()
             progress.advance(task_id_overall)
@@ -77,11 +78,6 @@ def main(filenames, cfg):
     # if all files were bad, raise error
     if bad_files == N_files:
         raise Exception("All files were bad!")
-
-    # if len(all_fit_results) >= 1 and cfg.do_make_plots:
-    #     # plot.set_style()
-    #     N_alignments_mins = [0, 10, 100, 1000, 10_000, 100_000]
-    #     plot.plot_fit_results(all_fit_results, cfg, N_alignments_mins=N_alignments_mins)
 
 
 if utils.is_ipython():

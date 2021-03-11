@@ -20,8 +20,8 @@ class MyProgress(Progress):
             if task.fields.get("progress_type") == "overall":
                 self.columns = progress_bar_overall
                 yield Panel(self.make_tasks_table([task]))
-            if task.fields.get("progress_type") == "name":
-                self.columns = progress_bar_name
+            if task.fields.get("progress_type") == "shortname":
+                self.columns = progress_bar_shortname
                 yield self.make_tasks_table([task])
             if task.fields.get("progress_type") == "status":
                 self.columns = progress_bar_status
@@ -40,7 +40,7 @@ progress_bar_overall = (
     TimeElapsedColumn(),
 )
 
-progress_bar_name = (TextColumn(" " * 4 + "[blue]{task.fields[name]}"),)
+progress_bar_shortname = (TextColumn(" " * 4 + "[blue]{task.fields[shortname]}"),)
 
 
 progress_bar_status = (
@@ -49,7 +49,7 @@ progress_bar_status = (
     "[progress.percentage]{task.percentage:>3.0f}%",
     "• Time Elapsed:",
     TimeElapsedColumn(),
-    "• {task.fields[name]} [progress.percentage]{task.completed:>4} / {task.total:>4}",
+    "• {task.fields[shortname]} [progress.percentage]{task.completed:>4} / {task.total:>4}",
 )
 
 #%%
