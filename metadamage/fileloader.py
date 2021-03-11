@@ -34,9 +34,9 @@ for ref in ACTG:
 # fmt: on
 
 columns = [
-    "taxid",
-    "name",
-    "rank",
+    "tax_id",
+    "tax_name",
+    "tax_rank",
     "N_alignments",
     "strand",
     "position",
@@ -113,22 +113,6 @@ def add_error_rates(df, ref, obs, include_uncertainties=False):
     return df
 
 
-# def add_error_rates_other(df, include_uncertainties=False):
-#     others = ["AC", "AG", "AT", "CA", "CG", "GC", "GT", "TA", "TC", "TG"]
-
-#     N_A = df[get_reference_columns(df, ref="A")].sum(axis=1)
-#     N_C = df[get_reference_columns(df, ref="C")].sum(axis=1)
-#     N_G = df[get_reference_columns(df, ref="G")].sum(axis=1)
-#     N_T = df[get_reference_columns(df, ref="T")].sum(axis=1)
-#     numerator = df[others].sum(axis=1)
-#     denominator = 3 * N_A + 2 * N_C + 2 * N_G + 3 * N_T
-#     f, sf = compute_fraction_and_uncertainty(numerator, denominator)
-#     df[f"f_other"] = f
-#     if include_uncertainties:
-#         df[f"sf_other"] = sf
-#     return df
-
-
 def make_position_1_indexed(df):
     "Make the position, z, one-indexed (opposed to zero-indexed)"
     df["position"] += 1
@@ -144,15 +128,25 @@ def make_reverse_position_negative(df):
     return df
 
 
-def delayed_list(lst, length):
-    @dask.delayed(nout=length)
-    def delayed_list_tmp(lst):
-        out = []
-        for l in lst:
-            out.append(l)
-        return out
+# def delayed_list(lst, length):
+#     @dask.delayed(nout=length)
+#     def delayed_list_tmp(lst):
+#         out = []
+#         for l in lst:
+#             out.append(l)
+#         return out
+#     return delayed_list_tmp(lst)
 
-    return delayed_list_tmp(lst)
+
+# def extract_top_max_fits_dask(df, max_fits):
+#     top_max_fits = (
+#         df.groupby("tax_id", observed=True)["N_alignments"]
+#         .sum()
+#         .nlargest(max_fits)
+#         .index
+#     )
+#     df_top_N = df[df["tax_id"].isin(delayed_list(top_max_fits, max_fits))]
+#     return df_top_N
 
 
 def delayed_list_unknown_length(lst):
@@ -166,25 +160,14 @@ def delayed_list_unknown_length(lst):
     return delayed_list_tmp(lst)
 
 
-def extract_top_max_fits_dask(df, max_fits):
-    top_max_fits = (
-        df.groupby("taxid", observed=True)["N_alignments"]
-        .sum()
-        .nlargest(max_fits)
-        .index
-    )
-    df_top_N = df[df["taxid"].isin(delayed_list(top_max_fits, max_fits))]
-    return df_top_N
-
-
 def extract_top_max_fits(df, max_fits):
     top_max_fits = (
-        df.groupby("taxid", observed=True)["N_alignments"]
+        df.groupby("tax_id", observed=True)["N_alignments"]
         .sum()
         .nlargest(max_fits)
         .index
     )
-    df_top_N = df[df["taxid"].isin(top_max_fits)]
+    df_top_N = df[df["tax_id"].isin(top_max_fits)]
     return df_top_N
 
 
@@ -216,15 +199,8 @@ def sort_by_alignments(df_top_N):
     pos = df_top_N["position"]
     df_top_N["order"] = pos.mask(pos > 0, 1 / pos)
     return df_top_N.sort_values(
-        by=["N_alignments", "taxid", "order"], ascending=False
+        by=["N_alignments", "tax_id", "order"], ascending=False
     ).drop(columns=["order"])
-
-
-# def cut_NANs_away(df):
-#     # we throw away rows with no C references or G references
-#     bad_taxids = df.query("C == 0 | G == 0").taxid.unique()
-#     df_nans_removed = df.query("taxid not in @bad_taxids")
-#     return df_nans_removed
 
 
 def replace_nans_with_zeroes(df):
@@ -249,30 +225,16 @@ def add_y_sum_counts(df, cfg):
     meta = pd.Series(
         [],
         name="y_sum_total",
-        index=pd.Index([], name="taxid", dtype=int),
+        index=pd.Index([], name="tax_id", dtype=int),
         dtype=int,
     )
 
-    ds = df.groupby("taxid").apply(compute_y_sum_total, cfg, meta=meta)
-    # ds = df.groupby("taxid").apply(compute_y_sum_total, cfg)
+    ds = df.groupby("tax_id").apply(compute_y_sum_total, cfg, meta=meta)
+    # ds = df.groupby("tax_id").apply(compute_y_sum_total, cfg)
     ds = ds.reset_index()  # .rename(columns={0: "y_sum_total"})
     # ds = ds.reset_index().rename(columns={0: "y_sum_total"})
-    df = dd.merge(df, ds, on=["taxid"])
+    df = dd.merge(df, ds, on=["tax_id"])
     return df
-
-
-# def filter_taxids_passing_y_sum_cut(df, cfg):
-
-#     ds = df.groupby("taxid").apply(compute_y_sum_total, cfg)
-#     accepted_taxids = ds[ds > cfg.min_y_sum].index
-
-#     if isinstance(df, dask.dataframe.DataFrame):
-#         length = len(df) // (cfg.max_position * 2)
-#         df_accepted = df[df["taxid"].isin(delayed_list(accepted_taxids, length=length))]
-
-#     else:
-#         df_accepted = df[df["taxid"].isin(accepted_taxids)]
-#     return df_accepted
 
 
 def get_top_max_fits(df, N_fits):
@@ -282,12 +244,17 @@ def get_top_max_fits(df, N_fits):
         return df
 
 
-def remove_taxids_with_too_few_alignments(df, cfg):
-    return df.query(f"N_alignments >= {cfg.min_alignments}")
+# def remove_tax_ids_with_too_few_alignments(df, cfg):
+#     return df.query(f"N_alignments >= {cfg.min_alignments}")
 
 
-def remove_taxids_with_too_few_y_sum_total(df, cfg):
-    return df.query(f"y_sum_total >= {cfg.min_y_sum}")
+# def remove_tax_ids_with_too_few_y_sum_total(df, cfg):
+#     return df.query(f"y_sum_total >= {cfg.min_y_sum}")
+
+
+def filter_cut_based_on_cfg(df, cfg):
+    query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
+    return df.query(query)
 
 
 def compute_dataframe_with_dask(cfg, use_processes=True):
@@ -339,10 +306,11 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
             .pipe(make_reverse_position_negative)
             .pipe(replace_nans_with_zeroes)
             .pipe(add_y_sum_counts, cfg=cfg)
+            .pipe(filter_cut_based_on_cfg, cfg)
             # turns dask dataframe into pandas dataframe
             .compute()
-            # .pipe(remove_taxids_with_too_few_y_sum_total, cfg)
-            # .pipe(cut_NANs_away)  # remove any taxids containing nans
+            # .pipe(remove_tax_ids_with_too_few_y_sum_total, cfg)
+            # .pipe(cut_NANs_away)  # remove any tax_ids containing nans
             .reset_index(drop=True)
             .pipe(sort_by_alignments)
             .reset_index(drop=True)
@@ -352,59 +320,337 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     # cluster.close()
     clean_up_after_dask()
 
-    categories = ["taxid", "name", "rank", "strand"]
+    df["shortname"] = cfg.shortname
+    df["df_type"] = "counts"
+    categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname", "df_type"]
     df2 = utils.downcast_dataframe(df, categories)
 
-    query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
-    return df2.query(query)
+    return df2
 
 
 def load_dataframe(cfg):
 
-    key = "counts"
+    # key = "counts"
 
-    if utils.file_exists(cfg.filename_out):
-        logger.info(f"Loading DataFrame from hdf5-file.")
+    # if utils.file_exists(cfg.filename_out):
+    #     logger.info(f"Loading DataFrame from hdf5-file.")
 
-        if cfg.ignore_metadata:
-            logger.info(f"Ignoring metadata and simply loads the file.")
-            df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
-            cfg.set_number_of_fits(df)
-            return df
+    #     if cfg.ignore_metadata:
+    #         logger.info(f"Ignoring metadata and simply loads the file.")
+    #         df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
+    #         cfg.set_number_of_fits(df)
+    #         return df
 
-        # exclude = ["max_cores", "force_fits", "num_cores", "N_fits"]
-        include = [
-            "min_alignments",
-            "min_y_sum",
-            "substitution_bases_forward",
-            "substitution_bases_reverse",
-        ]
-        if utils.metadata_is_similar(cfg, key, include=include):
-            df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
-            cfg.set_number_of_fits(df)
-            return df
+    #     # exclude = ["max_cores", "force_fits", "num_cores", "N_fits"]
+    #     include = [
+    #         "min_alignments",
+    #         "min_y_sum",
+    #         "substitution_bases_forward",
+    #         "substitution_bases_reverse",
+    #     ]
+    #     if utils.metadata_is_similar(cfg, key, include=include):
+    #         df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
+    #         cfg.set_number_of_fits(df)
+    #         return df
 
-        else:
-            filename = cfg.filename_out
-            metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
-            metadata_cfg = cfg.to_dict()
-            print("metadata file: ", metadata_file)
-            print("metadata cfg:  ", metadata_cfg)
-            raise AssertionError(f"Different metadata is not yet implemented")
+    #     else:
+    #         filename = cfg.filename_out
+    #         metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
+    #         metadata_cfg = cfg.to_dict()
+    #         print("metadata file: ", metadata_file)
+    #         print("metadata cfg:  ", metadata_cfg)
+    #         raise AssertionError(f"Different metadata is not yet implemented")
 
     logger.info(f"Creating DataFrame, please wait.")
     df = compute_dataframe_with_dask(cfg, use_processes=True)
-    cfg.set_number_of_fits(df)
 
-    logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
-    utils.init_parent_folder(cfg.filename_out)
-
-    utils.save_to_hdf5(filename=cfg.filename_out, key=key, value=df)
-    utils.save_metadata_to_hdf5(
-        filename=cfg.filename_out,
-        key=key,
-        value=df,
+    IO_HDF5().save(
+        df=df,
+        filename="./data/hdf5/test.hdf5",
+        key=f"counts/{cfg.shortname}",
         metadata=cfg.to_dict(),
     )
 
+    IO_Parquet().save(
+        filename="./data/out/parquet/test",
+        df=df,
+        metadata=cfg.to_dict(),
+        partition_cols="shortname",
+    )
+
+    # cfg.set_number_of_fits(df)
+
+    # logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
+    # utils.init_parent_folder(cfg.filename_out)
+
+    # utils.save_to_hdf5(filename=cfg.filename_out, key=key, value=df)
+    # utils.save_metadata_to_hdf5(
+    #     filename=cfg.filename_out,
+    #     key=key,
+    #     value=df,
+    #     metadata=cfg.to_dict(),
+    # )
+
     return df
+
+
+#%%
+
+
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pyarrow.dataset as ds
+import json
+import warnings
+
+from pandas import HDFStore
+
+
+class IO_HDF5:
+    def load(self, filename, key):
+        with HDFStore(filename, mode="r") as hdf:
+            df = hdf.select(key)
+            metadata = hdf.get_storer(key).attrs.metadata
+        return df, metadata
+
+    def save(self, df, filename, key, metadata=None):
+        if metadata is None:
+            metadata = {}
+        with warnings.catch_warnings():
+            message = "object name is not a valid Python identifier"
+            warnings.filterwarnings("ignore", message=message)
+            with HDFStore(filename, mode="a") as hdf:
+                hdf.append(key, df, format="table", data_columns=True)
+                hdf.get_storer(key).attrs.metadata = metadata
+
+
+def save_hdf5_test(df1, df2, df3, df4, cfg):
+    filename = "storage.hdf5"
+    for df in [df1, df2]:
+        shortname = df["shortname"].iloc[0]
+        key = f"counts/{shortname}"
+        IO_HDF5().save(
+            df=df,
+            filename=filename,
+            key=key,
+            metadata=cfg.to_dict(),
+        )
+    for df in [df3, df4]:
+        key = f"fit_results"
+        IO_HDF5().save(
+            df=df,
+            filename=filename,
+            key=key,
+            metadata=cfg.to_dict(),
+        )
+
+
+def load_hdf5_test():
+    filename = "storage.hdf5"
+    df, metadata = IO_HDF5().load(filename=filename, key="counts/XXX")
+    df2, metadata2 = IO_HDF5().load(filename=filename, key="fit_results")
+    return df, metadata, df2, metadata2
+
+
+class IO_Parquet:
+    def __init__(self):
+        self.custom_meta_key = "metadamage"
+
+    def load(self, filename, shortname=None):
+        dataset = ds.dataset(
+            filename,
+            format="parquet",
+            partitioning="hive",  # important to retreave the shortname column
+        )
+        metadata_json = dataset.schema.metadata[self.custom_meta_key.encode()]
+        metadata = json.loads(metadata_json)
+        if shortname is None:
+            df = dataset.to_table().to_pandas()
+        else:
+            df = dataset.to_table(filter=ds.field("shortname") == shortname).to_pandas()
+        return df, metadata
+
+    def _update_table_metadata(self, table, metadata):
+        if metadata is None:
+            metadata = {}
+        custom_meta_json = json.dumps(metadata)
+        updated_metadata = {
+            self.custom_meta_key.encode(): custom_meta_json.encode(),
+            **table.schema.metadata,
+        }
+        return table.replace_schema_metadata(updated_metadata)
+
+    def save(self, df, filename, metadata=None, partition_cols=None):
+        if isinstance(partition_cols, str):
+            partition_cols = [partition_cols]
+        table = pa.Table.from_pandas(df)
+        table = self._update_table_metadata(table, metadata)
+        pq.write_to_dataset(table, filename, partition_cols=partition_cols)
+
+
+def save_parquet_test(df1, df2, df3, df4, cfg):
+    metadata = cfg.to_dict()
+    for df in [df1, df2]:
+        filename = "parquet"
+        IO_Parquet().save(
+            filename=filename,
+            df=df,
+            metadata=metadata,
+            partition_cols="shortname",
+        )
+    for df in [df3, df4]:
+        filename = "parquet_34"
+        IO_Parquet().save(filename=filename, df=df, metadata=metadata)
+
+
+def load_parquet_test():
+    df, metadata = IO_Parquet().load(filename="parquet", shortname="XXX")
+    df2, metadata2 = IO_Parquet().load(filename="parquet_34")
+    return df, metadata, df2, metadata2
+
+
+# if False:
+#     #     pass
+
+#     # else:
+
+#     df1 = df  # .iloc[:10]
+
+#     df2 = df1.copy(deep=True)
+#     df2["shortname"] = "XXX"
+#     categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname", "df_type"]
+#     df2 = utils.downcast_dataframe(df2, categories)
+
+#     df3 = pd.DataFrame.from_dict(
+#         {
+#             "a": range(2),
+#             "b": np.random.randn(2),
+#             "c": ["a", "b"],
+#             "shortname": ["KapK-198A-Ext-55-Lib-55-Index1", "XXX"],
+#             "df_type": ["fit_results", "fit_results"],
+#         }
+#     )
+
+#     df4 = pd.DataFrame.from_dict(
+#         {
+#             "a": [2, 3],
+#             "b": np.random.randn(2),
+#             "c": ["c", "d"],
+#             "shortname": ["KapK-198A-Ext-55-Lib-55-Index1", "XXX"],
+#             "df_type": ["fit_results", "fit_results"],
+#         }
+#     )
+
+#     # %time save_hdf5_test(df1, df2, df3, df4, cfg)
+#     # %timeit df_hdf5, metadata_hdf5, df2_hdf5, metadata2_hdf5 = load_hdf5_test()
+#     save_hdf5_test(df1, df2, df3, df4, cfg)
+#     df_hdf5, metadata_hdf5, df2_hdf5, metadata2_hdf5 = load_hdf5_test()
+
+#     # %time save_parquet_test(df1, df2, df3, df4, cfg)
+#     # %timeit df_parquet, metadata_parquet, df2_parquet, metadata2_parquet = load_parquet_test()
+#     save_parquet_test(df1, df2, df3, df4, cfg)
+#     df_parquet, metadata_parquet, df2_parquet, metadata2_parquet = load_parquet_test()
+
+#     # df1.to_parquet(
+#     #     path="analytics",
+#     #     engine="pyarrow",
+#     #     compression="snappy",
+#     #     partition_cols=["shortname"],
+#     # )
+
+#     # df2.to_parquet(
+#     #     path="analytics",
+#     #     engine="pyarrow",
+#     #     compression="snappy",
+#     #     partition_cols=["shortname"],
+#     # )
+
+#     # # df3 = pd.read_parquet(
+#     # #     path="analytics",
+#     # #     engine="pyarrow",
+#     # #     # columns=['shortname'],
+#     # #     filters=[("shortname", "=", "XXX"), ("tax_id", "=", "1")],
+#     # # )
+
+#     # # pd.read_parquet(
+#     # #     path="analytics",
+#     # #     engine="pyarrow",
+#     # #     # columns=['shortname'],
+#     # #     # filters=[('shortname', '=', 'XXX'), ('tax_id', '=', '1')]
+#     # # )
+
+#     # # index not important for counts
+#     # table1 = pa.Table.from_pandas(df, preserve_index=False)
+#     # table2 = pa.Table.from_pandas(df2, preserve_index=False)
+
+#     # # pq.write_table(table, "example.parquet", version="2.0")
+
+#     # # # Local dataset write
+#     # # pq.write_to_dataset(table, root_path="dataset_name", partition_cols=["shortname"])
+
+#     # # table3 = pq.read_table("dataset_name")
+#     # # table3.to_pandas()
+
+#     # #%%
+
+#     # # table = table3
+
+#     # # Path("parquet_dataset").mkdir(exist_ok=True)
+#     # # pq.write_table(table, "parquet_dataset/data1.parquet")
+#     # # pq.write_table(table2, "parquet_dataset/data2.parquet")
+
+#     # # dataset = ds.dataset("parquet_dataset", format="parquet")
+#     # # dataset.files
+
+#     # # print(dataset.schema.to_string(show_field_metadata=False))
+
+#     # # dataset.to_table().to_pandas()
+
+#     # # dataset.to_table(columns=["tax_name", "shortname"]).to_pandas()
+
+#     # # dataset.to_table(filter=ds.field("tax_id") == 1).to_pandas()
+#     # # ds.field("a") != 3
+#     # # ds.field("a").isin([1, 2, 3])
+
+#     # for table in [table1, table2]:
+
+#     #     pq.write_to_dataset(
+#     #         table,
+#     #         "parquet_dataset_partitioned",
+#     #         partition_cols=["df_type", "shortname"],
+#     #     )
+
+#     # dataset = ds.dataset(
+#     #     "parquet_dataset_partitioned",
+#     #     format="parquet",
+#     #     partitioning="hive",  # important to retreave the shortname column
+#     # )
+#     # dataset.files
+#     # dataset.to_table().to_pandas()
+#     # dataset.to_table(filter=ds.field("shortname") == "XXX").to_pandas()
+
+#     # table_different = pa.table(
+#     #     {
+#     #         "a": range(2),
+#     #         "b": np.random.randn(2),
+#     #         "c": ["a", "b"],
+#     #         "shortname": ["KapK-198A-Ext-55-Lib-55-Index1", "XXX"],
+#     #         "df_type": ["fit_results", "fit_results"],
+#     #     }
+#     # )
+#     # table_different.to_pandas()
+
+#     # pq.write_to_dataset(
+#     #     table_different,
+#     #     "parquet_dataset_partitioned",
+#     #     partition_cols=["df_type", "shortname"],
+#     # )
+
+#     # dataset = ds.dataset(
+#     #     "parquet_dataset_partitioned",
+#     #     format="parquet",
+#     #     partitioning="hive",  # important to retreave the shortname column
+#     # )
+#     # dataset.files
+#     # dataset.to_table(filter=ds.field("df_type") == "counts").to_pandas()
+#     # dataset.to_table(filter=ds.field("df_type") == "fit_results").to_pandas()

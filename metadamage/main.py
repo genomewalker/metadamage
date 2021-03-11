@@ -55,6 +55,8 @@ def main(filenames, cfg):
                 continue
 
             cfg.add_filename(filename)
+            df = fileloader.compute_dataframe_with_dask(cfg, use_processes=True)
+            print(df)
 
             progress.add_task("task_name", progress_type="name", name=cfg.name)
 

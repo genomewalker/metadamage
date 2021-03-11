@@ -55,7 +55,7 @@ class Config:
     version: str
     #
     filename: Optional[str] = None
-    name: Optional[str] = None
+    shortname: Optional[str] = None
     filename_out: Optional[str] = None
 
     N_fits: Optional[int] = None
@@ -84,8 +84,8 @@ class Config:
 
     def add_filename(self, filename):
         self.filename = filename
-        self.name = extract_name(filename)
-        self.filename_out = f"./data/out/{self.name}.hdf5"
+        self.shortname = extract_name(filename)
+        self.filename_out = f"./data/out/{self.shortname}.hdf5"
 
     def set_number_of_fits(self, df):
         self.N_taxids = len(pd.unique(df.taxid))
@@ -100,7 +100,11 @@ class Config:
         logger.info(f"Setting number_of_fits to {self.N_fits}")
 
     def to_dict(self):
-        return asdict(self)
+        d_out = asdict(self)
+        for key, val in d_out.items():
+            if isinstance(val, Path):
+                d_out[key] = str(val)
+        return d_out
 
 
 class SubstitutionBases(str, Enum):
@@ -137,11 +141,11 @@ def is_ipython():
 
 
 def extract_name(filename, max_length=60):
-    name = Path(filename).stem.split(".")[0]
-    if len(name) > max_length:
-        name = name[:max_length] + "..."
-    logger.info(f"Running new file: {name}")
-    return name
+    shortname = Path(filename).stem.split(".")[0]
+    if len(shortname) > max_length:
+        shortname = shortname[:max_length] + "..."
+    logger.info(f"Running new file: {shortname}")
+    return shortname
 
 
 def file_is_valid(file):
@@ -408,7 +412,7 @@ def get_sorted_and_cutted_df(df, df_results, cfg):
     df_results_cutted = df_results.query(query)
     if len(df_results_cutted) == 0:
         logger.warning(
-            f"{cfg.name} did not have any fits that matched the requirements. "
+            f"{cfg.shortname} did not have any fits that matched the requirements. "
             f"Skipping for now"
         )
         return None
@@ -449,7 +453,7 @@ def is_df_accepted(df, cfg):
         return True
 
     logger.warning(
-        f"{cfg.name}: Length of dataframe was 0. Stopping any further operations on this file."
+        f"{cfg.shortname}: Length of dataframe was 0. Stopping any further operations on this file."
         f"This might be due to a quite restrictive cut at the moment."
         f"requiring that both C and G are present in the read."
     )
