@@ -372,7 +372,7 @@ def load_dataframe(cfg):
     )
 
     IO_Parquet().save(
-        filename="./data/out/parquet/test",
+        filename="./data/out/parquet/test.parquet",
         df=df,
         metadata=cfg.to_dict(),
         partition_cols="shortname",
