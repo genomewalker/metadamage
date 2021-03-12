@@ -13,7 +13,7 @@ class IO_Parquet:
     def __init__(self):
         self.custom_meta_key = "metadamage"
 
-    def _read_metadata(self, filename):
+    def load_metadata(self, filename):
         schema = pq.read_schema(filename)
         metadata_json = schema.metadata[self.custom_meta_key.encode()]
         metadata = json.loads(metadata_json)
@@ -34,7 +34,7 @@ class IO_Parquet:
         return df
 
     def load_single_file(self, filename, shortname=None):
-        metadata = self._read_metadata(filename)
+        metadata = self.load_metadata(filename)
         table = self._load_table(filename=filename, shortname=shortname)
         df = self._table_to_pandas(table)
         return df, metadata
