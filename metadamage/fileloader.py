@@ -251,6 +251,8 @@ def get_top_max_fits(df, N_fits):
 # def remove_tax_ids_with_too_few_y_sum_total(df, cfg):
 #     return df.query(f"y_sum_total >= {cfg.min_y_sum}")
 
+from psutil import cpu_count
+
 
 def filter_cut_based_on_cfg(df, cfg):
     query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
@@ -273,11 +275,16 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     #     local_directory="./dask-worker-space",
     # ):
 
+    # do not allow dask to use all the cores.
+    # important to remove bugs on HEP
+    n_workers = int(min(cfg.num_cores, cpu_count() * 0.6))
+    logger.info(f"Dask: number of workers = {n_workers}.")
+
     with LocalCluster(
         n_workers=cfg.num_cores,
         processes=use_processes,
         silence_logs=logging.CRITICAL,
-        threads_per_worker=1,
+        # threads_per_worker=1,
     ) as cluster, Client(cluster) as client:
 
         df = (
