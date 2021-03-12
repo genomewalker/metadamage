@@ -277,6 +277,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
         n_workers=cfg.num_cores,
         processes=use_processes,
         silence_logs=logging.CRITICAL,
+        threads_per_worker=1,
     ) as cluster, Client(cluster) as client:
 
         df = (
@@ -324,8 +325,6 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     df["df_type"] = "counts"
     categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname", "df_type"]
     df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
-    df2 = df
-
     return df2
 
 
@@ -425,6 +424,7 @@ class IO_HDF5:
         return all_dfs
 
     def save(self, df, filename, key, metadata=None):
+        utils.init_parent_folder(filename)
         if metadata is None:
             metadata = {}
         with warnings.catch_warnings():
@@ -500,6 +500,7 @@ class IO_Parquet:
         return table.replace_schema_metadata(updated_metadata)
 
     def save(self, df, filename, metadata=None, partition_cols=None):
+        utils.init_parent_folder(filename)
         if isinstance(partition_cols, str):
             partition_cols = [partition_cols]
         table = pa.Table.from_pandas(df)
