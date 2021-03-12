@@ -378,10 +378,9 @@ def load_dataframe(cfg):
     )
 
     IO_Parquet().save(
-        filename="./data/out/parquet_test.parquet",
+        filename=f"./data/out/parquet_test/{cfg.shortname}.parquet",
         df=df,
         metadata=cfg.to_dict(),
-        partition_cols="shortname",
     )
 
     # cfg.set_number_of_fits(df)
