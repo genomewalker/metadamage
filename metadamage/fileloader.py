@@ -281,7 +281,7 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     logger.info(f"Dask: number of workers = {n_workers}.")
 
     with LocalCluster(
-        n_workers=cfg.num_cores,
+        n_workers=n_workers,
         processes=use_processes,
         silence_logs=logging.CRITICAL,
         # threads_per_worker=1,
