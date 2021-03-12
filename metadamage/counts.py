@@ -11,11 +11,13 @@ import dask
 import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from dask.distributed import Client, LocalCluster
+from psutil import cpu_count
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import utils, io
+from metadamage import io, utils
 from metadamage.progressbar import console, progress
+
 
 logger = logging.getLogger(__name__)
 
@@ -127,27 +129,6 @@ def make_reverse_position_negative(df):
     return df
 
 
-# def delayed_list(lst, length):
-#     @dask.delayed(nout=length)
-#     def delayed_list_tmp(lst):
-#         out = []
-#         for l in lst:
-#             out.append(l)
-#         return out
-#     return delayed_list_tmp(lst)
-
-
-# def extract_top_max_fits_dask(df, max_fits):
-#     top_max_fits = (
-#         df.groupby("tax_id", observed=True)["N_alignments"]
-#         .sum()
-#         .nlargest(max_fits)
-#         .index
-#     )
-#     df_top_N = df[df["tax_id"].isin(delayed_list(top_max_fits, max_fits))]
-#     return df_top_N
-
-
 def delayed_list_unknown_length(lst):
     @dask.delayed()
     def delayed_list_tmp(lst):
@@ -229,9 +210,7 @@ def add_y_sum_counts(df, cfg):
     )
 
     ds = df.groupby("tax_id").apply(compute_y_sum_total, cfg, meta=meta)
-    # ds = df.groupby("tax_id").apply(compute_y_sum_total, cfg)
-    ds = ds.reset_index()  # .rename(columns={0: "y_sum_total"})
-    # ds = ds.reset_index().rename(columns={0: "y_sum_total"})
+    ds = ds.reset_index()
     df = dd.merge(df, ds, on=["tax_id"])
     return df
 
@@ -243,40 +222,19 @@ def get_top_max_fits(df, N_fits):
         return df
 
 
-# def remove_tax_ids_with_too_few_alignments(df, cfg):
-#     return df.query(f"N_alignments >= {cfg.min_alignments}")
-
-
-# def remove_tax_ids_with_too_few_y_sum_total(df, cfg):
-#     return df.query(f"y_sum_total >= {cfg.min_y_sum}")
-
-from psutil import cpu_count
-
-
 def filter_cut_based_on_cfg(df, cfg):
     query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
     return df.query(query)
 
 
-def compute_dataframe_with_dask(cfg, use_processes=True):
+def compute_counts_with_dask(cfg, use_processes=True):
 
     # Standard Library
     filename = cfg.filename
 
-    # if cfg.num_cores == 1:
-    # use_processes = False
-
-    # http://localhost:8787/status
-    # with Client(
-    #     n_workers=cfg.num_cores,
-    #     processes=use_processes,
-    #     silence_logs=logging.CRITICAL,
-    #     local_directory="./dask-worker-space",
-    # ):
-
     # do not allow dask to use all the cores.
     # important to remove bugs on HEP
-    n_workers = int(min(cfg.num_cores, cpu_count() * 0.6))
+    n_workers = int(min(cfg.N_cores, cpu_count() * 0.6))
     logger.info(f"Dask: number of workers = {n_workers}.")
 
     with LocalCluster(
@@ -326,74 +284,36 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     # client.shutdown()
     # cluster.close()
     clean_up_after_dask()
-
-    # df["shortname"] = cfg.shortname
-
-    # np.iinfo("uint32")
-
-    # # fix to make parquet see it as a category
-    # df.loc[:, 'tax_id'] = df["tax_id"].astype("uint32")
-
-    # df["df_type"] = "counts"
     categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname"]
     df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
     return df2
 
 
-def load_dataframe(cfg):
+def load_counts(cfg):
 
-    # key = "counts"
+    # reload(io)
+    parquet = io.Parquet(cfg.filename_counts)
 
-    # if utils.file_exists(cfg.filename_out):
-    #     logger.info(f"Loading DataFrame from hdf5-file.")
+    if parquet.exists(cfg.forced):
 
-    #     if cfg.ignore_metadata:
-    #         logger.info(f"Ignoring metadata and simply loads the file.")
-    #         df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
-    #         cfg.set_number_of_fits(df)
-    #         return df
+        metadata_file = parquet.load_metadata()
+        metadata_cfg = cfg.to_dict()
 
-    #     # exclude = ["max_cores", "force_fits", "num_cores", "N_fits"]
-    #     include = [
-    #         "min_alignments",
-    #         "min_y_sum",
-    #         "substitution_bases_forward",
-    #         "substitution_bases_reverse",
-    #     ]
-    #     if utils.metadata_is_similar(cfg, key, include=include):
-    #         df = utils.load_from_hdf5(filename=cfg.filename_out, key=key)
-    #         cfg.set_number_of_fits(df)
-    #         return df
+        include = [
+            "min_alignments",
+            "min_y_sum",
+            "substitution_bases_forward",
+            "substitution_bases_reverse",
+        ]
 
-    #     else:
-    #         filename = cfg.filename_out
-    #         metadata_file = utils.load_metadata_from_hdf5(filename=filename, key=key)
-    #         metadata_cfg = cfg.to_dict()
-    #         print("metadata file: ", metadata_file)
-    #         print("metadata cfg:  ", metadata_cfg)
-    #         raise AssertionError(f"Different metadata is not yet implemented")
+        if utils.metadata_is_similar(metadata_file, metadata_cfg, include=include):
+            logger.info(f"Loading DataFrame from parquet-file.")
+            df_counts = parquet.load()
+            return df_counts
 
     logger.info(f"Creating DataFrame, please wait.")
-    df = compute_dataframe_with_dask(cfg, use_processes=True)
+    df_counts = compute_counts_with_dask(cfg, use_processes=True)
 
-    parquet = io.Parquet()
-    parquet.save(
-        filename=f"./data/out/counts/{cfg.shortname}.parquet",
-        df=df,
-        metadata=cfg.to_dict(),
-    )
+    parquet.save(df_counts, metadata=cfg.to_dict())
 
-    # cfg.set_number_of_fits(df)
-
-    # logger.info(f"Saving DataFrame to hdf5-file (in data/out/) for faster loading..")
-    # utils.init_parent_folder(cfg.filename_out)
-
-    # utils.save_to_hdf5(filename=cfg.filename_out, key=key, value=df)
-    # utils.save_metadata_to_hdf5(
-    #     filename=cfg.filename_out,
-    #     key=key,
-    #     value=df,
-    #     metadata=cfg.to_dict(),
-    # )
-
-    return df
+    return df_counts

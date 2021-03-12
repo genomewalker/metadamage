@@ -40,9 +40,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Config:
+    out_dir: Path
+    #
     max_fits: Optional[int]
     max_cores: int
-    max_position: Optional[int]
+    # max_position: Optional[int]
     #
     min_alignments: int
     min_y_sum: int
@@ -50,42 +52,48 @@ class Config:
     substitution_bases_forward: str
     substitution_bases_reverse: str
     #
-    force_fits: bool
-    ignore_metadata: bool
+    forced: bool
     version: str
     #
-    filename: Optional[str] = None
+    filename: Optional[Path] = None
     shortname: Optional[str] = None
-    filename_out: Optional[str] = None
 
     N_fits: Optional[int] = None
 
-    num_cores: int = field(init=False)
+    N_cores: int = field(init=False)
 
     def __post_init__(self):
-        self._set_num_cores()
+        self._set_N_cores()
 
-    def _set_num_cores(self):
+    def _set_N_cores(self):
         available_cores = cpu_count(logical=True)
         if self.max_cores > available_cores:
-            self.num_cores = available_cores - 1
+            self.N_cores = available_cores - 1
             logger.info(
                 f"'max_cores' is set to a value larger than the maximum available"
-                f"so clipping to {self.num_cores} (available-1) cores"
+                f"so clipping to {self.N_cores} (available-1) cores"
             )
         elif self.max_cores < 0:
-            self.num_cores = available_cores - abs(self.max_cores)
+            self.N_cores = available_cores - abs(self.max_cores)
             logger.info(
                 f"'max-cores' is set to a negative value"
-                f"so using {self.num_cores} (available-max_cores) cores"
+                f"so using {self.N_cores} (available-max_cores) cores"
             )
         else:
-            self.num_cores = self.max_cores
+            self.N_cores = self.max_cores
 
     def add_filename(self, filename):
         self.filename = filename
         self.shortname = extract_name(filename)
-        self.filename_out = f"./data/out/{self.shortname}.hdf5"
+
+    @property
+    def filename_counts(self):
+        if self.shortname is None:
+            raise AssertionError(
+                "Shortname has to be set before filename_counts is defined: "
+                "cfg.add_filename(filename) "
+            )
+        return self.out_dir / "counts" / f"{self.shortname}.parquet"
 
     def set_number_of_fits(self, df):
         self.N_taxids = len(pd.unique(df.taxid))
@@ -148,9 +156,17 @@ def extract_name(filename, max_length=60):
     return shortname
 
 
-def file_is_valid(file):
-    if Path(file).exists() and Path(file).stat().st_size > 0:
+def file_is_valid(filename):
+    if Path(filename).exists() and Path(filename).stat().st_size > 0:
         return True
+
+    exists = Path(filename).exists()
+    valid_size = Path(filename).stat().st_size > 0
+    logger.error(
+        f"{filename} is not a valid file. "
+        f"{exists=} and {valid_size=}. "
+        f"Skipping for now."
+    )
     return False
 
 
@@ -196,47 +212,47 @@ def save_dill(filename, x):
         dill.dump(x, file)
 
 
-def save_to_hdf5(filename, key, value):
-    with pd.HDFStore(filename, mode="a") as store:
-        store.put(key, value, data_columns=True, format="Table")
+# def save_to_hdf5(filename, key, value):
+#     with pd.HDFStore(filename, mode="a") as store:
+#         store.put(key, value, data_columns=True, format="Table")
 
 
-def save_metadata_to_hdf5(filename, key, value, metadata):
-    with pd.HDFStore(filename, mode="a") as store:
-        store.get_storer(key).attrs.metadata = metadata
+# def save_metadata_to_hdf5(filename, key, value, metadata):
+#     with pd.HDFStore(filename, mode="a") as store:
+#         store.get_storer(key).attrs.metadata = metadata
 
 
-def load_from_hdf5(filename, key):
+# def load_from_hdf5(filename, key):
 
-    if isinstance(key, str):
-        with pd.HDFStore(filename, mode="r") as store:
-            df = store.get(key)
-        return df
+#     if isinstance(key, str):
+#         with pd.HDFStore(filename, mode="r") as store:
+#             df = store.get(key)
+#         return df
 
-    elif isinstance(key, (list, tuple)):
-        keys = key
-        out = []
-        with pd.HDFStore(filename, mode="r") as store:
-            for key in keys:
-                out.append(store.get(key))
-        return out
-
-
-def load_metadata_from_hdf5(filename, key):
-    with pd.HDFStore(filename, mode="r") as store:
-        metadata = store.get_storer(key).attrs.metadata
-    return metadata
+#     elif isinstance(key, (list, tuple)):
+#         keys = key
+#         out = []
+#         with pd.HDFStore(filename, mode="r") as store:
+#             for key in keys:
+#                 out.append(store.get(key))
+#         return out
 
 
-def get_hdf5_keys(filename, ignore_subgroups=False):
-    with pd.HDFStore(filename, mode="r") as store:
-        keys = store.keys()
+# def load_metadata_from_hdf5(filename, key):
+#     with pd.HDFStore(filename, mode="r") as store:
+#         metadata = store.get_storer(key).attrs.metadata
+#     return metadata
 
-    if ignore_subgroups:
-        keys = list(set([key.split("/")[1] for key in keys]))
-        return keys
-    else:
-        raise AssertionError(f"ignore_subgroups=False not implemented yet.")
+
+# def get_hdf5_keys(filename, ignore_subgroups=False):
+#     with pd.HDFStore(filename, mode="r") as store:
+#         keys = store.keys()
+
+#     if ignore_subgroups:
+#         keys = list(set([key.split("/")[1] for key in keys]))
+#         return keys
+#     else:
+#         raise AssertionError(f"ignore_subgroups=False not implemented yet.")
 
 
 #%%
@@ -275,56 +291,74 @@ def downcast_dataframe(df, categories, fully_automatic=False):
 #%%
 
 
-def metadata_is_similar(cfg, key, include=None, exclude=None):
-    """ Compares the metadata in the hdf5 file (cfg.filename_out) with that in cfg"""
+def metadata_is_similar(metadata_file, metadata_cfg, include=None):
 
-    if include is not None and exclude is not None:
-        logger.error("Cannot both include and exclude")
-        raise AssertionError(f"Cannot both include and exclude")
-
-    metadata_file = load_metadata_from_hdf5(filename=cfg.filename_out, key=key)
-    metadata_cfg = cfg.to_dict()
-
-    # # the metadata is not similar if it contains different keys
-    # if set(metadata_file.keys()) != set(metadata_cfg.keys()):
-    #     is_similar = False
-    #     logger.warning("metadata contains different keys")
-    #     return is_similar
-
-    if isinstance(include, (list, tuple)) and exclude is None:
-        logger.info("include is list or tuple and exclude is None")
-        # include = ['max_fits', 'max_position']
-        # exclude = None
-        is_similar = all([metadata_file[key] == metadata_cfg[key] for key in include])
-        return is_similar
-
-    elif isinstance(exclude, (list, tuple)) and include is None:
-        logger.info("exclude is list or tuple and include is None")
-        all_keys = metadata_file.keys()
-        similar = [
-            metadata_file[key] == metadata_cfg[key]
-            for key in all_keys
-            if key not in exclude
-        ]
-        is_similar = all(similar)
-        return is_similar
-
-    elif include is None and exclude is None:
-        # include = None
-        # exclude = None
-        logger.info("both include and exclude is is None")
-
+    # if include not defined, use all keys
+    if include is None:
+        # if keys are not the same, return false:
         if set(metadata_file.keys()) != set(metadata_cfg.keys()):
-            logger.warning("metadata contains different keys")
             return False
+        include = set(metadata_file.keys())
 
-        all_keys = metadata_file.keys()
-        is_similar = all({metadata_file[key] == metadata_cfg[key] for key in all_keys})
-        return is_similar
+    equals = {key: metadata_file[key] == metadata_cfg[key] for key in include}
+    is_equal = all(equals.values())
+    if not is_equal:
+        diff = {key: val for key, val in equals.items() if val is False}
+        logger.info(f"The files' metadata are not the same, differing here: {diff}")
+        return False
+    return True
 
-    else:
-        logger.warning("Did not expect to get here")
-        raise AssertionError("Did not expect to get here")
+
+# def metadata_is_similar(cfg, key, include=None, exclude=None):
+#     """ Compares the metadata in the hdf5 file (cfg.filename_out) with that in cfg"""
+
+#     if include is not None and exclude is not None:
+#         logger.error("Cannot both include and exclude")
+#         raise AssertionError(f"Cannot both include and exclude")
+
+#     metadata_file = load_metadata_from_hdf5(filename=cfg.filename_out, key=key)
+#     metadata_cfg = cfg.to_dict()
+
+#     # # the metadata is not similar if it contains different keys
+#     # if set(metadata_file.keys()) != set(metadata_cfg.keys()):
+#     #     is_similar = False
+#     #     logger.warning("metadata contains different keys")
+#     #     return is_similar
+
+#     if isinstance(include, (list, tuple)) and exclude is None:
+#         logger.info("include is list or tuple and exclude is None")
+#         # include = ['max_fits', 'max_position']
+#         # exclude = None
+#         is_similar = all([metadata_file[key] == metadata_cfg[key] for key in include])
+#         return is_similar
+
+#     elif isinstance(exclude, (list, tuple)) and include is None:
+#         logger.info("exclude is list or tuple and include is None")
+#         all_keys = metadata_file.keys()
+#         similar = [
+#             metadata_file[key] == metadata_cfg[key]
+#             for key in all_keys
+#             if key not in exclude
+#         ]
+#         is_similar = all(similar)
+#         return is_similar
+
+#     elif include is None and exclude is None:
+#         # include = None
+#         # exclude = None
+#         logger.info("both include and exclude is is None")
+
+#         if set(metadata_file.keys()) != set(metadata_cfg.keys()):
+#             logger.warning("metadata contains different keys")
+#             return False
+
+#         all_keys = metadata_file.keys()
+#         is_similar = all({metadata_file[key] == metadata_cfg[key] for key in all_keys})
+#         return is_similar
+
+#     else:
+#         logger.warning("Did not expect to get here")
+#         raise AssertionError("Did not expect to get here")
 
 
 #%%
@@ -395,16 +429,16 @@ def is_macbook():
 #%%
 
 
-# def get_num_cores(cfg):
+# def get_N_cores(cfg):
 
-#     if cfg.num_cores > 0:
-#         num_cores = cfg.num_cores
+#     if cfg.N_cores > 0:
+#         N_cores = cfg.N_cores
 #     else:
 #         N_cores = cpu_count(logical=True)
-#         num_cores = N_cores - abs(cfg.num_cores)
-#         if num_cores < 1:
-#             num_cores = 1
-#     return num_cores
+#         N_cores = N_cores - abs(cfg.N_cores)
+#         if N_cores < 1:
+#             N_cores = 1
+#     return N_cores
 
 
 #%%
@@ -462,14 +496,13 @@ def get_sorted_and_cutted_df(df, df_results, cfg):
 #%%
 
 
-def is_df_accepted(df, cfg):
-    if len(df) > 0:
+def is_df_counts_accepted(df_counts, cfg):
+    if len(df_counts) > 0:
         return True
 
     logger.warning(
-        f"{cfg.shortname}: Length of dataframe was 0. Stopping any further operations on this file."
-        f"This might be due to a quite restrictive cut at the moment."
-        f"requiring that both C and G are present in the read."
+        f"{cfg.shortname}: Length of dataframe was 0. "
+        "Stopping any further operations on this file."
     )
     return False
 

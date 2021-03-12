@@ -1,30 +1,46 @@
-from pathlib import Path
-import pyarrow as pa
-import pyarrow.parquet as pq
-import pyarrow.dataset as ds
-import json
-import warnings
-from tqdm.auto import tqdm
+# Scientific Library
 from pandas import HDFStore
+
+# Standard Library
+import json
+from pathlib import Path
+import warnings
+
+# Third Party
+import pyarrow as pa
+import pyarrow.dataset as ds
+import pyarrow.parquet as pq
+from tqdm.auto import tqdm
+
+# First Party
 from metadamage import utils
 
 
 class Parquet:
-    def __init__(self):
+    def __init__(self, filename):
+        self.filename = Path(filename)
         self.custom_meta_key = "metadamage"
 
-    def load_metadata(self, filename):
-        schema = pq.read_schema(filename)
+    def __str__(self):
+        return f"Parquet file: '{self.filename}'"
+
+    def __repr__(self):
+        return f"Parquet('{self.filename}')"
+
+    def load_metadata(self):
+        schema = pq.read_schema(self.filename)
         metadata_json = schema.metadata[self.custom_meta_key.encode()]
         metadata = json.loads(metadata_json)
         return metadata
 
-    def _load_table(self, filename, shortname=None):
+    def _load_table(self, shortname=None):
         if shortname is None:
-            table = pq.read_table(filename)
+            table = pq.read_table(self.filename)
         else:
             print("Consider loading the file directly.")
-            table = pq.read_table(filters=[("shortname", "==", shortname)])
+            table = pq.read_table(
+                self.filename, filters=[("shortname", "==", shortname)]
+            )
         return table
 
     def _table_to_pandas(self, table):
@@ -33,22 +49,21 @@ class Parquet:
             df = df.astype({"tax_id": "category"})
         return df
 
-    def load_single_file(self, filename, shortname=None):
-        metadata = self.load_metadata(filename)
-        table = self._load_table(filename=filename, shortname=shortname)
-        df = self._table_to_pandas(table)
-        return df, metadata
-
-    def load_dir(self, filename, shortname=None):
-        table = self._load_table(filename=filename, shortname=shortname)
+    def load_single_file(self, shortname=None):
+        table = self._load_table(shortname)
         df = self._table_to_pandas(table)
         return df
 
-    def load(self, filename, shortname=None):
-        if Path(filename).is_dir():
-            return self.load_dir(filename=filename, shortname=shortname)
+    def load_dir(self, shortname=None):
+        table = self._load_table(shortname)
+        df = self._table_to_pandas(table)
+        return df
+
+    def load(self, shortname=None):
+        if self.filename.is_dir():
+            return self.load_dir(shortname)
         else:
-            return self.load_single_file(filename=filename, shortname=shortname)
+            return self.load_single_file(shortname)
 
     def _add_metadata_to_table(self, table, metadata):
         if metadata is None:
@@ -60,12 +75,15 @@ class Parquet:
         }
         return table.replace_schema_metadata(updated_metadata)
 
-    def save(self, filename, df, metadata=None):
-        utils.init_parent_folder(filename)
+    def save(self, df, metadata=None):
+        utils.init_parent_folder(self.filename)
         table = pa.Table.from_pandas(df)
         table = self._add_metadata_to_table(table, metadata)
-        # pq.write_to_dataset(table, filename, partition_cols=partition_cols)
-        pq.write_table(table, filename, version="2.0")
+        # pq.write_to_dataset(table, self.filename, partition_cols=partition_cols)
+        pq.write_table(table, self.filename, version="2.0")
+
+    def exists(self, forced=False):
+        return self.filename.exists() and not forced
 
 
 class HDF5:

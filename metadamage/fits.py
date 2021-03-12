@@ -24,7 +24,7 @@ from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import fileloader, utils
+from metadamage import counts, utils
 from metadamage.progressbar import console, progress
 
 
@@ -569,12 +569,12 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
     groupby = df.groupby("taxid", sort=False, observed=True)
     N_groupby = len(groupby)
 
-    num_cores = cfg.num_cores if cfg.num_cores < N_groupby else N_groupby
+    N_cores = cfg.N_cores if cfg.N_cores < N_groupby else N_groupby
 
     manager = Manager()
     queue_in = manager.Queue()
     queue_out = manager.Queue()
-    the_pool = Pool(num_cores, worker, (queue_in, queue_out, mcmc_kwargs, cfg))
+    the_pool = Pool(N_cores, worker, (queue_in, queue_out, mcmc_kwargs, cfg))
 
     d_fits = {}
 
@@ -616,7 +616,7 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
     logger.debug(f"\n")
 
     # for _ in range(N_groupby):
-    for i in range(num_cores):
+    for i in range(N_cores):
         if i % (N_groupby // 3) == 0:
             logger.debug(f"queue_in.put(None) i {i}")
             s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
@@ -685,7 +685,7 @@ def compute_fits(df, cfg, mcmc_kwargs):
 
     groupby = df.groupby("taxid", sort=False, observed=True)
 
-    if cfg.num_cores == 1 or len(groupby) < 10:
+    if cfg.N_cores == 1 or len(groupby) < 10:
         return fit_seriel(df, mcmc_kwargs, cfg)
 
     # utils.avoid_fontconfig_warning()
@@ -724,7 +724,7 @@ def get_fits(df, cfg):
 
     logger.info(f"Generating fits and saving to file.")
 
-    df_top_N = fileloader.get_top_max_fits(df, cfg.N_fits)
+    df_top_N = counts.get_top_max_fits(df, cfg.N_fits)
 
     mcmc_kwargs = dict(
         progress_bar=False,

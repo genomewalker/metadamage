@@ -15,7 +15,7 @@ from pathlib import Path
 import numpyro
 
 # First Party
-from metadamage import fileloader, fit, plot, utils
+from metadamage import counts, fits, plot, utils
 from metadamage.progressbar import console, progress
 
 
@@ -44,32 +44,26 @@ def main(filenames, cfg):
         for filename in filenames:
 
             if not utils.file_is_valid(filename):
-                exists = Path(filename).exists()
-                valid_size = Path(filename).stat().st_size > 0
-                logger.error(
-                    f"{filename} is not a valid file. "
-                    f"{exists=} and {valid_size=}. "
-                    f"Skipping for now."
-                )
                 bad_files += 1
                 continue
 
             cfg.add_filename(filename)
+
             progress.add_task(
                 "task_name",
                 progress_type="shortname",
                 shortname=cfg.shortname,
             )
 
-            df = fileloader.load_dataframe(cfg)
-            # print(len(pd.unique(df.taxid)))
+            df_counts = counts.load_counts(cfg)
+            # print(len(pd.unique(df_counts.taxid)))
             # continue
-            # group = utils.get_specific_taxid(df, taxid=-1)  # get very first group
+            # group = utils.get_specific_taxid(df_counts, taxid=-1)  # get very first group
 
-            if not utils.is_df_accepted(df, cfg):
+            if not utils.is_df_counts_accepted(df_counts, cfg):
                 continue
 
-            # df_fit_results, df_fit_predictions = fit.get_fits(df, cfg)
+            df_fit_results, df_fit_predictions = fits.get_fits(df_counts, cfg)
 
             progress.refresh()
             progress.advance(task_id_overall)
@@ -91,22 +85,14 @@ if utils.is_ipython():
     reload(utils)
 
     cfg = utils.Config(
+        out_dir=Path("./data/out/"),
         max_fits=10,
-        # max_plots=0,
         max_cores=-1,
-        max_position=15,
-        # min_damage=None,
-        # min_sigma=None,
         min_alignments=10,
         min_y_sum=10,
-        # sort_by=utils.SortBy.alignments.value,
         substitution_bases_forward=utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=utils.SubstitutionBases.GA.value,
-        # force_reload_files=False,
-        # force_plots=False,
-        force_fits=False,
-        ignore_metadata=False,
-        # force_no_plots=False,
+        forced=False,
         version="0.0.0",
     )
 

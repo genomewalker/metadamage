@@ -22,7 +22,7 @@ from tqdm import tqdm
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import fileloader, fit, utils
+from metadamage import counts, fit, utils
 from metadamage.progressbar import console, progress
 
 
@@ -721,10 +721,10 @@ def parallel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
 
     total = groupby.ngroups
     print(
-        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {cfg.num_cores} cores:",
+        f"Plotting {utils.human_format(total)} TaxIDs in parallel using {cfg.N_cores} cores:",
         flush=True,
     )
-    res = ProgressParallel(use_tqdm=True, total=total, n_jobs=cfg.num_cores)(generator)
+    res = ProgressParallel(use_tqdm=True, total=total, n_jobs=cfg.N_cores)(generator)
     # errors = set([error for error in res if error])
 
     # if len(errors) >= 1:

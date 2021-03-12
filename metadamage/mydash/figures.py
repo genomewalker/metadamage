@@ -9,7 +9,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import fileloader, mydash
+from metadamage import counts, mydash
 
 
 #%%
@@ -275,7 +275,7 @@ def _plot_specific_mismatch(
     obs = mismatch[-1]
 
     y = df[f"{ref}{obs}"].values
-    reference_columns = fileloader.get_reference_columns(df, ref)
+    reference_columns = counts.get_reference_columns(df, ref)
     M = df[reference_columns].sum(axis=1).values
 
     customdata = np.stack([y, M]).T

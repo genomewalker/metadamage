@@ -63,7 +63,11 @@ app = ColorfulApp(cls=OrderedCommands)
 
 
 @app.callback()
-def callback():
+def callback(
+    version: Optional[bool] = typer.Option(
+        None, "--version", callback=version_callback
+    ),
+):
     """
     Metagenomics Ancient Damage: metadamage.
 
@@ -80,14 +84,18 @@ def callback():
     """
 
 
+# https://typer.tiangolo.com/tutorial/parameter-types/path/
+
+
 @app.command("fit")
 def cli_fit(
-    # input arguments (filenames)
+    # Path: input filename(s) and output directory
     filenames: List[Path] = typer.Argument(...),
+    out_dir: Path = typer.Option(Path("./data/out/")),
     # Fit options
     max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
     max_cores: int = 1,
-    max_position: int = typer.Option(15),
+    # max_position: int = typer.Option(15),
     # Filters
     min_alignments: int = 10,
     min_y_sum: int = 10,
@@ -101,12 +109,8 @@ def cli_fit(
         utils.SubstitutionBases.GA
     ),
     # boolean flags
-    force_fits: bool = typer.Option(False, "--force-fits"),
-    ignore_metadata: bool = typer.Option(False, "--ignore-metadata"),
+    forced: bool = typer.Option(False, "--forced"),
     # version
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback
-    ),
 ):
     """Fitting Ancient Damage.
 
@@ -125,9 +129,11 @@ def cli_fit(
     """
 
     d_cfg = {
+        "out_dir": out_dir,
+        #
         "max_fits": max_fits,
         "max_cores": max_cores,
-        "max_position": max_position,
+        # "max_position": max_position,
         #
         "min_alignments": min_alignments,
         "min_y_sum": min_y_sum,
@@ -136,8 +142,7 @@ def cli_fit(
         "substitution_bases_forward": substitution_bases_forward.value,
         "substitution_bases_reverse": substitution_bases_reverse.value,
         #
-        "force_fits": force_fits,
-        "ignore_metadata": ignore_metadata,
+        "forced": forced,
         #
         "version": "0.0.0",
     }
