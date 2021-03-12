@@ -9,7 +9,7 @@ from pandas import HDFStore
 from metadamage import utils
 
 
-class IO_Parquet:
+class Parquet:
     def __init__(self):
         self.custom_meta_key = "metadamage"
 
@@ -68,7 +68,7 @@ class IO_Parquet:
         pq.write_table(table, filename, version="2.0")
 
 
-class IO_HDF5:
+class HDF5:
     def load(self, filename, key):
         with HDFStore(filename, mode="r") as hdf:
             df = hdf.select(key)
@@ -103,6 +103,8 @@ class IO_HDF5:
         keys = sorted([key for key in keys if not "/meta/" in key])
         return keys
 
+
+#%%
 
 #     from tqdm.auto import tqdm
 
