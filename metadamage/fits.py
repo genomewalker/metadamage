@@ -24,7 +24,7 @@ from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import counts, utils
+from metadamage import counts, io, utils
 from metadamage.progressbar import console, progress
 
 
@@ -276,8 +276,9 @@ def compute_fit_results(
     fit_result["y_sum_reverse"] = data["y"][15:].sum()
     fit_result["y_sum_total"] = data["y"].sum()
 
-    fit_result["tax_name"] = group["name"].iloc[0]
-    fit_result["tax_rank"] = group["rank"].iloc[0]
+    fit_result["tax_id"] = group["tax_id"].iloc[0]
+    fit_result["tax_name"] = group["tax_name"].iloc[0]
+    fit_result["tax_rank"] = group["tax_rank"].iloc[0]
 
     add_assymetry_results_to_fit_results(
         mcmc_PMD_forward_reverse,
@@ -399,13 +400,13 @@ def group_to_numpyro_data(group, cfg):
     reverse = cfg.substitution_bases_reverse
     reverse_ref = reverse[0]
 
-    z = np.array(group.iloc[:15]["position"], dtype=np.int)
+    z = np.array(group.iloc[:15]["position"], dtype=int)
 
-    y_forward = np.array(group.iloc[:15][forward], dtype=np.int)
-    N_forward = np.array(group.iloc[:15][forward_ref], dtype=np.int)
+    y_forward = np.array(group.iloc[:15][forward], dtype=int)
+    N_forward = np.array(group.iloc[:15][forward_ref], dtype=int)
 
-    y_reverse = np.array(group.iloc[-15:][reverse], dtype=np.int)
-    N_reverse = np.array(group.iloc[-15:][reverse_ref], dtype=np.int)
+    y_reverse = np.array(group.iloc[-15:][reverse], dtype=int)
+    N_reverse = np.array(group.iloc[-15:][reverse_ref], dtype=int)
 
     data = {
         "z": np.concatenate([z, -z]),
@@ -416,9 +417,9 @@ def group_to_numpyro_data(group, cfg):
     return data
 
 
-def match_taxid_order_in_df_fit_results(df_fit_results, df):
-    taxids_all = pd.unique(df.taxid)
-    ordered = [taxid for taxid in taxids_all if taxid in df_fit_results.index]
+def match_tax_id_order_in_df_fit_results(df_fit_results, df):
+    tax_ids_all = pd.unique(df.tax_id)
+    ordered = [tax_id for tax_id in tax_ids_all if tax_id in df_fit_results.index]
     return df_fit_results.loc[ordered]
 
 
@@ -471,14 +472,14 @@ def get_fit_single_group_with_timeout(timeout=60):
     return timeout_decorator.timeout(timeout)(fit_single_group_without_timeout)
 
 
-def fit_seriel(df, mcmc_kwargs, cfg):
+def compute_fits_seriel(df, mcmc_kwargs, cfg):
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
-    groupby = df.groupby("taxid", sort=False, observed=True)
+    groupby = df.groupby("tax_id", sort=False, observed=True)
     d_fits = {}
 
     fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
@@ -493,7 +494,9 @@ def fit_seriel(df, mcmc_kwargs, cfg):
             total=len(groupby),
         )
 
-        for i, (taxid, group) in enumerate(groupby):
+        for i, (tax_id, group) in enumerate(groupby):
+            # break
+            # print(i)
 
             if i == 0:
                 fit_single_group = fit_single_group_patient
@@ -510,19 +513,21 @@ def fit_seriel(df, mcmc_kwargs, cfg):
                     mcmc_null_forward_reverse,
                 )
 
-                d_fits[taxid] = d_fit
+                d_fits[tax_id] = d_fit
 
             except TimeoutError:
-                logger.warning(f"Fit: Timeout at taxid {taxid}")
+                logger.warning(f"Fit: Timeout at tax_id {tax_id}")
 
             progress.advance(task_fit)
 
-    fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
-    df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
-    df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
+    return d_fits
 
-    df_fit_predictions = make_df_fit_predictions_from_d_fits(d_fits, cfg)
-    return df_fit_results, df_fit_predictions
+    # fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
+    # df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
+    # df_fit_results = match_tax_id_order_in_df_fit_results(df_fit_results, df)
+
+    # df_fit_predictions = make_df_fit_predictions_from_d_fits(d_fits, cfg)
+    # return df_fit_results, df_fit_predictions
 
 
 def worker(queue_in, queue_out, mcmc_kwargs, cfg):
@@ -540,10 +545,10 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
 
     while True:
         # block=True means make a blocking call to wait for items in queue
-        taxid_group = queue_in.get(block=True)
-        if taxid_group is None:
+        tax_id_group = queue_in.get(block=True)
+        if tax_id_group is None:
             break
-        taxid, group = taxid_group
+        tax_id, group = tax_id_group
 
         try:
             d_fit = fit_single_group(
@@ -555,18 +560,18 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
                 mcmc_null_forward_reverse,
             )
 
-            queue_out.put((taxid, d_fit))
+            queue_out.put((tax_id, d_fit))
 
         except TimeoutError:
-            logger.warning(f"Fit: Timeout at taxid {taxid}")
-            queue_out.put((taxid, None))
+            logger.warning(f"Fit: Timeout at tax_id {tax_id}")
+            queue_out.put((tax_id, None))
 
         fit_single_group = fit_single_group_busy
 
 
-def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
+def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
 
-    groupby = df.groupby("taxid", sort=False, observed=True)
+    groupby = df.groupby("tax_id", sort=False, observed=True)
     N_groupby = len(groupby)
 
     N_cores = cfg.N_cores if cfg.N_cores < N_groupby else N_groupby
@@ -589,13 +594,13 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
 
         logger.debug(f"\n")
 
-        # for taxid, group in groupby:
-        for i, (taxid, group) in enumerate(groupby):
+        # for tax_id, group in groupby:
+        for i, (tax_id, group) in enumerate(groupby):
             if i % (N_groupby // 3) == 0 or i == N_groupby - 1:
                 logger.debug(f"queue_in.put() i {i}")
                 s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
                 logger.debug(s)
-            queue_in.put((taxid, group))
+            queue_in.put((tax_id, group))
         logger.debug(f"Did put {i+1} elements into queue_in out of {N_groupby}")
 
         logger.debug(f"\n")
@@ -607,9 +612,9 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
                 logger.debug(f"queue_out.get() i {i}")
                 s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
                 logger.debug(s)
-            taxid, d_fit = queue_out.get()
+            tax_id, d_fit = queue_out.get()
             if d_fit is not None:
-                d_fits[taxid] = d_fit
+                d_fits[tax_id] = d_fit
             progress.advance(task_fit)
         logger.debug(f"Received {i+1} elements from queue_out out of {N_groupby}")
 
@@ -653,7 +658,7 @@ def compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs):
 
 def make_df_fit_predictions_from_d_fits(d_fits, cfg):
 
-    z = np.arange(cfg.max_position) + 1
+    z = np.arange(15) + 1
     position = np.concatenate([z, -z])
 
     # d_fit_predictions = {}
@@ -662,10 +667,10 @@ def make_df_fit_predictions_from_d_fits(d_fits, cfg):
 
         median = d_val["median"]
         hpdi = d_val["hpdi"]
-        taxid = key
+        tax_id = key
 
         data = {
-            "taxid": taxid,
+            "tax_id": tax_id,
             "position": position,
             "median": median,
             "hdpi_lower": hpdi[0, :],
@@ -678,53 +683,76 @@ def make_df_fit_predictions_from_d_fits(d_fits, cfg):
 
     # df_fit_predictions = pd.concat(d_fit_predictions.values(), axis=0, keys=d_fit_predictions.keys())
     df_fit_predictions = pd.concat(d_fit_predictions, axis="index", ignore_index=True)
+    df_fit_predictions["shortname"] = cfg.shortname
+
+    categories = ["tax_id", "shortname"]
+    df_fit_predictions = utils.downcast_dataframe(
+        df_fit_predictions, categories, fully_automatic=False
+    )
+
     return df_fit_predictions
 
 
-def compute_fits(df, cfg, mcmc_kwargs):
-
-    groupby = df.groupby("taxid", sort=False, observed=True)
-
-    if cfg.N_cores == 1 or len(groupby) < 10:
-        return fit_seriel(df, mcmc_kwargs, cfg)
-
-    # utils.avoid_fontconfig_warning()
-    d_fits = compute_parallel_fits_with_progressbar(df, cfg, mcmc_kwargs)
-
-    fit_results = {taxid: d["fit_result"] for taxid, d in d_fits.items()}
+def make_df_fit_results_from_fit_results(fit_results, df_counts, cfg):
     df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
-    df_fit_results = match_taxid_order_in_df_fit_results(df_fit_results, df)
+    df_fit_results = match_tax_id_order_in_df_fit_results(df_fit_results, df_counts)
+    df_fit_results["shortname"] = cfg.shortname
 
+    categories = ["tax_id", "tax_name", "tax_rank", "shortname"]
+    df_fit_results = utils.downcast_dataframe(
+        df_fit_results, categories, fully_automatic=False
+    )
+
+    df_fit_results = df_fit_results.reset_index(drop=True)
+
+    return df_fit_results
+
+
+def compute_fits(df_counts, cfg, mcmc_kwargs):
+
+    groupby = df_counts.groupby("tax_id", sort=False, observed=True)
+
+    if cfg.N_cores == 1 or len(groupby) <= 10:
+        d_fits = compute_fits_seriel(df_counts, mcmc_kwargs, cfg)
+
+    else:
+        # utils.avoid_fontconfig_warning()
+        d_fits = compute_fits_parallel_with_progressbar(df_counts, cfg, mcmc_kwargs)
+
+    fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
+
+    df_fit_results = make_df_fit_results_from_fit_results(fit_results, df_counts, cfg)
     df_fit_predictions = make_df_fit_predictions_from_d_fits(d_fits, cfg)
+
     return df_fit_results, df_fit_predictions
 
 
 #%%
 
 
-def get_fits(df, cfg):
+def extract_top_max_fits(df_counts, max_fits):
+    top_max_fits = (
+        df_counts.groupby("tax_id", observed=True)["N_alignments"]
+        .sum()
+        .nlargest(max_fits)
+        .index
+    )
+    df_counts_top_N = df_counts.query("tax_id in @top_max_fits")
+    return df_counts_top_N
 
-    # if file cfg.filename_out exists, use this
-    if utils.file_exists(cfg.filename_out, cfg.force_fits):
-        keys = utils.get_hdf5_keys(cfg.filename_out, ignore_subgroups=True)
-        if "fit_results" in keys and "fit_predictions" in keys:
-            logger.info(f"Loading fits from pregenerated file.")
 
-            df_fit_results = utils.load_from_hdf5(
-                filename=cfg.filename_out,
-                key="fit_results",
-            )
+def get_top_max_fits(df_counts, N_fits):
+    if N_fits is not None and N_fits > 0:
+        return df_counts.pipe(extract_top_max_fits, N_fits)
+    else:
+        return df_counts
 
-            df_fit_predictions = utils.load_from_hdf5(
-                filename=cfg.filename_out,
-                key="fit_predictions",
-            )
 
-            return df_fit_results, df_fit_predictions
+def get_fits(df_counts, cfg):
 
     logger.info(f"Generating fits and saving to file.")
 
-    df_top_N = counts.get_top_max_fits(df, cfg.N_fits)
+    df_counts_top_N = get_top_max_fits(df_counts, cfg.N_fits)
 
     mcmc_kwargs = dict(
         progress_bar=False,
@@ -734,21 +762,16 @@ def get_fits(df, cfg):
         chain_method="sequential",
     )
 
-    df_fit_results, df_fit_predictions = compute_fits(df_top_N, cfg, mcmc_kwargs)
+    # df = df_counts = df_counts_top_N
+    df_fit_results, df_fit_predictions = compute_fits(df_counts_top_N, cfg, mcmc_kwargs)
 
-    utils.save_to_hdf5(
-        filename=cfg.filename_out,
-        key="fit_results",
-        value=df_fit_results,
-    )
-    df_fit_results.to_csv(cfg.filename_out.replace(".hdf5", "_fit_results.csv"))
+    cfg.filename_fit_results
 
-    utils.save_to_hdf5(
-        filename=cfg.filename_out,
-        key="fit_predictions",
-        value=df_fit_predictions,
-    )
-    df_fit_predictions.to_csv(cfg.filename_out.replace(".hdf5", "_fit_predictions.csv"))
+    parquet_fit_results = io.Parquet(cfg.filename_fit_results)
+    parquet_fit_results.save(df_fit_results, metadata=cfg.to_dict())
+
+    parquet_fit_results.load()
+
 
     return df_fit_results, df_fit_predictions
 

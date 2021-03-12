@@ -75,12 +75,21 @@ class Parquet:
         }
         return table.replace_schema_metadata(updated_metadata)
 
-    def save(self, df, metadata=None):
-        utils.init_parent_folder(self.filename)
+    def _df_to_table_with_metadata(self, df, metadata):
         table = pa.Table.from_pandas(df)
         table = self._add_metadata_to_table(table, metadata)
+        return table
+
+    def save(self, df, metadata=None):
+        utils.init_parent_folder(self.filename)
+        table = self._df_to_table_with_metadata(df, metadata)
         # pq.write_to_dataset(table, self.filename, partition_cols=partition_cols)
         pq.write_table(table, self.filename, version="2.0")
+
+    # def append(self, df, metadata=None, forced=False):
+    #     table = self._df_to_table_with_metadata(df, metadata)
+    #     writer = pq.ParquetWriter(self.filename, table.schema)
+    #     writer.write_table(table=table)
 
     def exists(self, forced=False):
         return self.filename.exists() and not forced

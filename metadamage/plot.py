@@ -22,7 +22,7 @@ from tqdm import tqdm
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import counts, fit, utils
+from metadamage import counts, utils
 from metadamage.progressbar import console, progress
 
 

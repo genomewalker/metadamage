@@ -95,15 +95,23 @@ class Config:
             )
         return self.out_dir / "counts" / f"{self.shortname}.parquet"
 
-    def set_number_of_fits(self, df):
-        self.N_taxids = len(pd.unique(df.taxid))
+    @property
+    def filename_fit_results(self):
+        return self.out_dir / "fit_results.parquet"
+
+    @property
+    def filename_fit_predictions(self):
+        return self.out_dir / "fit_predictions.parquet"
+
+    def set_number_of_fits(self, df_counts):
+        self.N_tax_ids = len(pd.unique(df_counts.tax_id))
 
         if self.max_fits is not None and self.max_fits > 0:
-            self.N_fits = min(self.max_fits, self.N_taxids)
+            self.N_fits = min(self.max_fits, self.N_tax_ids)
 
         # use all TaxIDs available
         else:
-            self.N_fits = self.N_taxids
+            self.N_fits = self.N_tax_ids
 
         logger.info(f"Setting number_of_fits to {self.N_fits}")
 
@@ -195,10 +203,10 @@ def get_reverse(df):
     return df[~is_forward(df)]
 
 
-def get_specific_taxid(df, taxid):
-    if taxid == -1:
-        taxid = df.taxid.iloc[0]
-    return df.query("taxid == @taxid")
+def get_specific_tax_id(df, tax_id):
+    if tax_id == -1:
+        tax_id = df.tax_id.iloc[0]
+    return df.query("tax_id == @tax_id")
 
 
 def load_dill(filename):
@@ -275,7 +283,7 @@ def downcast_dataframe(df, categories, fully_automatic=False):
             df2.loc[:, col] = pd.to_numeric(df2[col], downcast="integer")
         else:
             if col == "position":
-                df2.loc[:, col] = df2[col].astype("uint8")
+                df2.loc[:, col] = df2[col].astype("int8")
             else:
                 df2.loc[:, col] = df2[col].astype("uint32")
 
@@ -475,17 +483,17 @@ def get_sorted_and_cutted_df(df, df_results, cfg):
     # sort the TaxIDs
     df_results_cutted_ordered = df_results_cutted.sort_values(sort_by, ascending=False)
 
-    taxids = df_results_cutted_ordered.index
+    tax_ids = df_results_cutted_ordered.index
 
     # get the number_of_plots in the top
-    taxids_top = taxids[: cfg.number_of_plots]
+    tax_ids_top = tax_ids[: cfg.number_of_plots]
 
     # the actual dataframe, unrelated to the fits
-    df_plot = df.query("taxid in @taxids_top")
+    df_plot = df.query("tax_id in @tax_ids_top")
     # the actual dataframe, unrelated to the fits, now sorted
     # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
     df_plot_sorted = pd.concat(
-        [df_plot.query(f"taxid == {taxid}") for taxid in taxids_top]
+        [df_plot.query(f"tax_id == {tax_id}") for tax_id in tax_ids_top]
     )
 
     return df_plot_sorted

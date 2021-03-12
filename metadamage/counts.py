@@ -140,17 +140,6 @@ def delayed_list_unknown_length(lst):
     return delayed_list_tmp(lst)
 
 
-def extract_top_max_fits(df, max_fits):
-    top_max_fits = (
-        df.groupby("tax_id", observed=True)["N_alignments"]
-        .sum()
-        .nlargest(max_fits)
-        .index
-    )
-    df_top_N = df[df["tax_id"].isin(top_max_fits)]
-    return df_top_N
-
-
 def remove_base_columns(df):
     columns_to_keep = []
     columns = df.columns
@@ -213,13 +202,6 @@ def add_y_sum_counts(df, cfg):
     ds = ds.reset_index()
     df = dd.merge(df, ds, on=["tax_id"])
     return df
-
-
-def get_top_max_fits(df, N_fits):
-    if N_fits is not None and N_fits > 0:
-        return df.pipe(extract_top_max_fits, N_fits)
-    else:
-        return df
 
 
 def filter_cut_based_on_cfg(df, cfg):
@@ -309,11 +291,12 @@ def load_counts(cfg):
         if utils.metadata_is_similar(metadata_file, metadata_cfg, include=include):
             logger.info(f"Loading DataFrame from parquet-file.")
             df_counts = parquet.load()
+            cfg.set_number_of_fits(df_counts)
             return df_counts
 
     logger.info(f"Creating DataFrame, please wait.")
     df_counts = compute_counts_with_dask(cfg, use_processes=True)
-
     parquet.save(df_counts, metadata=cfg.to_dict())
 
+    cfg.set_number_of_fits(df_counts)
     return df_counts

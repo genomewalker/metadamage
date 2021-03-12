@@ -40,7 +40,7 @@ progress_bar_overall = (
     TimeElapsedColumn(),
 )
 
-progress_bar_shortname = (TextColumn(" " * 4 + "[blue]{task.fields[shortname]}"),)
+progress_bar_shortname = (TextColumn(" " * 4 + "[blue]{task.fields[name]}"),)
 
 
 progress_bar_status = (
@@ -49,7 +49,7 @@ progress_bar_status = (
     "[progress.percentage]{task.percentage:>3.0f}%",
     "• Time Elapsed:",
     TimeElapsedColumn(),
-    "• {task.fields[shortname]} [progress.percentage]{task.completed:>4} / {task.total:>4}",
+    "• {task.fields[name]} [progress.percentage]{task.completed:>4} / {task.total:>4}",
 )
 
 #%%

@@ -52,7 +52,7 @@ def main(filenames, cfg):
             progress.add_task(
                 "task_name",
                 progress_type="shortname",
-                shortname=cfg.shortname,
+                name=cfg.shortname,
             )
 
             df_counts = counts.load_counts(cfg)
