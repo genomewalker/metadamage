@@ -17,7 +17,6 @@ from tqdm.auto import tqdm
 from metadamage import utils
 from metadamage.progressbar import console, progress
 
-
 logger = logging.getLogger(__name__)
 
 #%%
@@ -450,53 +449,84 @@ class IO_HDF5:
         return keys
 
 
-def save_hdf5_test(df1, df2, df3, df4, cfg):
-    filename = "storage.hdf5"
-    for df in [df1, df2]:
-        shortname = df["shortname"].iloc[0]
-        key = f"counts/{shortname}"
-        IO_HDF5().save(
-            df=df,
-            filename=filename,
-            key=key,
-            metadata=cfg.to_dict(),
-        )
-    for df in [df3, df4]:
-        key = f"fit_results"
-        IO_HDF5().save(
-            df=df,
-            filename=filename,
-            key=key,
-            metadata=cfg.to_dict(),
-        )
+# def save_hdf5_test(df1, df2, df3, df4, cfg):
+#     filename = "storage.hdf5"
+#     for df in [df1, df2]:
+#         shortname = df["shortname"].iloc[0]
+#         key = f"counts/{shortname}"
+#         IO_HDF5().save(
+#             df=df,
+#             filename=filename,
+#             key=key,
+#             metadata=cfg.to_dict(),
+#         )
+#     for df in [df3, df4]:
+#         key = f"fit_results"
+#         IO_HDF5().save(
+#             df=df,
+#             filename=filename,
+#             key=key,
+#             metadata=cfg.to_dict(),
+#         )
 
 
-def load_hdf5_test():
-    filename = "storage.hdf5"
-    df, metadata = IO_HDF5().load(filename=filename, key="counts/XXX")
-    df2, metadata2 = IO_HDF5().load(filename=filename, key="fit_results")
-    return df, metadata, df2, metadata2
+# def load_hdf5_test():
+#     filename = "storage.hdf5"
+#     df, metadata = IO_HDF5().load(filename=filename, key="counts/XXX")
+#     df2, metadata2 = IO_HDF5().load(filename=filename, key="fit_results")
+#     return df, metadata, df2, metadata2
+
+# shortnames = ["EC-Ext-14-Lib-14-Index1", "KapK-12-1-24-Ext-1-Lib-1-Index2"]
+# for shortname in shortnames:
+#     df_shortname = df_counts_hdf5.query(f"shortname=='{shortname}'")
+#     table = pa.Table.from_pandas(df_shortname)
+#     table2 = IO_Parquet()._update_table_metadata(table, metadata=cfg.to_dict())
+#     pq.write_table(table2, f"./data/out/counts/{shortname}.parquet", version="2.0")
+
+# pq.read_table("./data/out/counts").to_pandas()
+# pq.read_table("./data/out/counts").to_pandas().dtypes
+# pq.read_metadata("./data/out/counts/EC-Ext-14-Lib-14-Index1.parquet")
+
+
+from pathlib import Path
 
 
 class IO_Parquet:
     def __init__(self):
         self.custom_meta_key = "metadamage"
 
-    def load(self, filename, shortname=None):
-        dataset = ds.dataset(
-            filename,
-            format="parquet",
-            partitioning="hive",  # important to retreave the shortname column
-        )
-        metadata_json = dataset.schema.metadata[self.custom_meta_key.encode()]
+    def _read_metadata(self, filename):
+        schema = pq.read_schema(filename)
+        metadata_json = schema.metadata[self.custom_meta_key.encode()]
         metadata = json.loads(metadata_json)
+        return metadata
+
+    def _load_table(self, filename, shortname=None):
         if shortname is None:
-            df = dataset.to_table().to_pandas()
+            table = pq.read_table(filename)
         else:
-            df = dataset.to_table(filter=ds.field("shortname") == shortname).to_pandas()
+            raise AssertionError("shortname not implemted yet for reading")
+            # table = pq.read_table(filter=ds.field("shortname") == shortname).to_pandas()
+        return table
+
+    def load_single_file(self, filename, shortname=None):
+        metadata = self._read_metadata(filename)
+        table = self._load_table(filename=filename, shortname=shortname)
+        df = table.to_pandas()
         return df, metadata
 
-    def _update_table_metadata(self, table, metadata):
+    def load_dir(self, filename, shortname=None):
+        table = self._load_table(filename=filename, shortname=shortname)
+        df = table.to_pandas()
+        return df
+
+    def load(self, filename, shortname=None):
+        if Path(filename).is_dir():
+            return self.load_dir(filename=filename, shortname=shortname)
+        else:
+            return self.load_single_file(filename=filename, shortname=shortname)
+
+    def _add_metadata_to_table(self, table, metadata):
         if metadata is None:
             metadata = {}
         custom_meta_json = json.dumps(metadata)
@@ -506,34 +536,33 @@ class IO_Parquet:
         }
         return table.replace_schema_metadata(updated_metadata)
 
-    def save(self, df, filename, metadata=None, partition_cols=None):
+    def save(self, filename, df, metadata=None):
         utils.init_parent_folder(filename)
-        if isinstance(partition_cols, str):
-            partition_cols = [partition_cols]
         table = pa.Table.from_pandas(df)
-        table = self._update_table_metadata(table, metadata)
-        pq.write_to_dataset(table, filename, partition_cols=partition_cols)
+        table = self._add_metadata_to_table(table, metadata)
+        # pq.write_to_dataset(table, filename, partition_cols=partition_cols)
+        pq.write_table(table, filename, version="2.0")
 
 
-def save_parquet_test(df1, df2, df3, df4, cfg):
-    metadata = cfg.to_dict()
-    for df in [df1, df2]:
-        filename = "parquet"
-        IO_Parquet().save(
-            filename=filename,
-            df=df,
-            metadata=metadata,
-            partition_cols="shortname",
-        )
-    for df in [df3, df4]:
-        filename = "parquet_34"
-        IO_Parquet().save(filename=filename, df=df, metadata=metadata)
+# def save_parquet_test(df1, df2, df3, df4, cfg):
+#     metadata = cfg.to_dict()
+#     for df in [df1, df2]:
+#         filename = "parquet"
+#         IO_Parquet().save(
+#             filename=filename,
+#             df=df,
+#             metadata=metadata,
+#             partition_cols="shortname",
+#         )
+#     for df in [df3, df4]:
+#         filename = "parquet_34"
+#         IO_Parquet().save(filename=filename, df=df, metadata=metadata)
 
 
-def load_parquet_test():
-    df, metadata = IO_Parquet().load(filename="parquet", shortname="XXX")
-    df2, metadata2 = IO_Parquet().load(filename="parquet_34")
-    return df, metadata, df2, metadata2
+# def load_parquet_test():
+#     df, metadata = IO_Parquet().load(filename="parquet", shortname="XXX")
+#     df2, metadata2 = IO_Parquet().load(filename="parquet_34")
+#     return df, metadata, df2, metadata2
 
 
 #%%
@@ -586,14 +615,40 @@ if False:
         key="counts_combined",
     )
 
-    df_counts, metadata = IO_HDF5().load(filename=filename_hdf5, key="counts_combined")
+    df_counts_hdf5, metadata_hdf5 = IO_HDF5().load(
+        filename=filename_hdf5, key="counts_combined"
+    )
+
+    shortnames = ["EC-Ext-14-Lib-14-Index1", "KapK-12-1-24-Ext-1-Lib-1-Index2"]
+    for shortname in shortnames:
+        df_shortname = df_counts_hdf5.query(f"shortname=='{shortname}'")
+        filename = f"./data/out/counts/{shortname}.parquet"
+        IO_Parquet().save(filename=filename, df=df_shortname, metadata=cfg.to_dict())
+
+    IO_Parquet().load("./data/out/counts").dtypes
+
+    df_parquet, meta_parquet = IO_Parquet().load(
+        "./data/out/counts/EC-Ext-14-Lib-14-Index1.parquet"
+    )
+    df_parquet.dtypes
+    meta_parquet
 
     # %timeit IO_HDF5().load(filename=filename_hdf5, key="counts_combined")
 
-    filename_parquet = "./data/out/parquet_test.parquet"
-    IO_Parquet().load(filename_parquet, shortname=None)
+    # df3 = pd.read_parquet(
+    #     path="./data/out/counts",
+    #     engine="pyarrow",
+    #     # columns=['shortname'],
+    #     filters=[("shortname", "=", "KapK-12-1-24-Ext-1-Lib-1-Index2"), ("tax_id", "=", "1")],
+    # )
+    # df3
 
-    validate_schema
+    pd.read_parquet(
+        path="./data/out/counts/KapK-12-1-24-Ext-1-Lib-1-Index2.parquet"
+    ).dtypes
+
+    filename_parquet = "./data/out/parquet_test.parquet"
+    df_counts, metadata = IO_Parquet().load(filename_parquet, shortname=None)
 
     df3 = pd.read_parquet(
         path="./data/out/parquet_test.parquet/",
@@ -601,6 +656,38 @@ if False:
         # columns=['shortname'],
         # filters=[("shortname", "=", "XXX"), ("tax_id", "=", "1")],
     )
+
+    pd.read_parquet(
+        path="./data/out/parquet_test.parquet/shortname=KapK-12-1-24-Ext-1-Lib-1-Index2/207fe0f890e94c61b2602bd673b37d55.parquet"
+    ).dtypes
+
+    IO_Parquet().save(
+        filename="./data/out/test",
+        df=df_counts_hdf5,
+        metadata=cfg.to_dict(),
+        # partition_cols="shortname",
+    )
+
+    def f_test(x):
+        print(x)
+        return "-".join(x) + "1.parquet"
+
+    table = pa.Table.from_pandas(df_counts_hdf5)
+    table2 = IO_Parquet()._update_table_metadata(table, metadata=cfg.to_dict())
+    pq.write_to_dataset(
+        table2,
+        root_path="./data/out/test",
+        partition_cols=["shortname"],
+        partition_filename_cb=f_test,
+    )
+
+    pq.write_table(table2, "example.parquet", version="2.0")
+
+    # https://issues.apache.org/jira/browse/ARROW-6114
+
+    pd.read_parquet(path="./data/out/test").dtypes
+
+    pd.read_parquet(path="example.parquet").dtypes
 
 
 # if False:
