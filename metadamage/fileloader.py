@@ -323,7 +323,8 @@ def compute_dataframe_with_dask(cfg, use_processes=True):
     df["shortname"] = cfg.shortname
     df["df_type"] = "counts"
     categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname", "df_type"]
-    df2 = utils.downcast_dataframe(df, categories)
+    df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
+    df2 = df
 
     return df2
 
@@ -402,6 +403,7 @@ import pyarrow.parquet as pq
 import pyarrow.dataset as ds
 import json
 import warnings
+from tqdm.auto import tqdm
 
 from pandas import HDFStore
 
@@ -413,6 +415,15 @@ class IO_HDF5:
             metadata = hdf.get_storer(key).attrs.metadata
         return df, metadata
 
+    def load_multiple_keys(self, filename, keys):
+        all_dfs = []
+        with HDFStore(filename, mode="r") as hdf:
+            for key in tqdm(keys):
+                df_tmp = hdf.select(key)
+                all_dfs.append(df_tmp)
+            # metadata = hdf.get_storer(key).attrs.metadata
+        return all_dfs
+
     def save(self, df, filename, key, metadata=None):
         if metadata is None:
             metadata = {}
@@ -422,6 +433,14 @@ class IO_HDF5:
             with HDFStore(filename, mode="a") as hdf:
                 hdf.append(key, df, format="table", data_columns=True)
                 hdf.get_storer(key).attrs.metadata = metadata
+
+    def get_keys(self, filename):
+        with HDFStore(filename, mode="r") as hdf:
+            keys = list(set(hdf.keys()))
+
+        # remove meta keys
+        keys = sorted([key for key in keys if not "/meta/" in key])
+        return keys
 
 
 def save_hdf5_test(df1, df2, df3, df4, cfg):
@@ -507,6 +526,73 @@ def load_parquet_test():
     df, metadata = IO_Parquet().load(filename="parquet", shortname="XXX")
     df2, metadata2 = IO_Parquet().load(filename="parquet_34")
     return df, metadata, df2, metadata2
+
+
+#%%
+
+if False:
+
+    from tqdm.auto import tqdm
+
+    filename_hdf5 = "./data/out/hdf5_test.hdf5"
+    keys_hdf5 = IO_HDF5().get_keys(filename_hdf5)
+
+    # all_df = []
+    # for key in tqdm(keys_hdf5):
+    #     df_tmp, metadata = IO_HDF5().load(
+    #         filename=filename_hdf5, key="counts/KapK-12-1-24-Ext-1-Lib-1-Index2"
+    #     )
+    #     all_df.append(df_tmp)
+
+    all_df = IO_HDF5().load_multiple_keys(filename=filename_hdf5, keys=keys_hdf5)
+    df_counts1 = pd.concat(all_df, axis="index", ignore_index=True)
+
+    def concatenate(dfs, **kwargs):
+        """Concatenate while preserving categorical columns.
+
+        NB: We change the categories in-place for the input dataframes"""
+        from pandas.api.types import union_categoricals
+        import pandas as pd
+
+        # Iterate on categorical columns common to all dfs
+        for col in set.intersection(
+            *[set(df.select_dtypes(include="category").columns) for df in dfs]
+        ):
+            # Generate the union category across dfs for this column
+            uc = union_categoricals([df[col] for df in dfs])
+            # Change to union category for all dataframes
+            for df in dfs:
+                df[col] = pd.Categorical(df[col].values, categories=uc.categories)
+        return pd.concat(dfs, **kwargs)
+
+    df_counts2 = concatenate(all_df, axis="index", ignore_index=True)
+
+    df_counts1.memory_usage(deep=True) / 1e6
+    df_counts1.memory_usage(deep=True).sum() / 1e6
+    df_counts2.memory_usage(deep=True) / 1e6
+    df_counts2.memory_usage(deep=True).sum() / 1e6
+
+    IO_HDF5().save(
+        df=df_counts2,
+        filename=filename_hdf5,
+        key="counts_combined",
+    )
+
+    df_counts, metadata = IO_HDF5().load(filename=filename_hdf5, key="counts_combined")
+
+    # %timeit IO_HDF5().load(filename=filename_hdf5, key="counts_combined")
+
+    filename_parquet = "./data/out/parquet_test.parquet"
+    IO_Parquet().load(filename_parquet, shortname=None)
+
+    validate_schema
+
+    df3 = pd.read_parquet(
+        path="./data/out/parquet_test.parquet/",
+        engine="pyarrow",
+        # columns=['shortname'],
+        # filters=[("shortname", "=", "XXX"), ("tax_id", "=", "1")],
+    )
 
 
 # if False:

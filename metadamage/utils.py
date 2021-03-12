@@ -242,18 +242,32 @@ def get_hdf5_keys(filename, ignore_subgroups=False):
 #%%
 
 
-def downcast_dataframe(df, categories):
+def downcast_dataframe(df, categories, fully_automatic=False):
 
     categories = [category for category in categories if category in df.columns]
 
     d_categories = {category: "category" for category in categories}
     df2 = df.astype(d_categories)
 
-    for col in df2.select_dtypes(include=["integer"]).columns:
-        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="integer")
+    int_cols = df2.select_dtypes(include=["integer"]).columns
+
+    if df2[int_cols].max().max() > np.iinfo("uint32").max:
+        raise AssertionError("Dataframe contains too large values.")
+
+    for col in int_cols:
+        if fully_automatic:
+            df2.loc[:, col] = pd.to_numeric(df2[col], downcast="integer")
+        else:
+            if col == "position":
+                df2.loc[:, col] = df2[col].astype("uint8")
+            else:
+                df2.loc[:, col] = df2[col].astype("uint32")
 
     for col in df2.select_dtypes(include=["float"]).columns:
-        df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
+        if fully_automatic:
+            df2.loc[:, col] = pd.to_numeric(df2[col], downcast="float")
+        else:
+            df2.loc[:, col] = df2[col].astype("float32")
 
     return df2
 
