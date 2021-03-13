@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 def main(filenames, cfg):
 
+    # filename = Path(
+    #     "./data/input/ugly/Lok-75-Sample-1-Ext-58-Lib-58-Index1.col.sorted.sam.gz.bdamage.gz.up.txt"
+    # )
+    # cfg.add_filename(filename)
+    # df_counts = counts.load_counts(cfg)
+    # fits.fit_test(df_counts, cfg)
+
+    # return None
+
     utils.initial_print(filenames, cfg)
 
     # all_fit_results = {}
@@ -63,6 +72,7 @@ def main(filenames, cfg):
             if not utils.is_df_counts_accepted(df_counts, cfg):
                 continue
 
+            # fits.fit_test(df_counts, cfg)
             df_fit_results, df_fit_predictions = fits.get_fits(df_counts, cfg)
 
             progress.refresh()

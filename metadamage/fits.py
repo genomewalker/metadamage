@@ -239,6 +239,11 @@ def compute_fit_results(
     d_results_null = get_lppd_and_waic(mcmc_null, data)
 
     fit_result = {}
+
+    fit_result["tax_id"] = group["tax_id"].iloc[0]
+    fit_result["tax_name"] = group["tax_name"].iloc[0]
+    fit_result["tax_rank"] = group["tax_rank"].iloc[0]
+
     # y_frac = y/N, on the first position
     y_frac_median, y_frac_hpdi = get_y_average_and_hpdi(mcmc_PMD, data, func=np.median)
     fit_result["D_max"] = y_frac_median[0].item()
@@ -275,10 +280,6 @@ def compute_fit_results(
     fit_result["y_sum_forward"] = data["y"][:15].sum()
     fit_result["y_sum_reverse"] = data["y"][15:].sum()
     fit_result["y_sum_total"] = data["y"].sum()
-
-    fit_result["tax_id"] = group["tax_id"].iloc[0]
-    fit_result["tax_name"] = group["tax_name"].iloc[0]
-    fit_result["tax_rank"] = group["tax_rank"].iloc[0]
 
     add_assymetry_results_to_fit_results(
         mcmc_PMD_forward_reverse,
@@ -485,6 +486,8 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
     fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
     fit_single_group_busy = get_fit_single_group_with_timeout(timeout_busy)
 
+    logger.info(f"Initializing fit in seriel. INFO")
+
     with progress:
         task_fit = progress.add_task(
             "task_status_fitting",
@@ -496,7 +499,9 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
 
         for i, (tax_id, group) in enumerate(groupby):
             # break
-            # print(i)
+
+            # logger.info(f"Fitting tax_id {tax_id} now (i={i}). INFO")
+            # logger.debug(f"Fitting tax_id {tax_id} now (i={i}). DEBUG")
 
             if i == 0:
                 fit_single_group = fit_single_group_patient
@@ -521,13 +526,6 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
             progress.advance(task_fit)
 
     return d_fits
-
-    # fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
-    # df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
-    # df_fit_results = match_tax_id_order_in_df_fit_results(df_fit_results, df)
-
-    # df_fit_predictions = make_df_fit_predictions_from_d_fits(d_fits, cfg)
-    # return df_fit_results, df_fit_predictions
 
 
 def worker(queue_in, queue_out, mcmc_kwargs, cfg):
@@ -656,6 +654,9 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
     return d_fits
 
 
+#%%
+
+
 def make_df_fit_predictions_from_d_fits(d_fits, cfg):
 
     z = np.arange(15) + 1
@@ -706,6 +707,9 @@ def make_df_fit_results_from_fit_results(fit_results, df_counts, cfg):
     df_fit_results = df_fit_results.reset_index(drop=True)
 
     return df_fit_results
+
+
+#%%
 
 
 def compute_fits(df_counts, cfg, mcmc_kwargs):
@@ -790,7 +794,7 @@ def get_fits(df_counts, cfg):
         progress_bar=False,
         num_warmup=500,
         num_samples=1000,
-        num_chains=1,
+        num_chains=1,  # problem when setting to 2
         chain_method="sequential",
     )
 
@@ -807,9 +811,6 @@ def get_fits(df_counts, cfg):
 
 
 # import arviz as az
-
-# # mcmc = mcmc_PMD
-# # model = model_PMD
 
 # data_no_y = filter_out_y(data)
 
@@ -832,39 +833,94 @@ def get_fits(df_counts, cfg):
 # data_PMD = get_InferenceData(mcmc_PMD, model_PMD)
 # data_null = get_InferenceData(mcmc_null, model_null)
 
-# # az.plot_bpv(data_PMD, kind="p_value")
-# # az.plot_bpv(data_null, kind="p_value")
-
 # var_names = ["A", "D_max", "q", "c", "phi"]
-# # az.plot_density([data_PMD, data_null], var_names=var_names)
-
-# az.plot_dist_comparison(data_PMD, var_names=var_names)
-
-# # az.plot_elpd({"PMD model": data_PMD, "null model": data_null})
-
-# # az.plot_ess(data_PMD, kind="local", var_names=var_names)
-
-# # az.plot_forest(
-# #     data_PMD,
-# #     kind="ridgeplot",
-# #     # var_names=var_names[:-1],
-# #     combined=True,
-# #     ridgeplot_overlap=3,
-# #     colors="white",
-# #     figsize=(9, 7),
-# # )
-
-# # az.plot_loo_pit(idata=data_PMD, y="obs")
-# # az.plot_loo_pit(idata=data_PMD, y="obs", ecdf=True)
-
-# az.plot_posterior(data_PMD, var_names=var_names)
-
-# # az.plot_ppc(data_PMD)
 
 # az.plot_trace(data_PMD, var_names=var_names)
+# az.plot_dist_comparison(data_PMD, var_names=var_names)
+# az.plot_posterior(data_PMD, var_names=var_names)
 
 # model_compare = az.compare({"PMD": data_PMD, "Null": data_null}, ic="waic", scale='deviance')
 
 # model_compare[['rank', 'waic', 'd_waic', 'dse']]
 
 # az.plot_compare(model_compare, insample_dev=False)
+
+#%%
+
+
+# mcmc_kwargs = dict(
+#     progress_bar=True,
+#     num_warmup=500,
+#     num_samples=500,
+#     num_chains=2,
+#     chain_method="sequential",
+# )
+
+# mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
+# mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
+
+# %time fit_mcmc(mcmc_PMD, data)
+# fit_mcmc(mcmc_null, data)
+
+
+# def fit_mcmc(mcmc, data, seed=0):
+#     mcmc.run(Key(seed), **data)
+
+
+# def use_last_state_as_warmup_state(mcmc):
+#     # https://github.com/pyro-ppl/numpyro/issues/539
+#     mcmc._warmup_state = mcmc._last_state
+
+
+# mcmc_PMD._warmup_state = mcmc_PMD._last_state
+
+# seed = 0
+# mcmc = init_mcmc(model_PMD, **mcmc_kwargs)
+
+# mcmc._compile(Key(seed), **data)
+# mcmc.warmup(Key(seed), **data)
+# mcmc.run(Key(seed), reuse_warmup_states=True, **data)
+
+
+# def fit_test(df_counts, cfg):
+
+#     mcmc_kwargs = dict(
+#         progress_bar=False,
+#         # progress_bar=True,
+#         num_warmup=500,
+#         num_samples=500,
+#         num_chains=2,
+#         # chain_method="sequential",
+#         # chain_method="parallel",
+#         chain_method="vectorized",
+#     )
+
+#     df = get_top_max_fits(df_counts, cfg.N_fits)
+#     d_fits = compute_fits_seriel(df, mcmc_kwargs, cfg)
+#     return None
+
+#     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
+#     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
+#     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
+#     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
+
+#     groupby = df.groupby("tax_id", sort=False, observed=True)
+#     d_fits = {}
+
+#     for i, (tax_id, group) in enumerate(groupby):
+
+#         print("\n\n")
+#         print(i)
+#         fit_single_group = fit_single_group_without_timeout  # TODO XXX
+
+#         # try:
+#         d_fit = fit_single_group(
+#             group,
+#             cfg,
+#             mcmc_PMD,
+#             mcmc_null,
+#             mcmc_PMD_forward_reverse,
+#             mcmc_null_forward_reverse,
+#         )
+
+#         print(d_fit["fit_result"])
