@@ -104,8 +104,9 @@ if utils.is_ipython():
     os.chdir(path)
 
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
-    filename = filenames[1]
-    filename = filenames[3]
+    filename = filenames[0]
+    # filename = filenames[1]
+    # filename = filenames[3]
     # filename = "data/input/n_sigma_test.txt"
 
     if False:

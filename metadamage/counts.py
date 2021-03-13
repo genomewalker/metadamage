@@ -286,6 +286,8 @@ def load_counts(cfg):
             "min_y_sum",
             "substitution_bases_forward",
             "substitution_bases_reverse",
+            "shortname",
+            "filename",
         ]
 
         if utils.metadata_is_similar(metadata_file, metadata_cfg, include=include):

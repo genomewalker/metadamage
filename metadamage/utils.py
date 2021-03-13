@@ -97,11 +97,21 @@ class Config:
 
     @property
     def filename_fit_results(self):
-        return self.out_dir / "fit_results.parquet"
+        if self.shortname is None:
+            raise AssertionError(
+                "Shortname has to be set before filename_fit_results is defined: "
+                "cfg.add_filename(filename) "
+            )
+        return self.out_dir / "fit_results" / f"{self.shortname}.parquet"
 
     @property
     def filename_fit_predictions(self):
-        return self.out_dir / "fit_predictions.parquet"
+        if self.shortname is None:
+            raise AssertionError(
+                "Shortname has to be set before filename_fit_predictions is defined: "
+                "cfg.add_filename(filename) "
+            )
+        return self.out_dir / "fit_predictions" / f"{self.shortname}.parquet"
 
     def set_number_of_fits(self, df_counts):
         self.N_tax_ids = len(pd.unique(df_counts.tax_id))

@@ -712,7 +712,7 @@ def compute_fits(df_counts, cfg, mcmc_kwargs):
 
     groupby = df_counts.groupby("tax_id", sort=False, observed=True)
 
-    if cfg.N_cores == 1 or len(groupby) <= 10:
+    if cfg.N_cores == 1 or len(groupby) < 10:
         d_fits = compute_fits_seriel(df_counts, mcmc_kwargs, cfg)
 
     else:
@@ -750,6 +750,38 @@ def get_top_max_fits(df_counts, N_fits):
 
 def get_fits(df_counts, cfg):
 
+    parquet_fit_results = io.Parquet(cfg.filename_fit_results)
+    parquet_fit_predictions = io.Parquet(cfg.filename_fit_predictions)
+
+    if parquet_fit_results.exists(cfg.forced) and parquet_fit_predictions.exists(
+        cfg.forced
+    ):
+
+        include = [
+            "min_alignments",
+            "min_y_sum",
+            "substitution_bases_forward",
+            "substitution_bases_reverse",
+            "N_fits",
+            "shortname",
+            "filename",
+        ]
+
+        metadata_cfg = cfg.to_dict()
+
+        metadata_file_fit_results = parquet_fit_results.load_metadata()
+        metadata_file_fit_predictions = parquet_fit_predictions.load_metadata()
+
+        if utils.metadata_is_similar(
+            metadata_file_fit_results, metadata_cfg, include=include
+        ) and utils.metadata_is_similar(
+            metadata_file_fit_predictions, metadata_cfg, include=include
+        ):
+            logger.info(f"Loading fits from parquet-file.")
+            df_fit_results = parquet_fit_results.load()
+            df_fit_predictions = parquet_fit_predictions.load()
+            return df_fit_results, df_fit_predictions
+
     logger.info(f"Generating fits and saving to file.")
 
     df_counts_top_N = get_top_max_fits(df_counts, cfg.N_fits)
@@ -765,13 +797,8 @@ def get_fits(df_counts, cfg):
     # df = df_counts = df_counts_top_N
     df_fit_results, df_fit_predictions = compute_fits(df_counts_top_N, cfg, mcmc_kwargs)
 
-    cfg.filename_fit_results
-
-    parquet_fit_results = io.Parquet(cfg.filename_fit_results)
     parquet_fit_results.save(df_fit_results, metadata=cfg.to_dict())
-
-    parquet_fit_results.load()
-
+    parquet_fit_predictions.save(df_fit_predictions, metadata=cfg.to_dict())
 
     return df_fit_results, df_fit_predictions
 
