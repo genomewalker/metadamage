@@ -583,9 +583,6 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
     the_pool = Pool(N_cores, worker, (queue_in, queue_out, mcmc_kwargs, cfg))
 
     d_fits = {}
-
-    error_tax_ids = set()
-
     with progress:
         task_fit = progress.add_task(
             "task_status_fitting",
@@ -597,7 +594,6 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
 
         for tax_id, group in groupby:
             queue_in.put((tax_id, group))
-            # console.print(f"Putting tax_id: {tax_id}")
 
         # Get and print results
         for _ in range(N_groupby):
@@ -605,7 +601,6 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
             if d_fit is not TimeoutError:
                 d_fits[tax_id] = d_fit
             else:
-                error_tax_ids.add(tax_id)
                 logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
             progress.advance(task_fit)
 
@@ -626,7 +621,7 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
     the_pool.close()
     the_pool.join()
 
-    return d_fits, list(error_tax_ids)
+    return d_fits
 
 
 #%%
@@ -686,6 +681,25 @@ def make_df_fit_results_from_fit_results(fit_results, df_counts, cfg):
 #%%
 
 
+def get_chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
+
+
+def compute_fits_parallel_with_progressbar_chunks(df, cfg, mcmc_kwargs, chunk_max=1000):
+    d_fits_all_chunks = {}
+    tax_ids_unique = np.array(pd.unique(df.tax_id))
+    chunks = get_chunks(tax_ids_unique, chunk_max)
+    for chunk in chunks:
+        print(len(chunk))
+        d_fits_chunk = compute_fits_parallel_with_progressbar(
+            df.query("tax_id in @chunk"), cfg, mcmc_kwargs
+        )
+        d_fits_all_chunks.update(d_fits_chunk)
+    return d_fits_all_chunks
+
+
 def compute_fits(df_counts, cfg, mcmc_kwargs):
 
     # groupby = df_counts.groupby("tax_id", sort=False, observed=True)
@@ -694,15 +708,13 @@ def compute_fits(df_counts, cfg, mcmc_kwargs):
         d_fits = compute_fits_seriel(df_counts, mcmc_kwargs, cfg)
 
     else:
-        d_fits, error_tax_ids = compute_fits_parallel_with_progressbar(
-            df_counts, cfg, mcmc_kwargs
+        # d_fits = compute_fits_parallel_with_progressbar(df_counts, cfg, mcmc_kwargs)
+        d_fits = compute_fits_parallel_with_progressbar_chunks(
+            df_counts,
+            cfg,
+            mcmc_kwargs,
+            chunk_max=1000,
         )
-        print(error_tax_ids)
-
-        d_fits2, error_tax_ids2 = compute_fits_parallel_with_progressbar(
-            df_counts.query("tax_id in @error_tax_ids"), cfg, mcmc_kwargs
-        )
-        print(error_tax_ids2)
 
     fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
 

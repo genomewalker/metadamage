@@ -23,6 +23,10 @@ import dill
 from joblib import Parallel
 from psutil import cpu_count
 
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.table import Table
+from rich import box
+
 # First Party
 from metadamage.progressbar import console, progress
 
@@ -131,6 +135,66 @@ class Config:
             if isinstance(val, Path):
                 d_out[key] = str(val)
         return d_out
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        yield f""
+        my_table = Table(title="[b]Configuration:[/b]", box=box.MINIMAL_HEAVY_HEAD)
+        # my_table = Table(title="Configuration:")
+        my_table.add_column("Attribute", justify="left", style="cyan")
+        my_table.add_column("Value", justify="center", style="magenta")
+
+        my_table.add_row("Output directory", str(self.out_dir))
+
+        my_table.add_row("Maximum number of fits", str(self.max_fits))
+        if self.N_fits:
+            my_table.add_row("Number of fits", str(self.N_fits))
+
+        my_table.add_row("Maximum number of cores to use", str(self.max_cores))
+        if self.N_cores:
+            my_table.add_row("Number of cores to use", str(self.N_cores))
+
+        my_table.add_row("Minimum number of alignments", str(self.min_alignments))
+        my_table.add_row("Minimum y sum", str(self.min_y_sum))
+
+        my_table.add_row(
+            "Substitution bases forward", str(self.substitution_bases_forward)
+        )
+        my_table.add_row(
+            "Substitution bases reverse", str(self.substitution_bases_reverse)
+        )
+
+        my_table.add_row("Forced", str(self.forced))
+        my_table.add_row("Version", self.version)
+
+        if self.filename:
+            my_table.add_row("Filename", str(self.filename))
+            my_table.add_row("Shortname", str(self.shortname))
+
+        yield my_table
+
+    #      out_dir: Path
+    # #
+    # max_fits: Optional[int]
+    # max_cores: int
+    # # max_position: Optional[int]
+    # #
+    # min_alignments: int
+    # min_y_sum: int
+    # #
+    # substitution_bases_forward: str
+    # substitution_bases_reverse: str
+    # #
+    # forced: bool
+    # version: str
+    # #
+    # filename: Optional[Path] = None
+    # shortname: Optional[str] = None
+
+    # N_fits: Optional[int] = None
+
+    # N_cores: int = field(init=False)
 
 
 class SubstitutionBases(str, Enum):
