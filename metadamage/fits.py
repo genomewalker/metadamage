@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 #%%
 
-timeout_patient = 5 * 60  # 5 minutes
+timeout_patient = 5 * 60  # 5 minutes, very first fit
 timeout_busy = 60  # 1 minute
 
 #%%
@@ -424,6 +424,9 @@ def match_tax_id_order_in_df_fit_results(df_fit_results, df):
     return df_fit_results.loc[ordered]
 
 
+import time
+
+
 def fit_single_group_without_timeout(
     group,
     cfg,
@@ -486,7 +489,7 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
     fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
     fit_single_group_busy = get_fit_single_group_with_timeout(timeout_busy)
 
-    logger.info(f"Initializing fit in seriel. INFO")
+    logger.info(f"Fit: Initializing fit in seriel.")
 
     with progress:
         task_fit = progress.add_task(
@@ -521,7 +524,7 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
                 d_fits[tax_id] = d_fit
 
             except TimeoutError:
-                logger.warning(f"Fit: Timeout at tax_id {tax_id}")
+                logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
 
             progress.advance(task_fit)
 
@@ -561,13 +564,14 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
             queue_out.put((tax_id, d_fit))
 
         except TimeoutError:
-            logger.warning(f"Fit: Timeout at tax_id {tax_id}")
-            queue_out.put((tax_id, None))
+            queue_out.put((tax_id, TimeoutError))
 
         fit_single_group = fit_single_group_busy
 
 
 def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
+
+    logger.info(f"Fit: Initializing fit in parallel with progressbar.")
 
     groupby = df.groupby("tax_id", sort=False, observed=True)
     N_groupby = len(groupby)
@@ -590,40 +594,20 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
             total=N_groupby,
         )
 
-        logger.debug(f"\n")
-
-        # for tax_id, group in groupby:
-        for i, (tax_id, group) in enumerate(groupby):
-            if i % (N_groupby // 3) == 0 or i == N_groupby - 1:
-                logger.debug(f"queue_in.put() i {i}")
-                s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
-                logger.debug(s)
+        for tax_id, group in groupby:
             queue_in.put((tax_id, group))
-        logger.debug(f"Did put {i+1} elements into queue_in out of {N_groupby}")
-
-        logger.debug(f"\n")
+            # console.print(f"Putting tax_id: {tax_id}")
 
         # Get and print results
-        # for _ in range(N_groupby):
-        for i in range(N_groupby):
-            if i % (N_groupby // 3) == 0:
-                logger.debug(f"queue_out.get() i {i}")
-                s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
-                logger.debug(s)
+        for _ in range(N_groupby):
             tax_id, d_fit = queue_out.get()
-            if d_fit is not None:
+            if d_fit is not TimeoutError:
                 d_fits[tax_id] = d_fit
+            else:
+                logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
             progress.advance(task_fit)
-        logger.debug(f"Received {i+1} elements from queue_out out of {N_groupby}")
 
-    logger.debug(f"\n")
-
-    # for _ in range(N_groupby):
-    for i in range(N_cores):
-        if i % (N_groupby // 3) == 0:
-            logger.debug(f"queue_in.put(None) i {i}")
-            s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
-            logger.debug(s)
+    for _ in range(N_groupby):
         queue_in.put(None)
 
     # prevent adding anything more to the queue and wait for queue to empty
@@ -636,20 +620,9 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
     # queue_in.close()
     # queue_out.close()
 
-    logger.debug(f"\n")
-    logger.debug(f"Done?")
-    s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
-    logger.debug(s)
-
     # prevent adding anything more to the process pool and wait for all processes to finish
     the_pool.close()
     the_pool.join()
-
-    logger.debug(f"\n")
-    logger.debug(f"after close() and join()")
-    s = f"queue_in.qsize() = {queue_in.qsize()} queue_in.empty() = {queue_in.empty()}"
-    logger.debug(s)
-    logger.debug(f"\n")
 
     return d_fits
 
@@ -682,7 +655,6 @@ def make_df_fit_predictions_from_d_fits(d_fits, cfg):
         # d_fit_predictions[key] = df_tmp
         d_fit_predictions.append(df_tmp)
 
-    # df_fit_predictions = pd.concat(d_fit_predictions.values(), axis=0, keys=d_fit_predictions.keys())
     df_fit_predictions = pd.concat(d_fit_predictions, axis="index", ignore_index=True)
     df_fit_predictions["shortname"] = cfg.shortname
 
@@ -716,11 +688,10 @@ def compute_fits(df_counts, cfg, mcmc_kwargs):
 
     groupby = df_counts.groupby("tax_id", sort=False, observed=True)
 
-    if cfg.N_cores == 1 or len(groupby) < 10:
+    if cfg.N_cores == 1:  #  or len(groupby) < 10:
         d_fits = compute_fits_seriel(df_counts, mcmc_kwargs, cfg)
 
     else:
-        # utils.avoid_fontconfig_warning()
         d_fits = compute_fits_parallel_with_progressbar(df_counts, cfg, mcmc_kwargs)
 
     fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
@@ -781,12 +752,12 @@ def get_fits(df_counts, cfg):
         ) and utils.metadata_is_similar(
             metadata_file_fit_predictions, metadata_cfg, include=include
         ):
-            logger.info(f"Loading fits from parquet-file.")
+            logger.info(f"Fit: Loading fits from parquet-file.")
             df_fit_results = parquet_fit_results.load()
             df_fit_predictions = parquet_fit_predictions.load()
             return df_fit_results, df_fit_predictions
 
-    logger.info(f"Generating fits and saving to file.")
+    logger.info(f"Fit: Generating fits and saving to file.")
 
     df_counts_top_N = get_top_max_fits(df_counts, cfg.N_fits)
 
@@ -844,83 +815,3 @@ def get_fits(df_counts, cfg):
 # model_compare[['rank', 'waic', 'd_waic', 'dse']]
 
 # az.plot_compare(model_compare, insample_dev=False)
-
-#%%
-
-
-# mcmc_kwargs = dict(
-#     progress_bar=True,
-#     num_warmup=500,
-#     num_samples=500,
-#     num_chains=2,
-#     chain_method="sequential",
-# )
-
-# mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
-# mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
-
-# %time fit_mcmc(mcmc_PMD, data)
-# fit_mcmc(mcmc_null, data)
-
-
-# def fit_mcmc(mcmc, data, seed=0):
-#     mcmc.run(Key(seed), **data)
-
-
-# def use_last_state_as_warmup_state(mcmc):
-#     # https://github.com/pyro-ppl/numpyro/issues/539
-#     mcmc._warmup_state = mcmc._last_state
-
-
-# mcmc_PMD._warmup_state = mcmc_PMD._last_state
-
-# seed = 0
-# mcmc = init_mcmc(model_PMD, **mcmc_kwargs)
-
-# mcmc._compile(Key(seed), **data)
-# mcmc.warmup(Key(seed), **data)
-# mcmc.run(Key(seed), reuse_warmup_states=True, **data)
-
-
-# def fit_test(df_counts, cfg):
-
-#     mcmc_kwargs = dict(
-#         progress_bar=False,
-#         # progress_bar=True,
-#         num_warmup=500,
-#         num_samples=500,
-#         num_chains=2,
-#         # chain_method="sequential",
-#         # chain_method="parallel",
-#         chain_method="vectorized",
-#     )
-
-#     df = get_top_max_fits(df_counts, cfg.N_fits)
-#     d_fits = compute_fits_seriel(df, mcmc_kwargs, cfg)
-#     return None
-
-#     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
-#     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
-#     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
-#     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
-
-#     groupby = df.groupby("tax_id", sort=False, observed=True)
-#     d_fits = {}
-
-#     for i, (tax_id, group) in enumerate(groupby):
-
-#         print("\n\n")
-#         print(i)
-#         fit_single_group = fit_single_group_without_timeout  # TODO XXX
-
-#         # try:
-#         d_fit = fit_single_group(
-#             group,
-#             cfg,
-#             mcmc_PMD,
-#             mcmc_null,
-#             mcmc_PMD_forward_reverse,
-#             mcmc_null_forward_reverse,
-#         )
-
-#         print(d_fit["fit_result"])

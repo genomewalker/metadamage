@@ -65,9 +65,9 @@ def main(filenames, cfg):
             )
 
             df_counts = counts.load_counts(cfg)
-            # print(len(pd.unique(df_counts.taxid)))
+            # print(len(pd.unique(df_counts.tax_id)))
             # continue
-            # group = utils.get_specific_taxid(df_counts, taxid=-1)  # get very first group
+            # group = utils.get_specific_tax_id(df_counts, tax_id=-1)  # get very first group
 
             if not utils.is_df_counts_accepted(df_counts, cfg):
                 continue
@@ -116,7 +116,7 @@ if utils.is_ipython():
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
     filename = filenames[0]
     # filename = filenames[1]
-    # filename = filenames[3]
+    filename = filenames[3]
     # filename = "data/input/n_sigma_test.txt"
 
     if False:
@@ -130,7 +130,4 @@ if utils.is_ipython():
         taxid = 115547
         taxid = 3745
         taxid = 395312
-        group = utils.get_specific_taxid(df, taxid)  # get very first group
-
-
-#%%
+        group = utils.get_specific_taxid(df, taxid)
