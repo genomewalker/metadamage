@@ -33,8 +33,8 @@ logger = logging.getLogger(__name__)
 
 #%%
 
-timeout_patient = 5 * 60  # 5 minutes, very first fit
-timeout_busy = 60  # 1 minute
+timeout_first_fit = 5 * 60  # 5 minutes, very first fit
+timeout_subsequent_fits = 60  # 1 minute
 
 #%%
 
@@ -486,8 +486,8 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
     groupby = df.groupby("tax_id", sort=False, observed=True)
     d_fits = {}
 
-    fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
-    fit_single_group_busy = get_fit_single_group_with_timeout(timeout_busy)
+    fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
+    fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(timeout_subsequent_fits)
 
     logger.info(f"Fit: Initializing fit in seriel.")
 
@@ -507,9 +507,9 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
             # logger.debug(f"Fitting tax_id {tax_id} now (i={i}). DEBUG")
 
             if i == 0:
-                fit_single_group = fit_single_group_patient
+                fit_single_group = fit_single_group_first_fit
             else:
-                fit_single_group = fit_single_group_busy
+                fit_single_group = fit_single_group_subsequent_fits
 
             try:
                 d_fit = fit_single_group(
@@ -538,11 +538,11 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
-    fit_single_group_patient = get_fit_single_group_with_timeout(timeout_patient)
-    fit_single_group_busy = get_fit_single_group_with_timeout(timeout_busy)
+    fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
+    fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(timeout_subsequent_fits)
 
     # first run is patient
-    fit_single_group = fit_single_group_patient
+    fit_single_group = fit_single_group_first_fit
 
     while True:
         # block=True means make a blocking call to wait for items in queue
@@ -566,7 +566,7 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
         except TimeoutError:
             queue_out.put((tax_id, TimeoutError))
 
-        fit_single_group = fit_single_group_busy
+        fit_single_group = fit_single_group_subsequent_fits
 
 
 def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
