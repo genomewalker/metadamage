@@ -33,15 +33,18 @@ class Parquet:
         metadata = json.loads(metadata_json)
         return metadata
 
+    def _load_table(self, shortname=None, tax_id=None, columns=None):
 
-    def _load_table(self, shortname=None):
         filename = self.filename
         if shortname is not None:
             filename = filename / f"{shortname}.parquet"
-        table = pq.read_table(filename)
-        # table = pq.read_table(
-        #     self.filename, filters=[("shortname", "==", shortname)]
-        # )
+
+        if tax_id is None:
+            filters = None
+        else:
+            filters = [("tax_id", "==", tax_id)]
+
+        table = pq.read_table(filename, filters=filters, columns=columns)
         return table
 
     def _table_to_pandas(self, table):
@@ -50,24 +53,10 @@ class Parquet:
             df = df.astype({"tax_id": "category"})
         return df
 
-    # def load_single_file(self, shortname=None):
-    #     table = self._load_table(shortname)
-    #     df = self._table_to_pandas(table)
-    #     return df
-
-    # def load_dir(self):
-    #     table = self._load_table()
-    #     df = self._table_to_pandas(table)
-    #     return df
-
-    def load(self, shortname=None):
-        table = self._load_table(shortname)
+    def load(self, shortname=None, tax_id=None, columns=None):
+        table = self._load_table(shortname, tax_id=tax_id, columns=columns)
         df = self._table_to_pandas(table)
         return df
-        # if self.filename.is_dir() and shortname is None:
-        #     return self.load_dir()
-        # else:
-        #     return self.load_single_file(shortname)
 
     def _add_metadata_to_table(self, table, metadata):
         if metadata is None:
