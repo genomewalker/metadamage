@@ -64,7 +64,6 @@ def main(filenames, cfg):
 
             # fits.fit_test(df_counts, cfg)
             df_fit_results, df_fit_predictions = fits.get_fits(df_counts, cfg)
-            print(df_fit_results)
 
             progress.refresh()
             progress.advance(task_id_overall)
