@@ -27,19 +27,8 @@ logger = logging.getLogger(__name__)
 
 def main(filenames, cfg):
 
-    # filename = Path(
-    #     "./data/input/ugly/Lok-75-Sample-1-Ext-58-Lib-58-Index1.col.sorted.sam.gz.bdamage.gz.up.txt"
-    # )
-    # cfg.add_filename(filename)
-    # df_counts = counts.load_counts(cfg)
-    # fits.fit_test(df_counts, cfg)
-
-    # return None
-
     utils.initial_print(filenames, cfg)
-    return None
 
-    # all_fit_results = {}
     N_files = len(filenames)
     bad_files = 0
 

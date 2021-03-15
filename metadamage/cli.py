@@ -148,6 +148,7 @@ def cli_fit(
     }
 
     cfg = utils.Config(**d_cfg)
+    cfg.add_filenames(filenames)
     main(filenames, cfg)
 
 

@@ -692,7 +692,6 @@ def compute_fits_parallel_with_progressbar_chunks(df, cfg, mcmc_kwargs, chunk_ma
     tax_ids_unique = np.array(pd.unique(df.tax_id))
     chunks = get_chunks(tax_ids_unique, chunk_max)
     for chunk in chunks:
-        print(len(chunk))
         d_fits_chunk = compute_fits_parallel_with_progressbar(
             df.query("tax_id in @chunk"), cfg, mcmc_kwargs
         )

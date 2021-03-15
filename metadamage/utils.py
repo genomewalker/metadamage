@@ -59,11 +59,12 @@ class Config:
     forced: bool
     version: str
     #
+    all_filenames: Optional[Path] = None
     filename: Optional[Path] = None
     shortname: Optional[str] = None
 
+    N_filenames: Optional[int] = None
     N_fits: Optional[int] = None
-
     N_cores: int = field(init=False)
 
     def __post_init__(self):
@@ -85,6 +86,10 @@ class Config:
             )
         else:
             self.N_cores = self.max_cores
+
+    def add_filenames(self, filenames):
+        self.all_filenames = filenames
+        self.N_filenames = len(filenames)
 
     def add_filename(self, filename):
         self.filename = filename
@@ -126,7 +131,6 @@ class Config:
         # use all TaxIDs available
         else:
             self.N_fits = self.N_tax_ids
-
         logger.info(f"Setting number_of_fits to {self.N_fits}")
 
     def to_dict(self):
@@ -145,11 +149,14 @@ class Config:
         my_table.add_column("Attribute", justify="left", style="cyan")
         my_table.add_column("Value", justify="center", style="magenta")
 
+        if self.N_filenames:
+            my_table.add_row("Number of files", str(self.N_filenames))
+
         my_table.add_row("Output directory", str(self.out_dir))
 
-        my_table.add_row("Maximum number of fits", str(self.max_fits))
+        my_table.add_row("Maximum number of fits pr. file", str(self.max_fits))
         if self.N_fits:
-            my_table.add_row("Number of fits", str(self.N_fits))
+            my_table.add_row("Number of fits  pr. file", str(self.N_fits))
 
         my_table.add_row("Maximum number of cores to use", str(self.max_cores))
         if self.N_cores:
@@ -173,28 +180,6 @@ class Config:
             my_table.add_row("Shortname", str(self.shortname))
 
         yield my_table
-
-    #      out_dir: Path
-    # #
-    # max_fits: Optional[int]
-    # max_cores: int
-    # # max_position: Optional[int]
-    # #
-    # min_alignments: int
-    # min_y_sum: int
-    # #
-    # substitution_bases_forward: str
-    # substitution_bases_reverse: str
-    # #
-    # forced: bool
-    # version: str
-    # #
-    # filename: Optional[Path] = None
-    # shortname: Optional[str] = None
-
-    # N_fits: Optional[int] = None
-
-    # N_cores: int = field(init=False)
 
 
 class SubstitutionBases(str, Enum):
@@ -594,17 +579,17 @@ def is_df_counts_accepted(df_counts, cfg):
 
 def initial_print(filenames, cfg):
 
-    console.print("\n")
+    # console.print("\n")
     console.rule("[bold red]Initialization")
-    console.print(
-        f"\nRunning [bold green underline]metadamage[/bold green underline] "
-        f"on {len(filenames)} file(s) using the following configuration: \n"
-    )
+    # console.print(
+    #     f"\nRunning [bold green underline]metadamage[/bold green underline] "
+    #     f"on {len(filenames)} file(s) using the following configuration: \n"
+    # )
     console.print(cfg)
-    console.print("")
+    # console.print("")
 
     console.rule("[bold red]Main")
-    console.print("")
+    # console.print("")
 
 
 #%%
