@@ -59,7 +59,6 @@ class Config:
     forced: bool
     version: str
     #
-    all_filenames: Optional[Path] = None
     filename: Optional[Path] = None
     shortname: Optional[str] = None
 
@@ -88,7 +87,6 @@ class Config:
             self.N_cores = self.max_cores
 
     def add_filenames(self, filenames):
-        self.all_filenames = filenames
         self.N_filenames = len(filenames)
 
     def add_filename(self, filename):

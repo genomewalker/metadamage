@@ -712,7 +712,7 @@ def compute_fits(df_counts, cfg, mcmc_kwargs):
             df_counts,
             cfg,
             mcmc_kwargs,
-            chunk_max=1000,
+            chunk_max=10,
         )
 
     fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
@@ -788,6 +788,7 @@ def get_fits(df_counts, cfg):
         num_samples=1000,
         num_chains=1,  # problem when setting to 2
         chain_method="sequential",
+        # http://num.pyro.ai/en/stable/_modules/numpyro/infer/mcmc.html#MCMC
     )
 
     # df = df_counts = df_counts_top_N

@@ -105,6 +105,8 @@ if utils.is_ipython():
     os.chdir(path)
 
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
+    cfg.add_filenames(filenames)
+
     filename = filenames[0]
     # filename = filenames[1]
     filename = filenames[3]
