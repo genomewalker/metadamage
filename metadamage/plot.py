@@ -76,9 +76,9 @@ def fit_results_to_string(fit_result):
 
 
 def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
-    taxid = group["taxid"].iloc[0]
+    tax_id = group["tax_id"].iloc[0]
 
-    if d_fits and (taxid in d_fits):
+    if d_fits and (tax_id in d_fits):
         has_fits = True
     else:
         has_fits = False
@@ -148,7 +148,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
     if has_fits:
 
-        d_fit = d_fits[taxid]
+        d_fit = d_fits[tax_id]
 
         z = group.position.values
 
@@ -223,7 +223,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
     name = group["name"].iloc[0]
     rank = group["rank"].iloc[0]
-    title = f"Error rate frequency as a function of position.\nTaxon: {taxid}, {name}, {rank}\n"
+    title = f"Error rate frequency as a function of position.\nTaxon: {tax_id}, {name}, {rank}\n"
 
     # fix LaTeX errors:
     title = utils.fix_latex_warnings_in_string(title)
@@ -239,7 +239,7 @@ def plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
 
 def seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
 
-    groupby = df_plot_sorted.groupby("taxid", sort=False, observed=True)
+    groupby = df_plot_sorted.groupby("tax_id", sort=False, observed=True)
 
     task_id_status_plotting = progress.add_task(
         "task_status_plotting",
@@ -251,7 +251,7 @@ def seriel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
 
     utils.init_parent_folder(filename)
     with PdfPages(filename) as pdf, progress:
-        for taxid, group in groupby:
+        for tax_id, group in groupby:
             fig = plot_single_group(group, cfg, d_fits)
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.1)
             progress.advance(task_id_status_plotting)
@@ -699,8 +699,8 @@ def _plot_and_save_single_group_worker(i, group, filename, cfg, d_fits):
 
     # except Exception as e:
     #     raise e
-    # taxid = group.taxid.iloc[0]
-    # return taxid
+    # tax_id = group.tax_id.iloc[0]
+    # return tax_id
 
 
 # plot_single_group(group, cfg, d_fits=None, figsize=(18, 7)):
@@ -708,7 +708,7 @@ def _plot_and_save_single_group_worker(i, group, filename, cfg, d_fits):
 
 def parallel_saving_of_error_rates(cfg, df_plot_sorted, filename, d_fits):
 
-    groupby = df_plot_sorted.groupby("taxid", sort=False, observed=True)
+    groupby = df_plot_sorted.groupby("tax_id", sort=False, observed=True)
 
     # for i, (name, group) in enumerate(groupby):
     #     break

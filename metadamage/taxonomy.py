@@ -11,8 +11,8 @@ memory = Memory(cachedir, verbose=0)
 
 # @lru_cache
 @memory.cache
-def extract_descendant_taxids(tax, include_subspecies=True):
-    """Given either taxid or tax_name, extract all the descendants' taxIDs.
+def extract_descendant_tax_ids(tax, include_subspecies=True):
+    """Given either tax_id or tax_name, extract all the descendants' taxIDs.
     Subspecies are automatically included, but can be disables with
     include_subspecies = False.
     """
@@ -76,6 +76,6 @@ if is_ipython():
 # # or even returned as an annotated tree
 # tree = ncbi.get_descendant_taxa(name, collapse_subspecies=True, return_tree=True)
 # print("")
-# print(tree.get_ascii(attributes=["sci_name", "taxid"]))
+# print(tree.get_ascii(attributes=["sci_name", "tax_id"]))
 
 # # %%

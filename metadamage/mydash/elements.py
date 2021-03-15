@@ -13,17 +13,18 @@ from dash_table import DataTable
 from metadamage import mydash, utils
 
 
-def get_dropdown_file_selection(id, fit_results, filenames_to_show="all"):
+def get_dropdown_file_selection(id, fit_results, shortnames_to_show="all"):
 
-    if filenames_to_show == "all":
-        filenames_to_show = None
+    if shortnames_to_show == "all":
+        shortnames_to_show = None
 
     dropdown_file_selection = dcc.Dropdown(
         id=id,
         options=[
-            {"label": filename, "value": filename} for filename in fit_results.filenames
+            {"label": shortname, "value": shortname}
+            for shortname in fit_results.shortnames
         ],
-        value=fit_results.filenames[:filenames_to_show],
+        value=fit_results.shortnames[:shortnames_to_show],
         multi=True,
         placeholder="Select files to plot",
     )

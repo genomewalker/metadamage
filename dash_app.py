@@ -40,17 +40,7 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 folder = Path("./data/out")
 verbose = True
-shortname = "EC-Ext-A27-Lib27A-Index1"
-
-x = x
-
-df_counts = io.Parquet(folder / "counts").load(shortname)
-
-parquet_fit_results = io.Parquet(folder / "fit_results")
-parquet_fit_predictions = io.Parquet(folder / "fit_predictions")
-
-df_fit_results = parquet_fit_results.load()
-df_fit_predictions = parquet_fit_predictions.load()
+# shortname = "EC-Ext-A27-Lib27A-Index1"
 
 fit_results = mydash.fit_results.FitResults(folder, verbose=verbose)
 
@@ -114,15 +104,15 @@ card_tabs = dbc.Card(
 
 #%%
 
-mismatch_dropdown_filenames = dbc.FormGroup(
+mismatch_dropdown_shortnames = dbc.FormGroup(
     [
         dbc.Label("Filenames:", className="mr-2"),
         html.Div(
             dcc.Dropdown(
-                id="dropdown_mismatch_filename",
+                id="dropdown_mismatch_shortname",
                 options=[
-                    {"label": filename, "value": filename}
-                    for filename in fit_results.filenames
+                    {"label": shortname, "value": shortname}
+                    for shortname in fit_results.shortnames
                 ],
                 clearable=False,
             ),
@@ -132,11 +122,11 @@ mismatch_dropdown_filenames = dbc.FormGroup(
     className="mr-5",
 )
 
-mismatch_dropdown_taxids = dbc.FormGroup(
+mismatch_dropdown_tax_ids = dbc.FormGroup(
     [
         dbc.Label("Tax IDs:", className="mr-2"),
         html.Div(
-            dcc.Dropdown(id="dropdown_mismatch_taxid", clearable=True),
+            dcc.Dropdown(id="dropdown_mismatch_tax_id", clearable=True),
             style={"min-width": "150px"},
         ),
     ],
@@ -148,8 +138,8 @@ mismatch_dropdowns = dbc.Card(
     [
         dbc.Form(
             [
-                mismatch_dropdown_filenames,
-                mismatch_dropdown_taxids,
+                mismatch_dropdown_shortnames,
+                mismatch_dropdown_tax_ids,
             ],
             inline=True,
         ),
@@ -188,7 +178,7 @@ card_datatable = dbc.Card(
 #%%
 
 
-filter_taxid = dbc.Row(
+filter_tax_id = dbc.Row(
     [
         dbc.Col(
             html.Br(),
@@ -202,7 +192,7 @@ filter_taxid = dbc.Row(
             dbc.FormGroup(
                 [
                     dbc.Input(
-                        id="taxid_filter_input",
+                        id="tax_id_filter_input",
                         placeholder="Input goes here...",
                         type="text",
                         autoComplete="off",
@@ -219,14 +209,14 @@ filter_taxid = dbc.Row(
                             {"label": "Include subspecies", "value": True},
                         ],
                         value=[True],
-                        id="taxid_filter_subspecies",
+                        id="tax_id_filter_subspecies",
                     ),
                 ]
             ),
             width=12,
         ),
         dbc.Col(
-            html.P(id="taxid_filter_counts_output"),
+            html.P(id="tax_id_filter_counts_output"),
             # xl=9,
             width=12,
         ),
@@ -235,7 +225,7 @@ filter_taxid = dbc.Row(
                 [
                     dbc.Button(
                         "Plot",
-                        id="taxid_plot_button",
+                        id="tax_id_plot_button",
                         color="primary",
                         block=True,
                     ),
@@ -256,19 +246,19 @@ filter_taxid = dbc.Row(
 )
 
 
-filters_collapse_taxid = html.Div(
+filters_collapse_tax_id = html.Div(
     [
         dbc.Button(
             "Filter TaxIDs",
-            id="filters_toggle_taxids_button",
+            id="filters_toggle_tax_ids_button",
             color="secondary",
             block=True,
             outline=True,
             size="lg",
         ),
         dbc.Collapse(
-            filter_taxid,
-            id="filters_dropdown_taxids",
+            filter_tax_id,
+            id="filters_dropdown_tax_ids",
             is_open=False,
         ),
     ]
@@ -288,7 +278,7 @@ filter_dropdown_file = dbc.FormGroup(
         mydash.elements.get_dropdown_file_selection(
             id="dropdown_file_selection",
             fit_results=fit_results,
-            filenames_to_show="all",
+            shortnames_to_show="all",
         ),
     ]
 )
@@ -360,8 +350,8 @@ filters_collapse_ranges = html.Div(
                     dcc.Dropdown(
                         id="dropdown_slider",
                         options=[
-                            {"label": filename, "value": filename}
-                            for filename in slider_names
+                            {"label": shortname, "value": shortname}
+                            for shortname in slider_names
                         ],
                         value=[],
                         multi=True,
@@ -390,7 +380,7 @@ filter_card = dbc.Card(
             [
                 filters_collapse_files,
                 html.Hr(),
-                filters_collapse_taxid,
+                filters_collapse_tax_id,
                 html.Hr(),
                 filters_collapse_ranges,
             ]
@@ -627,42 +617,42 @@ app.layout = dbc.Container(
 #
 
 
-def apply_taxid_filter(d_filter, tax_name, taxid_filter_subspecies):
+def apply_tax_id_filter(d_filter, tax_name, tax_id_filter_subspecies):
     if tax_name is None:
         return None
 
-    taxids = taxonomy.extract_descendant_taxids(
+    tax_ids = taxonomy.extract_descendant_tax_ids(
         tax_name,
-        include_subspecies=include_subspecies(taxid_filter_subspecies),
+        include_subspecies=include_subspecies(tax_id_filter_subspecies),
     )
-    N_taxids = len(taxids)
-    if N_taxids != 0:
-        d_filter["taxids"] = taxids
+    N_tax_ids = len(tax_ids)
+    if N_tax_ids != 0:
+        d_filter["tax_ids"] = tax_ids
 
 
 @app.callback(
     Output("store", "data"),
     Output("modal", "is_open"),
     Input("dropdown_file_selection", "value"),
-    Input("taxid_plot_button", "n_clicks"),
+    Input("tax_id_plot_button", "n_clicks"),
     Input({"type": "dynamic-slider", "index": ALL}, "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
     Input("modal_close_button", "n_clicks"),
-    State("taxid_filter_input", "value"),
-    State("taxid_filter_subspecies", "value"),
+    State("tax_id_filter_input", "value"),
+    State("tax_id_filter_subspecies", "value"),
     State({"type": "dynamic-slider", "index": ALL}, "id"),
     State("modal", "is_open"),
 )
 def filter_fit_results(
     dropdown_file_selection,
-    taxid_button,
+    tax_id_button,
     slider_values,
     marker_size_max,
     marker_transformation,
     n_clicks_modal,
-    taxid_filter_input,
-    taxid_filter_subspecies,
+    tax_id_filter_input,
+    tax_id_filter_subspecies,
     slider_ids,
     modal_is_open,
     prevent_initial_call=True,
@@ -678,12 +668,12 @@ def filter_fit_results(
 
     fit_results.set_marker_size(marker_transformation, marker_size_max)
 
-    d_filter = {"filenames": dropdown_file_selection}
+    d_filter = {"shortnames": dropdown_file_selection}
     slider_names = [id["index"] for id in slider_ids]
-    for filename, values in zip(slider_names, slider_values):
-        d_filter[filename] = values
+    for shortname, values in zip(slider_names, slider_values):
+        d_filter[shortname] = values
 
-    apply_taxid_filter(d_filter, taxid_filter_input, taxid_filter_subspecies)
+    apply_tax_id_filter(d_filter, tax_id_filter_input, tax_id_filter_subspecies)
 
     df_fit_results_filtered = fit_results.filter(d_filter)
 
@@ -729,27 +719,27 @@ def get_name_of_removed_slider(current_names, dropdown_names):
     return list(set(current_names).difference(dropdown_names))[0]
 
 
-def remove_name_from_children(filename, children, id_type):
-    " Given a filename, remove the corresponding child element from children"
-    index = find_index_in_children(children, id_type=id_type, search_index=filename)
+def remove_name_from_children(shortname, children, id_type):
+    " Given a shortname, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=shortname)
     children.pop(index)
 
 
-def make_new_slider(filename, id_type, N_steps=100):
+def make_new_slider(shortname, id_type, N_steps=100):
     return dbc.Container(
         [
             dbc.Row(html.Br()),
-            dbc.Row(html.P(filename), justify="center"),
+            dbc.Row(html.P(shortname), justify="center"),
             dbc.Row(
                 dbc.Col(
                     dcc.RangeSlider(
                         id={
                             "type": "dynamic-slider",
-                            "index": filename,
+                            "index": shortname,
                         },
                         **mydash.elements.get_range_slider_keywords(
                             fit_results,
-                            column=filename,
+                            column=shortname,
                             N_steps=N_steps,
                         ),
                     ),
@@ -757,7 +747,7 @@ def make_new_slider(filename, id_type, N_steps=100):
                 ),
             ),
         ],
-        id={"type": id_type, "index": filename},
+        id={"type": id_type, "index": shortname},
     )
 
 
@@ -781,14 +771,14 @@ def add_or_remove_slider(
 
     # add new slider
     if slider_is_added(current_names, dropdown_names):
-        filename = get_name_of_added_slider(current_names, dropdown_names)
-        new_element = make_new_slider(filename, id_type=id_type)
+        shortname = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(shortname, id_type=id_type)
         children.append(new_element)
 
     # remove selected slider
     else:
-        filename = get_name_of_removed_slider(current_names, dropdown_names)
-        remove_name_from_children(filename, children, id_type=id_type)
+        shortname = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(shortname, children, id_type=id_type)
 
     return children
 
@@ -838,12 +828,12 @@ def update_tab_layout(active_tab, button_n, data):
 @app.callback(
     Output("graph_mismatch", "figure"),
     Input("tabs", "active_tab"),
-    Input("dropdown_mismatch_taxid", "value"),
-    Input("dropdown_mismatch_filename", "value"),
+    Input("dropdown_mismatch_tax_id", "value"),
+    Input("dropdown_mismatch_shortname", "value"),
 )
-def update_mismatch_plot(active_tab, dropdown_mismatch_taxid, dropdown_name):
+def update_mismatch_plot(active_tab, dropdown_mismatch_tax_id, dropdown_name):
 
-    if dropdown_mismatch_taxid is None:
+    if dropdown_mismatch_tax_id is None:
         if active_tab == "fig_histograms":
             s = "Does not work for binned data"
             return mydash.figures.create_empty_figure(s=s)
@@ -852,12 +842,12 @@ def update_mismatch_plot(active_tab, dropdown_mismatch_taxid, dropdown_name):
 
     try:
         group = fit_results.get_single_count_group(
-            filename=dropdown_name,
-            taxid=dropdown_mismatch_taxid,
+            shortname=dropdown_name,
+            tax_id=dropdown_mismatch_tax_id,
         )
         fit = fit_results.get_single_fit_prediction(
-            filename=dropdown_name,
-            taxid=dropdown_mismatch_taxid,
+            shortname=dropdown_name,
+            tax_id=dropdown_mismatch_tax_id,
         )
         chosen_mismatch_columns = ["C→T", "G→A"]
         fig = mydash.figures.plot_count_fraction(
@@ -890,10 +880,10 @@ def update_data_table(click_data, active_tab):
         return ds.to_dict("records")
 
     try:
-        taxid = fit_results.parse_click_data(click_data, variable="taxid")
-        filename = fit_results.parse_click_data(click_data, variable="filename")
+        tax_id = fit_results.parse_click_data(click_data, variable="tax_id")
+        shortname = fit_results.parse_click_data(click_data, variable="shortname")
         df_fit_results_filtered = fit_results.filter(
-            {"filename": filename, "taxid": taxid}
+            {"shortname": shortname, "tax_id": tax_id}
         )
         return df_fit_results_filtered.to_dict("records")
 
@@ -905,30 +895,28 @@ def update_data_table(click_data, active_tab):
 #%%
 
 
-def get_taxid_options_based_on_filename(filename, df_string="df_fit_results"):
+def get_tax_id_options_based_on_shortname(shortname, df_string="df_fit_results"):
     """df_string is a string, eg. df_fit_results or  df_counts.
     The 'df_' part is optional
     """
-    taxids = sorted(
-        fit_results.filter({"filename": filename}, df="counts")["taxid"].unique()
-    )
-    options = [{"label": i, "value": i} for i in taxids]
+    tax_ids = sorted(fit_results.load_df_counts_shortname(shortname)["tax_id"].unique())
+    options = [{"label": i, "value": i} for i in tax_ids]
     return options
 
 
 @app.callback(
-    Output("dropdown_mismatch_taxid", "options"),
-    Input("dropdown_mismatch_filename", "value"),
+    Output("dropdown_mismatch_tax_id", "options"),
+    Input("dropdown_mismatch_shortname", "value"),
 )
-def update_dropdown_taxid_options(filename):
-    # if filename is None:
-    # print("update_dropdown_taxid_options got filename==None")
-    return get_taxid_options_based_on_filename(filename, df_string="counts")
+def update_dropdown_tax_id_options(shortname):
+    # if shortname is None:
+    # print("update_dropdown_tax_id_options got shortname==None")
+    return get_tax_id_options_based_on_shortname(shortname, df_string="counts")
 
 
 @app.callback(
-    Output("dropdown_mismatch_filename", "value"),
-    Output("dropdown_mismatch_taxid", "value"),
+    Output("dropdown_mismatch_shortname", "value"),
+    Output("dropdown_mismatch_tax_id", "value"),
     Input("main_graph", "clickData"),
     State("tabs", "active_tab"),
 )
@@ -938,9 +926,9 @@ def update_dropdowns_based_on_click_data(click_data, active_tab):
             # print("update_dropdowns_based_on_click_data got here")
             raise PreventUpdate
         try:
-            taxid = fit_results.parse_click_data(click_data, variable="taxid")
-            filename = fit_results.parse_click_data(click_data, variable="filename")
-            return filename, taxid
+            tax_id = fit_results.parse_click_data(click_data, variable="tax_id")
+            shortname = fit_results.parse_click_data(click_data, variable="shortname")
+            return shortname, tax_id
         except KeyError:
             # print("update_dropdowns_based_on_click_data got KeyError")
             raise PreventUpdate
@@ -960,25 +948,25 @@ def include_subspecies(subspecies):
 
 
 @app.callback(
-    Output("taxid_filter_counts_output", "children"),
-    # Input("taxid_filter_button", "n_clicks"),
-    Input("taxid_filter_input", "value"),
-    Input("taxid_filter_subspecies", "value"),
+    Output("tax_id_filter_counts_output", "children"),
+    # Input("tax_id_filter_button", "n_clicks"),
+    Input("tax_id_filter_input", "value"),
+    Input("tax_id_filter_subspecies", "value"),
 )
-def update_taxid_filter_counts(tax_name, subspecies):
+def update_tax_id_filter_counts(tax_name, subspecies):
 
     if tax_name is None or tax_name == "":
         return f"No specific Tax IDs selected, defaults to ALL."
         # raise PreventUpdate
 
-    taxids = taxonomy.extract_descendant_taxids(
+    tax_ids = taxonomy.extract_descendant_tax_ids(
         tax_name,
         include_subspecies=include_subspecies(subspecies),
     )
-    N_taxids = len(taxids)
-    if N_taxids == 0:
+    N_tax_ids = len(tax_ids)
+    if N_tax_ids == 0:
         return f"Couldn't find any Tax IDs for {tax_name} in NCBI"
-    return f"Found {utils.human_format(N_taxids)} Tax IDs for {tax_name} in NCBI"
+    return f"Found {utils.human_format(N_tax_ids)} Tax IDs for {tax_name} in NCBI"
 
 
 #%%
@@ -999,12 +987,12 @@ def toggle_collapse_files(n, is_open):
 
 
 @app.callback(
-    Output("filters_dropdown_taxids", "is_open"),
-    Output("filters_toggle_taxids_button", "outline"),
-    Input("filters_toggle_taxids_button", "n_clicks"),
-    State("filters_dropdown_taxids", "is_open"),
+    Output("filters_dropdown_tax_ids", "is_open"),
+    Output("filters_toggle_tax_ids_button", "outline"),
+    Input("filters_toggle_tax_ids_button", "n_clicks"),
+    State("filters_dropdown_tax_ids", "is_open"),
 )
-def toggle_collapse_taxids(n, is_open):
+def toggle_collapse_tax_ids(n, is_open):
     if n:
         return not is_open, is_open
     return is_open, True
@@ -1046,18 +1034,16 @@ else:
         N_steps=100,
     )
 
-    filename = "KapK-12-1-33-Ext-10-Lib-10-Index2"
-    # filename = "SJArg-1-Nit"
-    taxid = 33090
+    shortname = "KapK-12-1-24-Ext-1-Lib-1-Index2"
+    # shortname = "SJArg-1-Nit"
+    tax_id = 131567
 
     df_fit_results_all = fit_results.df_fit_results
 
-    df_fit_results = fit_results.filter(
-        {"taxid": taxid, "filename": filename}, df="df_fit_results"
-    )
+    df_fit_results = fit_results.filter({"tax_id": tax_id, "shortname": shortname})
 
-    group = fit_results.get_single_count_group(filename=filename, taxid=taxid)
-    fit = fit_results.get_single_fit_prediction(filename=filename, taxid=taxid)
+    group = fit_results.get_single_count_group(shortname=shortname, tax_id=tax_id)
+    fit = fit_results.get_single_fit_prediction(shortname=shortname, tax_id=tax_id)
 
     chosen_mismatch_columns = ["C→T", "G→A"]
 
@@ -1073,17 +1059,17 @@ else:
     tax_name = "Mammalia"
     # tax_name = "Chordata"
     # tax_name = "Salmon"
-    taxids = taxonomy.extract_descendant_taxids(tax_name)
+    tax_ids = taxonomy.extract_descendant_tax_ids(tax_name)
 
-    df_fit_results = fit_results.filter({"taxids": taxids}, df="df_fit_results")
+    df_fit_results = fit_results.filter({"tax_ids": tax_ids})
 
     fig2 = mydash.figures.plot_fit_results(fit_results, df_fit_results_all)
-    # mydash.figures.plot_histograms(fit_results, df_fit_results_all)
-    # mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_all)
-    # mydash.figures.plot_forward_reverse(fit_results, df_fit_results_all)
+    mydash.figures.plot_histograms(fit_results, df_fit_results_all)
+    mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_all)
+    mydash.figures.plot_forward_reverse(fit_results, df_fit_results_all)
 
     mydash.elements.get_dropdown_file_selection(
         id="dropdown_file_selection",
         fit_results=fit_results,
-        filenames_to_show="all",
+        shortnames_to_show="all",
     )

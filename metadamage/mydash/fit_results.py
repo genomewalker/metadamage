@@ -12,7 +12,7 @@ from joblib import Memory
 import plotly.express as px
 
 # First Party
-from metadamage import mydash, utils
+from metadamage import mydash, utils, io
 
 
 cachedir = "memoization"
@@ -22,89 +22,15 @@ memory = Memory(cachedir, verbose=0)
 
 #%%
 
-
-@memory.cache
-def load_dataframes_memoization(files):
-    df_counts = _load_df_counts(files)
-    df_fit_results = _load_df_fit_results(files)
-    df_fit_predictions = _load_df_fit_predictions(files)
-    return df_counts, df_fit_results, df_fit_predictions
-
-
-def _load_single_dataframe(files, key, ignore_index):
-    df_list = []
-    for filename in files:
-        cfg = utils.load_metadata_from_hdf5(filename, key="counts")
-        name = cfg["name"]
-        df = utils.load_from_hdf5(filename, key)
-        df["filename"] = name
-        df_list.append(df)
-
-    df = pd.concat(df_list, axis=0, ignore_index=ignore_index)
-    categories = ["taxid", "name", "rank", "strand", "filename"]
-    df = utils.downcast_dataframe(df, categories)
-    return df
-
-
-def _load_df_counts(files):
-    df_counts = _load_single_dataframe(
-        files=files,
-        key="counts",
-        ignore_index=True,
-    )
-    return df_counts
-
-
-def _load_df_fit_results(files):
-    df = _load_single_dataframe(
-        files=files,
-        key="fit_results",
-        ignore_index=False,
-    )
-    df["taxid"] = df.index
-    df = df.reset_index(drop=True)
-
-    df["N_alignments_log10"] = np.log10(df["N_alignments"])
-    df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-    with np.errstate(divide="ignore", invalid="ignore"):
-        df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
-
-    df_fit_results = df
-    return df_fit_results
-
-
-def _load_df_fit_predictions(files):
-    df_fit_predictions = _load_single_dataframe(
-        files=files,
-        key="fit_predictions",
-        ignore_index=True,
-    )
-    return df_fit_predictions
-
-
-def find_good_files(folder):
-    filenames = list(Path(folder).rglob("*.hdf5"))
-
-    good_files = []
-    for filename in filenames:
-        keys = utils.get_hdf5_keys(filename, ignore_subgroups=True)
-        if "counts" in keys and "fit_results" in keys and "fit_predictions" in keys:
-            good_files.append(filename)
-        else:
-            print(filename, keys)
-    return good_files
-
-
 #%%
 
 
 class FitResults:
-    def __init__(self, folder, verbose=True):
+    def __init__(self, folder, verbose=False):
+        self.folder = Path(folder)
         self.verbose = verbose
-        self._load_dataframes(folder)
-        # self._load_df_counts(verbose)
-        # self._load_df_fit_results(verbose)
-        # self._load_df_fit_predictions(verbose)
+        self._load_df_fit_results()
+        self._load_df_fit_predictions()
         self._compute_ranges()
         self._set_cmap()
         self._set_hover_info()
@@ -114,28 +40,28 @@ class FitResults:
 
     #%%
 
-    def _load_dataframes(self, folder):
-        self.folder = folder
-        self.filenames_hdf5 = find_good_files(folder)
+    def _load_df_counts_all(self):
+        return io.Parquet(self.folder / "counts").load()
 
-        if len(self.filenames_hdf5) == 0:
-            raise AssertionError(f"No output files found in {self.folder}.")
+    def load_df_counts_shortname(self, shortname):
+        return io.Parquet(self.folder / "counts").load(shortname)
 
-        # unique_id = "".join([str(file) for file in self.filenames_hdf5])
-        filenames_hdf5 = tuple(str(file) for file in self.filenames_hdf5)
+    def _load_df_fit_results(self):
+        df = io.Parquet(self.folder / "fit_results").load()
 
-        dataframes = load_dataframes_memoization(filenames_hdf5)
-        df_counts, df_fit_results, df_fit_predictions = dataframes
+        df["N_alignments_log10"] = np.log10(df["N_alignments"])
+        df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
+        with np.errstate(divide="ignore", invalid="ignore"):
+            df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
 
-        self.df_counts = df_counts
-        self.df_fit_results = df_fit_results
-        self.df_fit_predictions = df_fit_predictions
+        self.df_fit_results = df
 
-        self.filenames = list(self.df_counts.filename.unique())
+        self.shortnames = list(self.df_fit_results.shortname.unique())
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
 
-    #%%
+    def _load_df_fit_predictions(self):
+        self.df_fit_predictions = io.Parquet(self.folder / "fit_predictions").load()
 
     def _get_range_of_column(self, column, spacing):
         array = self.df_fit_results[column]
@@ -188,24 +114,24 @@ class FitResults:
         self.marker_size_max = marker_size_max
         return None
 
-    def filter(self, filters, df="df_fit_results"):
+    def filter(self, filters, df_type="df_fit_results"):
         query = ""
         for dimension, filter in filters.items():
 
             if filter is None:
                 continue
 
-            elif dimension == "filenames":
-                query += f"(filename in {filter}) & "
+            elif dimension == "shortnames":
+                query += f"(shortname in {filter}) & "
 
-            elif dimension == "filename":
-                query += f"(filename == '{filter}') & "
+            elif dimension == "shortname":
+                query += f"(shortname == '{filter}') & "
 
-            elif dimension == "taxid":
-                query += f"(taxid == {filter}) & "
+            elif dimension == "tax_id":
+                query += f"(tax_id == {filter}) & "
 
-            elif dimension == "taxids":
-                query += f"(taxid in {filter}) & "
+            elif dimension == "tax_ids":
+                query += f"(tax_id in {filter}) & "
 
             else:
                 low, high = filter
@@ -217,24 +143,22 @@ class FitResults:
         query = query[:-2]
         # print(query)
 
-        if "fit_results" in df:
+        if "fit_results" in df_type:
             return self.df_fit_results.query(query)
-        elif "counts" in df:
-            return self.df_counts.query(query)
+        # elif "counts" in df:
+        # return self.df_counts.query(query)
         else:
             raise AssertionError(
-                f"df = {df} not implemented yet, "
-                "only 'df_fit_results' and 'df_counts"
+                f"df_type = {df_type} not implemented yet, only 'df_fit_results'"
             )
 
-    # def get_mismatch_group(self, filename, taxid):
-    def get_single_count_group(self, filename, taxid):
-        return self.df_counts.query(f"filename == '{filename}' & taxid == {taxid}")
+    def get_single_count_group(self, shortname, tax_id):
+        df_counts_group = self.load_df_counts_shortname(shortname)
+        return df_counts_group.query(f"tax_id == {tax_id}")
 
-    def get_single_fit_prediction(self, filename, taxid):
-        return self.df_fit_predictions.query(
-            f"filename == '{filename}' & taxid == {taxid}"
-        )
+    def get_single_fit_prediction(self, shortname, tax_id):
+        query = f"shortname == '{shortname}' & tax_id == {tax_id}"
+        return self.df_fit_predictions.query(query)
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
@@ -242,7 +166,7 @@ class FitResults:
 
         d_cmap = {}
         for i, (name, _) in enumerate(
-            self.df_fit_results.groupby("filename", sort=False)
+            self.df_fit_results.groupby("shortname", sort=False)
         ):
             d_cmap[name] = cmap[i]
 
@@ -252,10 +176,10 @@ class FitResults:
     def _set_hover_info(self):
 
         self.custom_data_columns = [
-            "filename",
+            "shortname",
             "tax_name",
             "tax_rank",
-            "taxid",
+            "tax_id",
             "n_sigma",
             "D_max",
             "q_mean",

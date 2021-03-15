@@ -22,8 +22,8 @@ def plot_fit_results(fit_results, df_fit_results):
         x="n_sigma",
         y="D_max",
         size="size",
-        color="filename",
-        hover_name="filename",
+        color="shortname",
+        hover_name="shortname",
         # size_max=marker_size_max,
         opacity=0.2,
         color_discrete_map=fit_results.d_cmap,
@@ -101,7 +101,7 @@ def plot_histograms(fit_results, df_fit_results):
 
     for dimension, row, column in fit_results.iterate_over_dimensions():
         highest_y_max = 0
-        for filename, group in df_fit_results.groupby("filename", sort=False):
+        for filename, group in df_fit_results.groupby("shortname", sort=False):
             trace, y_max = plotly_histogram(
                 fit_results=fit_results,
                 data=group[dimension],
@@ -140,8 +140,8 @@ def plot_scatter_matrix(fit_results, df_fit_results):
     fig = px.scatter_matrix(
         df_fit_results,
         dimensions=fit_results.dimensions,
-        color="filename",
-        hover_name="filename",
+        color="shortname",
+        hover_name="shortname",
         size_max=10,
         color_discrete_map=fit_results.d_cmap,
         labels=fit_results.labels,
@@ -183,7 +183,7 @@ def plot_forward_reverse(fit_results, df_fit_results):
     for it in fit_results.iterate_over_dimensions_forward_reverse(N_cols):
         dimension, row, column, showlegend, forward, reverse = it
 
-        for filename, group in df_fit_results.groupby("filename", sort=False):
+        for filename, group in df_fit_results.groupby("shortname", sort=False):
             kwargs = dict(
                 name=filename,
                 mode="markers",

@@ -17,7 +17,7 @@ def get_data_table_keywords(id="data_table"):
         # Tax Info
         "tax_name": {"name": "Tax Name"},
         "tax_rank": {"name": "Tax Rank"},
-        "taxid": {"name": "Tax ID"},
+        "tax_id": {"name": "Tax ID"},
         # Fit Results
         "n_sigma": {
             "name": "n sigma",

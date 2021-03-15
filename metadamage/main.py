@@ -119,10 +119,10 @@ if utils.is_ipython():
         filename_parquet = "./data/parquet/n_sigma_test.parquet"
 
         df = pd.read_parquet(filename_parquet)
-        taxid = 115547
-        taxid = 3745
-        taxid = 395312
-        group = utils.get_specific_taxid(df, taxid)
+        tax_id = 115547
+        tax_id = 3745
+        tax_id = 395312
+        group = utils.get_specific_tax_id(df, tax_id)
 
         # from metadamage import io
         # io.Parquet(
