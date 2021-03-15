@@ -42,7 +42,7 @@ folder = Path("./data/out")
 verbose = True
 shortname = "EC-Ext-A27-Lib27A-Index1"
 
-x=x
+x = x
 
 df_counts = io.Parquet(folder / "counts").load(shortname)
 

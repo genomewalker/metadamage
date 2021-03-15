@@ -568,9 +568,13 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
         fit_single_group = fit_single_group_subsequent_fits
 
 
-def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
+def compute_fits_parallel_with_progressbar(
+    df,
+    cfg,
+    mcmc_kwargs,
+):
 
-    logger.info(f"Fit: Initializing fit in parallel with progressbar.")
+    # logger.info(f"Fit: Initializing fit in parallel with progressbar")
 
     groupby = df.groupby("tax_id", sort=False, observed=True)
     N_groupby = len(groupby)
@@ -688,6 +692,11 @@ def get_chunks(lst, n):
 
 
 def compute_fits_parallel_with_progressbar_chunks(df, cfg, mcmc_kwargs, chunk_max=1000):
+    logger.info(
+        f"Fit: Initializing fit in parallel with progressbar "
+        "in chunks of size {chunk_max}."
+    )
+
     d_fits_all_chunks = {}
     tax_ids_unique = np.array(pd.unique(df.tax_id))
     chunks = get_chunks(tax_ids_unique, chunk_max)
