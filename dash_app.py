@@ -24,7 +24,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import mydash, taxonomy, utils
+from metadamage import mydash, taxonomy, utils, io
 
 
 #%%
@@ -38,8 +38,19 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 #%%
 
-folder = "./data/out"
+folder = Path("./data/out")
 verbose = True
+shortname = "EC-Ext-A27-Lib27A-Index1"
+
+x=x
+
+df_counts = io.Parquet(folder / "counts").load(shortname)
+
+parquet_fit_results = io.Parquet(folder / "fit_results")
+parquet_fit_predictions = io.Parquet(folder / "fit_predictions")
+
+df_fit_results = parquet_fit_results.load()
+df_fit_predictions = parquet_fit_predictions.load()
 
 fit_results = mydash.fit_results.FitResults(folder, verbose=verbose)
 

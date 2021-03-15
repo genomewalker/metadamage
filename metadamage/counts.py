@@ -266,6 +266,8 @@ def compute_counts_with_dask(cfg, use_processes=True):
     # client.shutdown()
     # cluster.close()
     clean_up_after_dask()
+
+    df["shortname"] = cfg.shortname
     categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname"]
     df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
     return df2

@@ -558,8 +558,6 @@ def get_sorted_and_cutted_df(df, df_results, cfg):
 
 #%%
 
-#%%
-
 
 def is_df_counts_accepted(df_counts, cfg):
     if len(df_counts) > 0:
@@ -577,7 +575,7 @@ def is_df_counts_accepted(df_counts, cfg):
 
 def initial_print(filenames, cfg):
 
-    # console.print("\n")
+    console.print("")
     console.rule("[bold red]Initialization")
     # console.print(
     #     f"\nRunning [bold green underline]metadamage[/bold green underline] "
@@ -587,7 +585,7 @@ def initial_print(filenames, cfg):
     # console.print("")
 
     console.rule("[bold red]Main")
-    # console.print("")
+    console.print("")
 
 
 #%%

@@ -123,3 +123,8 @@ if utils.is_ipython():
         taxid = 3745
         taxid = 395312
         group = utils.get_specific_taxid(df, taxid)
+
+        # from metadamage import io
+        # io.Parquet(
+        #     "./data/out/fit_results/KapK-12-1-24-Ext-1-Lib-1-Index2.parquet"
+        # ).load_metadata()
