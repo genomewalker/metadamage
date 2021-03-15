@@ -487,7 +487,11 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
     d_fits = {}
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
-    fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(timeout_subsequent_fits)
+    fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(
+        timeout_subsequent_fits
+    )
+
+    fit_single_group = fit_single_group_first_fit
 
     logger.info(f"Fit: Initializing fit in seriel.")
 
@@ -500,16 +504,8 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
             total=len(groupby),
         )
 
-        for i, (tax_id, group) in enumerate(groupby):
+        for tax_id, group in groupby:
             # break
-
-            # logger.info(f"Fitting tax_id {tax_id} now (i={i}). INFO")
-            # logger.debug(f"Fitting tax_id {tax_id} now (i={i}). DEBUG")
-
-            if i == 0:
-                fit_single_group = fit_single_group_first_fit
-            else:
-                fit_single_group = fit_single_group_subsequent_fits
 
             try:
                 d_fit = fit_single_group(
@@ -527,6 +523,7 @@ def compute_fits_seriel(df, mcmc_kwargs, cfg):
                 logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
 
             progress.advance(task_fit)
+            fit_single_group = fit_single_group_subsequent_fits
 
     return d_fits
 
@@ -539,7 +536,9 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
-    fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(timeout_subsequent_fits)
+    fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(
+        timeout_subsequent_fits
+    )
 
     # first run is patient
     fit_single_group = fit_single_group_first_fit
@@ -585,6 +584,8 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
 
     d_fits = {}
 
+    error_tax_ids = set()
+
     with progress:
         task_fit = progress.add_task(
             "task_status_fitting",
@@ -604,6 +605,7 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
             if d_fit is not TimeoutError:
                 d_fits[tax_id] = d_fit
             else:
+                error_tax_ids.add(tax_id)
                 logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
             progress.advance(task_fit)
 
@@ -624,7 +626,7 @@ def compute_fits_parallel_with_progressbar(df, cfg, mcmc_kwargs):
     the_pool.close()
     the_pool.join()
 
-    return d_fits
+    return d_fits, list(error_tax_ids)
 
 
 #%%
@@ -686,13 +688,21 @@ def make_df_fit_results_from_fit_results(fit_results, df_counts, cfg):
 
 def compute_fits(df_counts, cfg, mcmc_kwargs):
 
-    groupby = df_counts.groupby("tax_id", sort=False, observed=True)
+    # groupby = df_counts.groupby("tax_id", sort=False, observed=True)
 
     if cfg.N_cores == 1:  #  or len(groupby) < 10:
         d_fits = compute_fits_seriel(df_counts, mcmc_kwargs, cfg)
 
     else:
-        d_fits = compute_fits_parallel_with_progressbar(df_counts, cfg, mcmc_kwargs)
+        d_fits, error_tax_ids = compute_fits_parallel_with_progressbar(
+            df_counts, cfg, mcmc_kwargs
+        )
+        print(error_tax_ids)
+
+        d_fits2, error_tax_ids2 = compute_fits_parallel_with_progressbar(
+            df_counts.query("tax_id in @error_tax_ids"), cfg, mcmc_kwargs
+        )
+        print(error_tax_ids2)
 
     fit_results = {tax_id: d["fit_result"] for tax_id, d in d_fits.items()}
 

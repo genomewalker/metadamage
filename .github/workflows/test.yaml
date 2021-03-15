@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-4
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-5
       #----------------------------------------------
       # install dependencies if cache does not exist
       #----------------------------------------------

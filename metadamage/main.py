@@ -69,11 +69,38 @@ def main(filenames, cfg):
             # continue
             # group = utils.get_specific_tax_id(df_counts, tax_id=-1)  # get very first group
 
+            tax_ids = [
+                85604,
+                41197,
+                41196,
+                41196,
+                41196,
+                981120,
+                3329,
+                41191,
+                37567,
+                7088,
+                325217,
+                1082933,
+                1348585,
+                240010,
+                189328,
+                97854,
+                325515,
+                50460,
+                1420917,
+                1879023,
+                431838,
+            ]
+            df_counts = df_counts.query("tax_id in @tax_ids")
+            print(df_counts)
+
             if not utils.is_df_counts_accepted(df_counts, cfg):
                 continue
 
             # fits.fit_test(df_counts, cfg)
             df_fit_results, df_fit_predictions = fits.get_fits(df_counts, cfg)
+            print(df_fit_results)
 
             progress.refresh()
             progress.advance(task_id_overall)
