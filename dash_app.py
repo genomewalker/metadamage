@@ -26,29 +26,21 @@ from plotly.subplots import make_subplots
 # First Party
 from metadamage import mydash, taxonomy, utils, io
 
-from about_time import about_time
-
 #%%
 
 mydash.utils.set_custom_theme()
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 #%%
-#%%
-# x = x
-
-#%%
 
 folder = Path("./data/out")
 verbose = True
-# shortname = "EC-Ext-A27-Lib27A-Index1"
 
-print(f"Time taken to get fit_results:")
 with about_time() as at1:
     fit_results = mydash.fit_results.FitResults(
         folder, verbose=verbose, very_verbose=False
     )
-print(f"\t Total: {at1.duration_human}\n")
+# print(f"\t Total: {at1.duration_human}\n")
 
 
 #%%BOOTSTRAP
@@ -183,6 +175,7 @@ card_datatable = dbc.Card(
 
 #%%
 
+import itertools
 
 filter_tax_id = dbc.Row(
     [
@@ -191,14 +184,45 @@ filter_tax_id = dbc.Row(
             width=12,
         ),
         dbc.Col(
-            html.H3("Filter based on specific Taxas"),
+            html.H3("Filter specific taxa"),
+            width=12,
+        ),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dcc.Dropdown(
+                        id="tax_id_filter_input",
+                        options=[
+                            {"label": tax, "value": tax}
+                            for tax in itertools.chain.from_iterable(
+                                [
+                                    fit_results.all_tax_ranks,
+                                    fit_results.all_tax_names,
+                                    fit_results.all_tax_ids,
+                                ]
+                            )
+                        ],
+                        clearable=True,
+                        multi=True,
+                        placeholder="Select taxas...",
+                    ),
+                ]
+            ),
+            width=12,
+        ),
+        dbc.Col(
+            html.Br(),
+            width=12,
+        ),
+        dbc.Col(
+            html.H3("Filter taxanomic descendants"),
             width=12,
         ),
         dbc.Col(
             dbc.FormGroup(
                 [
                     dbc.Input(
-                        id="tax_id_filter_input",
+                        id="tax_id_filter_input_descendants",
                         placeholder="Input goes here...",
                         type="text",
                         autoComplete="off",
@@ -278,7 +302,7 @@ filter_dropdown_file = dbc.FormGroup(
         # dbc.Label("Dropdown"),
         html.Br(),
         dbc.Col(
-            html.H3("Filter based on input samples"),
+            html.H3("Filter input samples"),
             width=12,
         ),
         mydash.elements.get_dropdown_file_selection(
@@ -349,7 +373,7 @@ filters_collapse_ranges = html.Div(
             [
                 html.Br(),
                 dbc.Col(
-                    html.H3("Filter based on fit results"),
+                    html.H3("Filter fit results"),
                     width=12,
                 ),
                 dbc.Col(
@@ -643,7 +667,29 @@ def update_dropdown_when_Select_All(dropdown_file_selection):
     return dropdown_file_selection
 
 
-def apply_tax_id_filter(d_filter, tax_name, tax_id_filter_subspecies):
+def append_to_list_if_exists(d, key, value):
+    if key in d:
+        d[key].append(value)
+    else:
+        d[key] = [value]
+
+
+def apply_tax_id_filter(d_filter, tax_id_filter_input):
+    if tax_id_filter_input is None or len(tax_id_filter_input) == 0:
+        return None
+
+    for tax in tax_id_filter_input:
+        if tax in fit_results.all_tax_ids:
+            append_to_list_if_exists(d_filter, "tax_ids", tax)
+        elif tax in fit_results.all_tax_names:
+            append_to_list_if_exists(d_filter, "tax_names", tax)
+        elif tax in fit_results.all_tax_ranks:
+            append_to_list_if_exists(d_filter, "tax_ranks", tax)
+        else:
+            raise AssertionError(f"Tax {tax} could not be found. ")
+
+
+def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies):
     if tax_name is None:
         return None
 
@@ -653,19 +699,23 @@ def apply_tax_id_filter(d_filter, tax_name, tax_id_filter_subspecies):
     )
     N_tax_ids = len(tax_ids)
     if N_tax_ids != 0:
-        d_filter["tax_ids"] = tax_ids
+        if "tax_id" in d_filter:
+            d_filter["tax_ids"].extend(tax_ids)
+        else:
+            d_filter["tax_ids"] = tax_ids
 
 
 @app.callback(
     Output("store", "data"),
     Output("modal", "is_open"),
     Input("dropdown_file_selection", "value"),
+    Input("tax_id_filter_input", "value"),
     Input("tax_id_plot_button", "n_clicks"),
     Input({"type": "dynamic-slider", "index": ALL}, "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
     Input("modal_close_button", "n_clicks"),
-    State("tax_id_filter_input", "value"),
+    State("tax_id_filter_input_descendants", "value"),
     State("tax_id_filter_subspecies", "value"),
     State({"type": "dynamic-slider", "index": ALL}, "id"),
     State("modal", "is_open"),
@@ -673,12 +723,13 @@ def apply_tax_id_filter(d_filter, tax_name, tax_id_filter_subspecies):
 )
 def filter_fit_results(
     dropdown_file_selection,
+    tax_id_filter_input,
     tax_id_button,
     slider_values,
     marker_size_max,
     marker_transformation,
     n_clicks_modal,
-    tax_id_filter_input,
+    tax_id_filter_input_descendants,
     tax_id_filter_subspecies,
     slider_ids,
     modal_is_open,
@@ -703,11 +754,25 @@ def filter_fit_results(
         for shortname, values in zip(slider_names, slider_values):
             d_filter[shortname] = values
 
-        apply_tax_id_filter(d_filter, tax_id_filter_input, tax_id_filter_subspecies)
+        if tax_id_filter_input is not None and len(tax_id_filter_input) > 0:
+            print("tax_id_filter_input", tax_id_filter_input)
+
+        apply_tax_id_filter(
+            d_filter,
+            tax_id_filter_input,
+        )
+
+        apply_tax_id_descendants_filter(
+            d_filter,
+            tax_id_filter_input_descendants,
+            tax_id_filter_subspecies,
+        )
+
+        print(d_filter)
 
         df_fit_results_filtered = fit_results.filter(d_filter)
 
-    print(f"Time taken to filter : {at1.duration_human}")
+    # print(f"Time taken to filter : {at1.duration_human}")
 
     # raise modal warning if no results due to too restrictive filtering
     if len(df_fit_results_filtered) == 0:
@@ -989,7 +1054,7 @@ def include_subspecies(subspecies):
 @app.callback(
     Output("tax_id_filter_counts_output", "children"),
     # Input("tax_id_filter_button", "n_clicks"),
-    Input("tax_id_filter_input", "value"),
+    Input("tax_id_filter_input_descendants", "value"),
     Input("tax_id_filter_subspecies", "value"),
 )
 def update_tax_id_filter_counts(tax_name, subspecies):
@@ -1058,6 +1123,7 @@ def is_ipython():
 
 if __name__ == "__main__" and not is_ipython():
     app.run_server(debug=True)
+    # app.run_server(debug=False)
 
 
 else:
@@ -1110,8 +1176,12 @@ else:
     mydash.elements.get_dropdown_file_selection(
         id="dropdown_file_selection",
         fit_results=fit_results,
-        shortnames_to_show="all",
+        shortnames_to_show="each",
     )
+
+    fit_results.all_tax_ranks
+    fit_results.all_tax_names
+    fit_results.all_tax_ids
 
     # tax_ids = taxonomy.extract_descendant_tax_ids(
     #     1,

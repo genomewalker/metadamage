@@ -106,6 +106,9 @@ class FitResults:
 
         self.df_fit_results = df
 
+        self.all_tax_ids = set(self.df_fit_results.tax_id.unique())
+        self.all_tax_names = set(self.df_fit_results.tax_name.unique())
+        self.all_tax_ranks = set(self.df_fit_results.tax_rank.unique())
         self.shortnames = list(self.df_fit_results.shortname.unique())
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
@@ -183,6 +186,18 @@ class FitResults:
 
             elif dimension == "tax_ids":
                 query += f"(tax_id in {filter}) & "
+
+            elif dimension == "tax_rank":
+                query += f"(tax_rank == {filter}) & "
+
+            elif dimension == "tax_ranks":
+                query += f"(tax_rank in {filter}) & "
+
+            elif dimension == "tax_name":
+                query += f"(tax_name == {filter}) & "
+
+            elif dimension == "tax_names":
+                query += f"(tax_name in {filter}) & "
 
             else:
                 low, high = filter
