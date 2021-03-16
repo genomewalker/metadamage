@@ -70,14 +70,14 @@ class FitResults:
         with about_time() as times["hover"]:
             self._set_hover_info()
 
-        with about_time() as times["dimensions"]:
-            self._set_dimensions()
+        with about_time() as times["columns"]:
+            self._set_columns()
 
         with about_time() as times["labels"]:
             self._set_labels()
 
-        with about_time() as times["dimensions_forward_reverse"]:
-            self._set_dimensions_forward_reverse()
+        with about_time() as times["columns_forward_reverse"]:
+            self._set_columns_forward_reverse()
 
         if very_verbose:
             for key, val in times.items():
@@ -170,41 +170,41 @@ class FitResults:
 
     def filter(self, filters, df_type="df_fit_results"):
         query = ""
-        for dimension, filter in filters.items():
+        for column, filter in filters.items():
 
             if filter is None:
                 continue
 
-            elif dimension == "shortnames":
+            elif column == "shortnames":
                 query += f"(shortname in {filter}) & "
 
-            elif dimension == "shortname":
+            elif column == "shortname":
                 query += f"(shortname == '{filter}') & "
 
-            elif dimension == "tax_id":
+            elif column == "tax_id":
                 query += f"(tax_id == {filter}) & "
 
-            elif dimension == "tax_ids":
+            elif column == "tax_ids":
                 query += f"(tax_id in {filter}) & "
 
-            elif dimension == "tax_rank":
+            elif column == "tax_rank":
                 query += f"(tax_rank == {filter}) & "
 
-            elif dimension == "tax_ranks":
+            elif column == "tax_ranks":
                 query += f"(tax_rank in {filter}) & "
 
-            elif dimension == "tax_name":
+            elif column == "tax_name":
                 query += f"(tax_name == {filter}) & "
 
-            elif dimension == "tax_names":
+            elif column == "tax_names":
                 query += f"(tax_name in {filter}) & "
 
             else:
                 low, high = filter
-                if dimension in ["N_alignments", "y_sum_total", "N_sum_total"]:
+                if column in mydash.utils.log_transform_columns:
                     low = mydash.utils.log_transform_slider(low)
                     high = mydash.utils.log_transform_slider(high)
-                query += f"({low} <= {dimension} <= {high}) & "
+                query += f"({low} <= {column} <= {high}) & "
 
         query = query[:-2]
         # print(query)
@@ -288,8 +288,8 @@ class FitResults:
 
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
-    def _set_dimensions(self):
-        self.dimensions = [
+    def _set_columns(self):
+        self.columns = [
             "n_sigma",
             "D_max",
             "N_alignments_log10",
@@ -313,22 +313,22 @@ class FitResults:
             r"$\large \mathrm{noise}$",
         ]
 
-        iterator = zip(self.dimensions, labels_list)
-        self.labels = {dimension: label for dimension, label in iterator}
+        iterator = zip(self.columns, labels_list)
+        self.labels = {column: label for column, label in iterator}
 
-    def iterate_over_dimensions(self):
+    def iterate_over_columns(self):
         row = 1
         column = 1
-        for dimension in self.dimensions:
-            yield dimension, row, column
+        for column in self.columns:
+            yield column, row, column
             if column >= 4:
                 row += 1
                 column = 1
             else:
                 column += 1
 
-    def _set_dimensions_forward_reverse(self):
-        self.dimensions_forward_reverse = {
+    def _set_columns_forward_reverse(self):
+        self.columns_forward_reverse = {
             "n_sigma": r"$\large n_\sigma$",
             "D_max": r"$\large D_\mathrm{max}$",
             "N_z1": r"$\large N_{z=1}$",
@@ -337,25 +337,25 @@ class FitResults:
             "normalized_noise": r"$\large \mathrm{noise}$",
         }
         # if not self.has_y_sum_total:
-        #     self.dimensions_forward_reverse.pop("y_sum")
+        #     self.columns_forward_reverse.pop("y_sum")
 
-    def iterate_over_dimensions_forward_reverse(self, N_cols):
+    def iterate_over_columns_forward_reverse(self, N_cols):
         showlegend = True
-        for i, dimension in enumerate(self.dimensions_forward_reverse.keys()):
+        for i, column in enumerate(self.columns_forward_reverse.keys()):
             column = i % N_cols
             row = (i - column) // N_cols
             column += 1
             row += 1
 
-            forward = f"{dimension}_forward"
-            reverse = f"{dimension}_reverse"
+            forward = f"{column}_forward"
+            reverse = f"{column}_reverse"
 
-            yield dimension, row, column, showlegend, forward, reverse
+            yield column, row, column, showlegend, forward, reverse
             showlegend = False
 
-    def parse_click_data(self, click_data, variable):
+    def parse_click_data(self, click_data, column):
         try:
-            index = self.custom_data_columns.index(variable)
+            index = self.custom_data_columns.index(column)
             value = click_data["points"][0]["customdata"][index]
             return value
 

@@ -79,7 +79,7 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
 
     df = fit_results.df_fit_results
 
-    if column in ["N_alignments", "y_sum_total", "N_sum_total"]:
+    if column in mydash.utils.log_transform_columns:
 
         x = df[column]
 
@@ -104,7 +104,7 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
         marks[marks_steps[0]] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
         marks[marks_steps[-1]] = {"label": "No Max.", "style": {"color": "#a3ada9"}}
 
-    elif column == "D_max":
+    elif column == "D_max" or column == "q_mean":
         range_min = 0.0
         range_max = 1.0
         marks = {

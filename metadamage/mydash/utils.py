@@ -44,6 +44,7 @@ def set_custom_theme():
 
 #%%
 
+log_transform_columns = ["N_alignments", "y_sum_total", "N_sum_total"]
 
 def log_transform_slider(x):
     return np.where(x < 0, 0, 10 ** np.clip(x, 0, a_max=None))

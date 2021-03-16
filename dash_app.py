@@ -390,12 +390,12 @@ filters_collapse_ranges = html.Div(
                     width=12,
                 ),
                 dbc.Col(
-                    id="dynamic-slider-container",
+                    id="dynamic_slider-container",
                     children=[],
                     width=12,
                 ),
             ],
-            id="filters_dropdown_ranges",
+            id="filters_dropdown_ranges_button",
             is_open=False,
         ),
     ]
@@ -425,7 +425,7 @@ filter_card = dbc.Card(
 
 form_overview_marker_size = dbc.FormGroup(
     [
-        dbc.Label("Marker Size", className="mr-2"),
+        dbc.Label("Marker scaling", className="mr-2"),
         # dbc.Col(
         html.Div(
             dcc.Slider(  # possible fix for ReferenceError
@@ -443,7 +443,7 @@ form_overview_marker_size = dbc.FormGroup(
 
 form_overview_marker_transformation = dbc.FormGroup(
     [
-        dbc.Label("Marker Transformation", className="mr-2"),
+        dbc.Label("Marker transformation", className="mr-2"),
         # dbc.Col(
         dcc.Dropdown(  # possible fix for ReferenceError
             id={"type": "dropdown_overview_marker_transformation", "index": 0},
@@ -711,13 +711,13 @@ def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies
     Input("dropdown_file_selection", "value"),
     Input("tax_id_filter_input", "value"),
     Input("tax_id_plot_button", "n_clicks"),
-    Input({"type": "dynamic-slider", "index": ALL}, "value"),
+    Input({"type": "dynamic_slider", "index": ALL}, "value"),
     Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
     Input({"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"),
     Input("modal_close_button", "n_clicks"),
     State("tax_id_filter_input_descendants", "value"),
     State("tax_id_filter_subspecies", "value"),
-    State({"type": "dynamic-slider", "index": ALL}, "id"),
+    State({"type": "dynamic_slider", "index": ALL}, "id"),
     State("modal", "is_open"),
     # State("tabs", "active_tab"),
 )
@@ -754,9 +754,6 @@ def filter_fit_results(
         for shortname, values in zip(slider_names, slider_values):
             d_filter[shortname] = values
 
-        if tax_id_filter_input is not None and len(tax_id_filter_input) > 0:
-            print("tax_id_filter_input", tax_id_filter_input)
-
         apply_tax_id_filter(
             d_filter,
             tax_id_filter_input,
@@ -768,8 +765,6 @@ def filter_fit_results(
             tax_id_filter_subspecies,
         )
 
-        print(d_filter)
-
         df_fit_results_filtered = fit_results.filter(d_filter)
 
     # print(f"Time taken to filter : {at1.duration_human}")
@@ -779,9 +774,6 @@ def filter_fit_results(
         return dash.no_update, True
 
     return df_fit_results_filtered.to_dict("records"), dash.no_update
-
-
-#%%
 
 
 #%%
@@ -819,43 +811,67 @@ def get_name_of_removed_slider(current_names, dropdown_names):
     return list(set(current_names).difference(dropdown_names))[0]
 
 
-def remove_name_from_children(shortname, children, id_type):
-    " Given a shortname, remove the corresponding child element from children"
-    index = find_index_in_children(children, id_type=id_type, search_index=shortname)
+def remove_name_from_children(column, children, id_type):
+    " Given a column, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=column)
     children.pop(index)
 
 
-def make_new_slider(shortname, id_type, N_steps=100):
+def get_slider_name(column, low_high):
+    if isinstance(low_high, dict):
+        low = low_high["min"]
+        high = low_high["max"]
+    elif isinstance(low_high, (tuple, list)):
+        low = low_high[0]
+        high = low_high[1]
+
+    if column in mydash.utils.log_transform_columns:
+        low = mydash.utils.log_transform_slider(low)
+        high = mydash.utils.log_transform_slider(high)
+
+    low = utils.human_format(low)
+    high = utils.human_format(high)
+
+    return f"{column}: [{low}, {high}]"
+
+
+def make_new_slider(column, id_type, N_steps=100):
+
+    d_range_slider = mydash.elements.get_range_slider_keywords(
+        fit_results,
+        column=column,
+        N_steps=N_steps,
+    )
+
     return dbc.Container(
         [
             dbc.Row(html.Br()),
-            dbc.Row(html.P(shortname), justify="center"),
+            dbc.Row(
+                html.P(
+                    get_slider_name(column, d_range_slider),
+                    id={"type": "dynamic_slider_name", "index": column},
+                ),
+                justify="center",
+            ),
             dbc.Row(
                 dbc.Col(
                     dcc.RangeSlider(
-                        id={
-                            "type": "dynamic-slider",
-                            "index": shortname,
-                        },
-                        **mydash.elements.get_range_slider_keywords(
-                            fit_results,
-                            column=shortname,
-                            N_steps=N_steps,
-                        ),
+                        id={"type": "dynamic_slider", "index": column},
+                        **d_range_slider,
                     ),
                     width=12,
                 ),
             ),
         ],
-        id={"type": id_type, "index": shortname},
+        id={"type": id_type, "index": column},
     )
 
 
 @app.callback(
-    Output("dynamic-slider-container", "children"),
+    Output("dynamic_slider-container", "children"),
     Input("dropdown_slider", "value"),
-    State("dynamic-slider-container", "children"),
-    State({"type": "dynamic-slider", "index": ALL}, "id"),
+    State("dynamic_slider-container", "children"),
+    State({"type": "dynamic_slider", "index": ALL}, "id"),
     prevent_initial_call=True,
 )
 def add_or_remove_slider(
@@ -864,23 +880,34 @@ def add_or_remove_slider(
     current_ids,
 ):
 
-    # id_type = "div"
     id_type = "dbc"
 
     current_names = get_current_names(current_ids)
 
     # add new slider
     if slider_is_added(current_names, dropdown_names):
-        shortname = get_name_of_added_slider(current_names, dropdown_names)
-        new_element = make_new_slider(shortname, id_type=id_type)
+        column = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(column, id_type=id_type)
         children.append(new_element)
 
     # remove selected slider
     else:
-        shortname = get_name_of_removed_slider(current_names, dropdown_names)
-        remove_name_from_children(shortname, children, id_type=id_type)
+        column = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(column, children, id_type=id_type)
 
     return children
+
+
+@app.callback(
+    Output({"type": "dynamic_slider_name", "index": MATCH}, "children"),
+    Input({"type": "dynamic_slider", "index": MATCH}, "value"),
+    State({"type": "dynamic_slider", "index": MATCH}, "id"),
+    prevent_initial_call=True,
+)
+def update_slider_name(dynamic_slider_values, dynamic_slider_name):
+    column = dynamic_slider_name["index"]
+    name = get_slider_name(column, dynamic_slider_values)
+    return name
 
 
 #%%
@@ -980,8 +1007,8 @@ def update_data_table(click_data, active_tab):
         return ds.to_dict("records")
 
     try:
-        tax_id = fit_results.parse_click_data(click_data, variable="tax_id")
-        shortname = fit_results.parse_click_data(click_data, variable="shortname")
+        tax_id = fit_results.parse_click_data(click_data, column="tax_id")
+        shortname = fit_results.parse_click_data(click_data, column="shortname")
         df_fit_results_filtered = fit_results.filter(
             {"shortname": shortname, "tax_id": tax_id}
         )
@@ -1030,8 +1057,8 @@ def update_dropdowns_based_on_click_data(click_data, active_tab):
             # print("update_dropdowns_based_on_click_data got here")
             raise PreventUpdate
         try:
-            tax_id = fit_results.parse_click_data(click_data, variable="tax_id")
-            shortname = fit_results.parse_click_data(click_data, variable="shortname")
+            tax_id = fit_results.parse_click_data(click_data, column="tax_id")
+            shortname = fit_results.parse_click_data(click_data, column="shortname")
             return shortname, tax_id
         except KeyError:
             # print("update_dropdowns_based_on_click_data got KeyError")
@@ -1103,10 +1130,10 @@ def toggle_collapse_tax_ids(n, is_open):
 
 
 @app.callback(
-    Output("filters_dropdown_ranges", "is_open"),
+    Output("filters_dropdown_ranges_button", "is_open"),
     Output("filters_toggle_ranges_button", "outline"),
     Input("filters_toggle_ranges_button", "n_clicks"),
-    State("filters_dropdown_ranges", "is_open"),
+    State("filters_dropdown_ranges_button", "is_open"),
 )
 def toggle_collapse_ranges(n, is_open):
     if n:
