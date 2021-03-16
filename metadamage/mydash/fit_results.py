@@ -22,32 +22,82 @@ memory = Memory(cachedir, verbose=0)
 
 #%%
 
+from about_time import about_time
+
+#%%
+
+from joblib import Memory
+
+cachedir = "memoization"
+memory = Memory(cachedir, verbose=0)
+
+# @memory.cache
+
+#%%
+
+
+from datetime import datetime
+
+
+@memory.cache
+def load_parquet_file_memoized(pathname, date_string):
+    df = io.Parquet(pathname).load()
+    return df
+
+
 #%%
 
 
 class FitResults:
-    def __init__(self, folder, verbose=False):
+    def __init__(self, folder, verbose=False, very_verbose=False):
         self.folder = Path(folder)
         self.verbose = verbose
-        self._load_df_fit_results()
-        self._load_df_fit_predictions()
-        self._compute_ranges()
-        self._set_cmap()
-        self._set_hover_info()
-        self._set_dimensions()
-        self._set_labels()
-        self._set_dimensions_forward_reverse()
+
+        times = {}
+
+        with about_time() as times["df_fit_results"]:
+            self._load_df_fit_results()
+
+        with about_time() as times["df_fit_predictions"]:
+            self._load_df_fit_predictions()
+
+        with about_time() as times["ranges"]:
+            self._compute_ranges()
+
+        with about_time() as times["cmap"]:
+            self._set_cmap()
+
+        with about_time() as times["hover"]:
+            self._set_hover_info()
+
+        with about_time() as times["dimensions"]:
+            self._set_dimensions()
+
+        with about_time() as times["labels"]:
+            self._set_labels()
+
+        with about_time() as times["dimensions_forward_reverse"]:
+            self._set_dimensions_forward_reverse()
+
+        if very_verbose:
+            for key, val in times.items():
+                print(f"\t {key}: {val.duration_human}")
 
     #%%
 
-    def _load_df_counts_all(self):
-        return io.Parquet(self.folder / "counts").load()
+    # def _load_df_counts_all(self):
+    #     return io.Parquet(self.folder / "counts").load()
 
-    def load_df_counts_shortname(self, shortname):
-        return io.Parquet(self.folder / "counts").load(shortname)
+    def load_df_counts_shortname(self, shortname, columns=None):
+        return io.Parquet(self.folder / "counts").load(shortname, columns=columns)
+
+    def _load_parquet_file(self, key):
+        date_string = datetime.now().strftime("%Y-%d-%m")
+        df = load_parquet_file_memoized(self.folder / key, date_string)
+        return df
 
     def _load_df_fit_results(self):
-        df = io.Parquet(self.folder / "fit_results").load()
+        df = self._load_parquet_file("fit_results")
 
         df["N_alignments_log10"] = np.log10(df["N_alignments"])
         df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
@@ -61,7 +111,8 @@ class FitResults:
         self.set_marker_size(marker_transformation="sqrt")
 
     def _load_df_fit_predictions(self):
-        self.df_fit_predictions = io.Parquet(self.folder / "fit_predictions").load()
+        self.df_fit_predictions = self._load_parquet_file("fit_predictions")
+        # self.df_fit_predictions = io.Parquet(self.folder / "fit_predictions").load()
 
     def _get_range_of_column(self, column, spacing):
         array = self.df_fit_results[column]

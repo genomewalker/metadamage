@@ -26,6 +26,7 @@ from plotly.subplots import make_subplots
 # First Party
 from metadamage import mydash, taxonomy, utils, io
 
+from about_time import about_time
 
 #%%
 
@@ -42,7 +43,12 @@ folder = Path("./data/out")
 verbose = True
 # shortname = "EC-Ext-A27-Lib27A-Index1"
 
-fit_results = mydash.fit_results.FitResults(folder, verbose=verbose)
+print(f"Time taken to get fit_results:")
+with about_time() as at1:
+    fit_results = mydash.fit_results.FitResults(
+        folder, verbose=verbose, very_verbose=False
+    )
+print(f"\t Total: {at1.duration_human}\n")
 
 
 #%%BOOTSTRAP
@@ -278,7 +284,7 @@ filter_dropdown_file = dbc.FormGroup(
         mydash.elements.get_dropdown_file_selection(
             id="dropdown_file_selection",
             fit_results=fit_results,
-            shortnames_to_show="all",
+            shortnames_to_show=10,
         ),
     ]
 )
@@ -666,16 +672,20 @@ def filter_fit_results(
     if not dropdown_file_selection:
         raise PreventUpdate
 
-    fit_results.set_marker_size(marker_transformation, marker_size_max)
+    with about_time() as at1:
 
-    d_filter = {"shortnames": dropdown_file_selection}
-    slider_names = [id["index"] for id in slider_ids]
-    for shortname, values in zip(slider_names, slider_values):
-        d_filter[shortname] = values
+        fit_results.set_marker_size(marker_transformation, marker_size_max)
 
-    apply_tax_id_filter(d_filter, tax_id_filter_input, tax_id_filter_subspecies)
+        d_filter = {"shortnames": dropdown_file_selection}
+        slider_names = [id["index"] for id in slider_ids]
+        for shortname, values in zip(slider_names, slider_values):
+            d_filter[shortname] = values
 
-    df_fit_results_filtered = fit_results.filter(d_filter)
+        apply_tax_id_filter(d_filter, tax_id_filter_input, tax_id_filter_subspecies)
+
+        df_fit_results_filtered = fit_results.filter(d_filter)
+
+    print(f"Time taken to filter : {at1.duration_human}")
 
     # raise modal warning if no results due to too restrictive filtering
     if len(df_fit_results_filtered) == 0:
@@ -899,7 +909,11 @@ def get_tax_id_options_based_on_shortname(shortname, df_string="df_fit_results")
     """df_string is a string, eg. df_fit_results or  df_counts.
     The 'df_' part is optional
     """
-    tax_ids = sorted(fit_results.load_df_counts_shortname(shortname)["tax_id"].unique())
+    tax_ids = sorted(
+        fit_results.load_df_counts_shortname(shortname, columns="tax_id")[
+            "tax_id"
+        ].unique()
+    )
     options = [{"label": i, "value": i} for i in tax_ids]
     return options
 
@@ -1063,10 +1077,10 @@ else:
 
     df_fit_results = fit_results.filter({"tax_ids": tax_ids})
 
-    fig2 = mydash.figures.plot_fit_results(fit_results, df_fit_results_all)
-    mydash.figures.plot_histograms(fit_results, df_fit_results_all)
-    mydash.figures.plot_scatter_matrix(fit_results, df_fit_results_all)
-    mydash.figures.plot_forward_reverse(fit_results, df_fit_results_all)
+    fig2 = mydash.figures.plot_fit_results(fit_results)
+    # mydash.figures.plot_histograms(fit_results)
+    # mydash.figures.plot_scatter_matrix(fit_results)
+    # mydash.figures.plot_forward_reverse(fit_results)
 
     mydash.elements.get_dropdown_file_selection(
         id="dropdown_file_selection",

@@ -15,7 +15,10 @@ from metadamage import counts, mydash
 #%%
 
 
-def plot_fit_results(fit_results, df_fit_results):
+def plot_fit_results(fit_results, df_fit_results=None):
+
+    if df_fit_results is None:
+        df_fit_results = fit_results.df_fit_results
 
     fig = px.scatter(
         df_fit_results,
@@ -30,6 +33,7 @@ def plot_fit_results(fit_results, df_fit_results):
         custom_data=fit_results.custom_data_columns,
         range_x=fit_results.ranges["n_sigma"],
         range_y=[0, 1],
+        render_mode="webgl",
     )
 
     fig.update_traces(
@@ -93,7 +97,10 @@ def plotly_histogram(
     return trace, np.max(binned[0])
 
 
-def plot_histograms(fit_results, df_fit_results):
+def plot_histograms(fit_results, df_fit_results=None):
+
+    if df_fit_results is None:
+        df_fit_results = fit_results.df_fit_results
 
     fig = make_subplots(rows=2, cols=4)
 
@@ -135,7 +142,10 @@ def plot_histograms(fit_results, df_fit_results):
 #%%
 
 
-def plot_scatter_matrix(fit_results, df_fit_results):
+def plot_scatter_matrix(fit_results, df_fit_results=None):
+
+    if df_fit_results is None:
+        df_fit_results = fit_results.df_fit_results
 
     fig = px.scatter_matrix(
         df_fit_results,
@@ -147,6 +157,7 @@ def plot_scatter_matrix(fit_results, df_fit_results):
         labels=fit_results.labels,
         opacity=0.1,
         custom_data=fit_results.custom_data_columns,
+        # render_mode="webgl",
     )
 
     fig.update_traces(
@@ -173,7 +184,10 @@ def plot_scatter_matrix(fit_results, df_fit_results):
 #%%
 
 
-def plot_forward_reverse(fit_results, df_fit_results):
+def plot_forward_reverse(fit_results, df_fit_results=None):
+
+    if df_fit_results is None:
+        df_fit_results = fit_results.df_fit_results
 
     N_rows = 3
     N_cols = 2
@@ -194,7 +208,7 @@ def plot_forward_reverse(fit_results, df_fit_results):
             )
 
             fig.add_trace(
-                go.Scatter(
+                go.Scattergl(
                     x=group[forward],
                     y=group[reverse],
                     showlegend=showlegend,
@@ -559,7 +573,6 @@ def _plot_count_fraction(
     )
 
 
-# def plot_mismatch_fractions(group, chosen_mismatch_columns=None, fit=None):
 def plot_count_fraction(group, chosen_mismatch_columns=None, fit=None):
 
     if chosen_mismatch_columns is None:

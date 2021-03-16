@@ -44,6 +44,9 @@ class Parquet:
         else:
             filters = [("tax_id", "==", tax_id)]
 
+        if isinstance(columns, str):
+            columns = [columns]
+
         table = pq.read_table(filename, filters=filters, columns=columns)
         return table
 
