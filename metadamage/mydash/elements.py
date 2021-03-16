@@ -13,18 +13,43 @@ from dash_table import DataTable
 from metadamage import mydash, utils
 
 
+def get_shortnames_each(all_shortnames):
+    first_letters = {s[0] for s in all_shortnames}
+    values = []
+    for first_letter in first_letters:
+        for shortname in all_shortnames:
+            if shortname[0] == first_letter:
+                values.append(shortname)
+                break
+    return values
+
+
 def get_dropdown_file_selection(id, fit_results, shortnames_to_show="all"):
 
-    if shortnames_to_show == "all":
-        shortnames_to_show = None
+    special_shortnames = ["Select all", "Deselect (almost) all"]
+    N_special_shortnames = len(special_shortnames)
+    all_shortnames = special_shortnames + fit_results.shortnames
+
+    if shortnames_to_show is None:
+        values = all_shortnames
+
+    elif isinstance(shortnames_to_show, int):
+        values = all_shortnames[: shortnames_to_show + N_special_shortnames]
+
+    elif isinstance(shortnames_to_show, str):
+
+        if shortnames_to_show == "all":
+            values = all_shortnames
+
+        elif shortnames_to_show == "each":
+            values = get_shortnames_each(fit_results.shortnames)
 
     dropdown_file_selection = dcc.Dropdown(
         id=id,
         options=[
-            {"label": shortname, "value": shortname}
-            for shortname in fit_results.shortnames
+            {"label": shortname, "value": shortname} for shortname in all_shortnames
         ],
-        value=fit_results.shortnames[:shortnames_to_show],
+        value=values,
         multi=True,
         placeholder="Select files to plot",
     )

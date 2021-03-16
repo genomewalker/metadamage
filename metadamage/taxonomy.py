@@ -25,7 +25,7 @@ def extract_descendant_tax_ids(tax, include_subspecies=True):
     except ValueError:
         return []
 
-        # subspecies
+    # subspecies
     if include_subspecies:
         try:
             descendants |= set(ncbi.get_descendant_taxa(tax, collapse_subspecies=False))

@@ -255,7 +255,7 @@ filter_tax_id = dbc.Row(
 filters_collapse_tax_id = html.Div(
     [
         dbc.Button(
-            "Filter TaxIDs",
+            "Filter Tax IDs",
             id="filters_toggle_tax_ids_button",
             color="secondary",
             block=True,
@@ -284,7 +284,7 @@ filter_dropdown_file = dbc.FormGroup(
         mydash.elements.get_dropdown_file_selection(
             id="dropdown_file_selection",
             fit_results=fit_results,
-            shortnames_to_show=10,
+            shortnames_to_show="each",  # one for each first letter in shortname
         ),
     ]
 )
@@ -623,6 +623,26 @@ app.layout = dbc.Container(
 #
 
 
+def key_is_in_list_case_insensitive(lst, key):
+    return any([key.lower() in s.lower() for s in lst])
+
+
+@app.callback(
+    Output("dropdown_file_selection", "value"),
+    Input("dropdown_file_selection", "value"),
+)
+def update_dropdown_when_Select_All(dropdown_file_selection):
+    if key_is_in_list_case_insensitive(dropdown_file_selection, "Select all"):
+        print("dropdown_file_selection Select all")
+        dropdown_file_selection = fit_results.shortnames
+    elif key_is_in_list_case_insensitive(dropdown_file_selection, "Deselect"):
+        print("dropdown_file_selection Deselect Most")
+        dropdown_file_selection = mydash.elements.get_shortnames_each(
+            fit_results.shortnames
+        )
+    return dropdown_file_selection
+
+
 def apply_tax_id_filter(d_filter, tax_name, tax_id_filter_subspecies):
     if tax_name is None:
         return None
@@ -649,6 +669,7 @@ def apply_tax_id_filter(d_filter, tax_name, tax_id_filter_subspecies):
     State("tax_id_filter_subspecies", "value"),
     State({"type": "dynamic-slider", "index": ALL}, "id"),
     State("modal", "is_open"),
+    # State("tabs", "active_tab"),
 )
 def filter_fit_results(
     dropdown_file_selection,
@@ -661,6 +682,7 @@ def filter_fit_results(
     tax_id_filter_subspecies,
     slider_ids,
     modal_is_open,
+    # active_tab,
     prevent_initial_call=True,
 ):
 
@@ -692,6 +714,9 @@ def filter_fit_results(
         return dash.no_update, True
 
     return df_fit_results_filtered.to_dict("records"), dash.no_update
+
+
+#%%
 
 
 #%%
@@ -1087,3 +1112,8 @@ else:
         fit_results=fit_results,
         shortnames_to_show="all",
     )
+
+    # tax_ids = taxonomy.extract_descendant_tax_ids(
+    #     1,
+    #     include_subspecies=False,
+    # )
