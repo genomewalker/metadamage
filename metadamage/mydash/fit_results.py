@@ -143,7 +143,7 @@ class FitResults:
                     range_reverse = ranges[column_reverse]
 
                     if column == "n_sigma":
-                        paddding = 2
+                        paddding = 1
                     elif column == "D_max":
                         paddding = 0.1
                     elif column == "noise":

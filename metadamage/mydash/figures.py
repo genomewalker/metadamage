@@ -15,12 +15,21 @@ from metadamage import counts, mydash
 #%%
 
 
-def set_opacity_for_trace(trace):
+def set_opacity_for_trace(
+    trace, method="sqrt", scale=3.0, opacity_min=0.001, opacity_max=0.9
+):
     N = len(trace.x)
-    # opacity = 1 / N
-    # opacity = 1 / np.sqrt(N)
-    opacity = 1 / np.log(N)
-    # print(trace.name, opacity)
+    if "lin" in method:
+        opacity = 1 / N
+    elif method == "sqrt":
+        opacity = 1 / np.sqrt(N)
+    elif method == "log":
+        opacity = 1 / np.log(N)
+
+    opacity *= scale
+    opacity = max(opacity_min, min(opacity, opacity_max))
+
+    print(trace.name, opacity)
     trace.update(marker_opacity=opacity)
 
 
@@ -61,7 +70,15 @@ def plot_fit_results(fit_results, df_fit_results=None):
         legend_title="Files",
     )
 
-    fig.for_each_trace(set_opacity_for_trace)
+    fig.for_each_trace(
+        lambda trace: set_opacity_for_trace(
+            trace,
+            method="sqrt",
+            scale=20 / df_fit_results.shortname.nunique(),
+            opacity_min=0.001,
+            opacity_max=0.8,
+        )
+    )
 
     return fig
 
@@ -147,8 +164,8 @@ def plot_histograms(fit_results, df_fit_results=None):
 
 def set_opacity_for_trace_scatter_matrix(trace):
     N = len(trace.dimensions[0].values)
-    # opacity = 1 / np.log(N)
-    opacity = 1 / np.sqrt(N)
+    # opacity = 1 / np.sqrt(N)
+    opacity = 1 / N ** 0.75
     trace.update(marker_opacity=opacity)
 
 
@@ -240,13 +257,9 @@ def plot_forward_reverse(fit_results, df_fit_results=None):
     fig.update_xaxes(title_text="Forward")
     fig.update_yaxes(title_text="Reverse")
 
-    fig.for_each_trace(set_opacity_for_trace)
+    fig.for_each_trace(lambda trace: set_opacity_for_trace(trace, method="sqrt"))
 
-    fig.update_layout(
-        font_size=12,
-        # title_text="Forward / Reverse",
-        legend_title="Files",
-    )
+    fig.update_layout(font_size=12, legend_title="Files")
 
     return fig
 
