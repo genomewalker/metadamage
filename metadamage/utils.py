@@ -31,7 +31,7 @@ from rich import box
 from metadamage.progressbar import console, progress
 
 
-# def __post_init__
+import toml
 
 #%%
 
@@ -137,6 +137,11 @@ class Config:
             if isinstance(val, Path):
                 d_out[key] = str(val)
         return d_out
+
+    # def save_dict(self, dict_name):
+    #     d_out = self.to_dict()
+    #     with open(dict_name, "w") as f:
+    #         toml.dump(d_out, f)
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions

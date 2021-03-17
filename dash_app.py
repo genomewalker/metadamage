@@ -1189,8 +1189,6 @@ else:
     reload(taxonomy)
     tax_name = "Ursus"
     tax_name = "Mammalia"
-    # tax_name = "Chordata"
-    # tax_name = "Salmon"
     tax_ids = taxonomy.extract_descendant_tax_ids(tax_name)
 
     df_fit_results = fit_results.filter({"tax_ids": tax_ids})

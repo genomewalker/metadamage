@@ -41,6 +41,7 @@ timeout-decorator = "^0.5.0"
 dask = {version = "^2021.3.0", extras = ["complete"]}
 tornado = "^6.1"
 tables = "^3.6.1"
+toml = "^0.10.2"
 
 
 [tool.poetry.dev-dependencies]

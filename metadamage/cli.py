@@ -15,11 +15,7 @@ from metadamage import utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
 
-# from metadamage.mydash.main import main as dash_main
-# from mydash.dash_main import main as dash_main
-
-
-# from dash_app import app as dashapp
+out_dir_default = Path("./data/out/")
 
 
 def version_callback(value: bool):
@@ -97,7 +93,7 @@ def callback(
 def cli_fit(
     # Path: input filename(s) and output directory
     filenames: List[Path] = typer.Argument(...),
-    out_dir: Path = typer.Option(Path("./data/out/")),
+    out_dir: Path = typer.Option(out_dir_default),
     # Fit options
     max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
     max_cores: int = 1,
@@ -160,7 +156,7 @@ def cli_fit(
 
 @cli_app.command("dashboard")
 def cli_dashboard(
-    dir: Path = typer.Option(Path("./data/out/")),
+    dir: Path = typer.Option(out_dir_default),
 ):
     """Dashboard: Visualizing Ancient Damage.
 
@@ -178,9 +174,10 @@ def cli_dashboard(
 
     """
 
-    typer.echo(f"Dashboard, string={dir}.")
-    # dash_main(dir).run_server(debug=True)
-    # dash_main()
+    from metadamage.mydash.dash_app import get_app
+
+    dashboard_app = get_app(out_dir_default, verbose=False)
+    dashboard_app.run_server(debug=False)
 
 
 def cli_main():
