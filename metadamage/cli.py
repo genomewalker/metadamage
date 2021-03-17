@@ -189,7 +189,7 @@ def cli_dashboard(
     if not debug:
         dashboard.utils.open_browser_in_background()
     dashboard_app = dashboard.app.get_app(dir, verbose=verbose)
-    dashboard_app.run_server(debug=debug)
+    dashboard_app.run_server(debug=debug, host="0.0.0.0")
 
 
 def cli_main():
