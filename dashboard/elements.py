@@ -8,11 +8,11 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash_table import DataTable
+import dashboard
 
 # First Party
-# from metadamage import mydash, utils
 from metadamage.utils import human_format
-import dashboard
+
 
 def get_shortnames_each(all_shortnames):
     first_letters = {s[0] for s in all_shortnames}

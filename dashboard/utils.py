@@ -2,6 +2,7 @@
 import numpy as np
 
 # Standard Library
+from threading import Timer
 import webbrowser
 
 # Third Party
@@ -50,14 +51,14 @@ log_transform_columns = ["N_alignments", "y_sum_total", "N_sum_total"]
 def log_transform_slider(x):
     return np.where(x < 0, 0, 10 ** np.clip(x, 0, a_max=None))
 
-from threading import Timer
+
 def open_browser():
     # webbrowser.open_new("http://localhost:8050")
     webbrowser.open("http://localhost:8050")
 
 
 def open_browser_in_background():
-    Timer(1, open_browser).start();
+    Timer(3, open_browser).start()
 
 
 #%%

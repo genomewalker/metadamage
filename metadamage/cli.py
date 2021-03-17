@@ -7,6 +7,7 @@ from typing import Iterable, List, Literal, Optional, Union
 import click
 from click import Context
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
+import dashboard
 from rich.console import Console
 import typer
 
@@ -15,7 +16,8 @@ from metadamage import utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
 
-import dashboard
+
+# from dashboard import app
 
 
 out_dir_default = Path("./data/out/")
@@ -184,14 +186,9 @@ def cli_dashboard(
         typer.echo("Please choose a valid directory")
         raise typer.Abort()
 
-    if not debug:
-        typer.echo("\n\n")
-        typer.echo("Please go to http://127.0.0.1:8050/ in your browser")
-        typer.echo("\n")
-
     verbose = True if debug else False
-
-    # dashboard.utils.open_browser_in_background()
+    if not debug:
+        dashboard.utils.open_browser_in_background()
     dashboard_app = dashboard.app.get_app(dir, verbose=verbose)
     dashboard_app.run_server(debug=debug)
 

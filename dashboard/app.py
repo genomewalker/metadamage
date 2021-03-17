@@ -24,13 +24,8 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import io, mydash, taxonomy, utils
+from metadamage import io, taxonomy, utils
 
-
-#%%
-
-mydash.utils.set_custom_theme()
-external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 #%%
 
@@ -56,20 +51,27 @@ graph_kwargs = dict(
 
 def get_app(out_dir_default, verbose=True):
 
+    # Third Party
+    import dashboard
+
+    dashboard.utils.set_custom_theme()
+
     if verbose:
         print(f"Getting app now from {out_dir_default}")
 
     with about_time() as at1:
-        fit_results = mydash.fit_results.FitResults(
+        fit_results = dashboard.fit_results.FitResults(
             folder=out_dir_default,
             verbose=verbose,
             very_verbose=False,
         )
     # print(f"{at1.duration_human}")
 
-    bootstrap = mydash.bootstrap.Bootstrap(fit_results, graph_kwargs)
+    bootstrap = dashboard.bootstrap.Bootstrap(fit_results, graph_kwargs)
 
     #%%BOOTSTRAP
+
+    # external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
     app = dash.Dash(
         __name__,
@@ -90,15 +92,19 @@ def get_app(out_dir_default, verbose=True):
 
     def get_figure_from_df_and_tab(df_fit_results_filtered, active_tab):
         if active_tab == "fig_fit_results":
-            fig = mydash.figures.plot_fit_results(fit_results, df_fit_results_filtered)
+            fig = dashboard.figures.plot_fit_results(
+                fit_results, df_fit_results_filtered
+            )
         elif active_tab == "fig_histograms":
-            fig = mydash.figures.plot_histograms(fit_results, df_fit_results_filtered)
+            fig = dashboard.figures.plot_histograms(
+                fit_results, df_fit_results_filtered
+            )
         elif active_tab == "fig_scatter_matrix":
-            fig = mydash.figures.plot_scatter_matrix(
+            fig = dashboard.figures.plot_scatter_matrix(
                 fit_results, df_fit_results_filtered
             )
         elif active_tab == "fig_forward_reverse":
-            fig = mydash.figures.plot_forward_reverse(
+            fig = dashboard.figures.plot_forward_reverse(
                 fit_results, df_fit_results_filtered
             )
         else:
@@ -107,7 +113,7 @@ def get_app(out_dir_default, verbose=True):
 
     def get_main_figure(data_or_df, active_tab="fig_fit_results"):
         if data_or_df is None:
-            return mydash.figures.create_empty_figure(s="")
+            return dashboard.figures.create_empty_figure(s="")
 
         if isinstance(data_or_df, list):
             df = pd.DataFrame.from_records(data_or_df)
@@ -247,7 +253,7 @@ def get_app(out_dir_default, verbose=True):
         if key_is_in_list_case_insensitive(dropdown_file_selection, "Select all"):
             dropdown_file_selection = fit_results.shortnames
         elif key_is_in_list_case_insensitive(dropdown_file_selection, "Deselect"):
-            dropdown_file_selection = mydash.elements.get_shortnames_each(
+            dropdown_file_selection = dashboard.elements.get_shortnames_each(
                 fit_results.shortnames
             )
         return dropdown_file_selection
@@ -399,9 +405,9 @@ def get_app(out_dir_default, verbose=True):
             low = low_high[0]
             high = low_high[1]
 
-        if column in mydash.utils.log_transform_columns:
-            low = mydash.utils.log_transform_slider(low)
-            high = mydash.utils.log_transform_slider(high)
+        if column in dashboard.utils.log_transform_columns:
+            low = dashboard.utils.log_transform_slider(low)
+            high = dashboard.utils.log_transform_slider(high)
 
         low = utils.human_format(low)
         high = utils.human_format(high)
@@ -410,7 +416,7 @@ def get_app(out_dir_default, verbose=True):
 
     def make_new_slider(column, id_type, N_steps=100):
 
-        d_range_slider = mydash.elements.get_range_slider_keywords(
+        d_range_slider = dashboard.elements.get_range_slider_keywords(
             fit_results,
             column=column,
             N_steps=N_steps,
@@ -529,9 +535,9 @@ def get_app(out_dir_default, verbose=True):
         if dropdown_mismatch_tax_id is None:
             if active_tab == "fig_histograms":
                 s = "Does not work for binned data"
-                return mydash.figures.create_empty_figure(s=s)
+                return dashboard.figures.create_empty_figure(s=s)
             else:
-                return mydash.figures.create_empty_figure()
+                return dashboard.figures.create_empty_figure()
 
         try:
             group = fit_results.get_single_count_group(
@@ -543,7 +549,7 @@ def get_app(out_dir_default, verbose=True):
                 tax_id=dropdown_mismatch_tax_id,
             )
             chosen_mismatch_columns = ["C→T", "G→A"]
-            fig = mydash.figures.plot_count_fraction(
+            fig = dashboard.figures.plot_count_fraction(
                 group,
                 chosen_mismatch_columns,
                 fit,
@@ -565,9 +571,9 @@ def get_app(out_dir_default, verbose=True):
         if click_data is None:
             if active_tab == "fig_histograms":
                 s = "Does not work for binned data (histograms)"
-                ds = mydash.datatable.create_empty_dataframe_for_datatable(s)
+                ds = dashboard.datatable.create_empty_dataframe_for_datatable(s)
             else:
-                ds = mydash.datatable.create_empty_dataframe_for_datatable()
+                ds = dashboard.datatable.create_empty_dataframe_for_datatable()
             return ds.to_dict("records")
 
         try:
@@ -710,12 +716,12 @@ def get_app(out_dir_default, verbose=True):
 
 # else:
 
-#     mydash.elements.get_range_slider_keywords(
+#     dashboard.elements.get_range_slider_keywords(
 #         fit_results,
 #         column="D_max",
 #         N_steps=100,
 #     )
-#     mydash.elements.get_range_slider_keywords(
+#     dashboard.elements.get_range_slider_keywords(
 #         fit_results,
 #         column="n_sigma",
 #         N_steps=100,
@@ -736,7 +742,7 @@ def get_app(out_dir_default, verbose=True):
 
 #     # # #%%
 
-#     fig = mydash.figures.plot_count_fraction(group, chosen_mismatch_columns, fit=fit)
+#     fig = dashboard.figures.plot_count_fraction(group, chosen_mismatch_columns, fit=fit)
 #     fig
 
 #     group[["position", "CT", "C"]]
@@ -752,7 +758,7 @@ def get_app(out_dir_default, verbose=True):
 #     N_shortnames = df.shortname.nunique()
 #     symbol_sequence = [str(i) for i in range(N_shortnames)]
 
-#     fig1 = mydash.figures.plot_fit_results(fit_results, df)
-#     # fig2 = mydash.figures.plot_histograms(fit_results, df)
-#     # fig3 = mydash.figures.plot_scatter_matrix(fit_results, df)
-#     # fig4 = mydash.figures.plot_forward_reverse(fit_results, df)
+#     fig1 = dashboard.figures.plot_fit_results(fit_results, df)
+#     # fig2 = dashboard.figures.plot_histograms(fit_results, df)
+#     # fig3 = dashboard.figures.plot_scatter_matrix(fit_results, df)
+#     # fig4 = dashboard.figures.plot_forward_reverse(fit_results, df)

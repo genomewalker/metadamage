@@ -1,9 +1,2 @@
 # Local Folder
-from . import (
-    bootstrap,
-    datatable,
-    elements,
-    figures,
-    fit_results,
-    utils,
-)
+from . import app, bootstrap, datatable, elements, figures, fit_results, utils
