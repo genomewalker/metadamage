@@ -15,8 +15,11 @@ from metadamage import utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
 
+import dashboard
+
 
 out_dir_default = Path("./data/out/")
+first_time = True
 
 
 def version_callback(value: bool):
@@ -157,7 +160,7 @@ def cli_fit(
 
 @cli_app.command("dashboard")
 def cli_dashboard(
-    dir: Path = typer.Option(out_dir_default),
+    dir: Path = typer.Argument(out_dir_default),
     debug: bool = typer.Option(False, "--debug"),
 ):
     """Dashboard: Visualizing Ancient Damage.
@@ -172,15 +175,24 @@ def cli_dashboard(
     or for another directory than default:
 
     \b
-        $ metadamage dashboard --dir ./other/dir
+        $ metadamage dashboard ./other/dir
 
     """
 
-    # Third Party
-    from dashboard.app import get_app
+    counts_dir = dir / "counts/"
+    if not (counts_dir.exists() and counts_dir.is_dir()):
+        typer.echo("Please choose a valid directory")
+        raise typer.Abort()
+
+    if not debug:
+        typer.echo("\n\n")
+        typer.echo("Please go to http://127.0.0.1:8050/ in your browser")
+        typer.echo("\n")
 
     verbose = True if debug else False
-    dashboard_app = get_app(out_dir_default, verbose=verbose)
+
+    # dashboard.utils.open_browser_in_background()
+    dashboard_app = dashboard.app.get_app(dir, verbose=verbose)
     dashboard_app.run_server(debug=debug)
 
 

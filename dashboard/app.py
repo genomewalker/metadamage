@@ -57,11 +57,13 @@ graph_kwargs = dict(
 def get_app(out_dir_default, verbose=True):
 
     if verbose:
-        print("Getting app now")
+        print(f"Getting app now from {out_dir_default}")
 
     with about_time() as at1:
         fit_results = mydash.fit_results.FitResults(
-            folder=out_dir_default, verbose=verbose, very_verbose=False
+            folder=out_dir_default,
+            verbose=verbose,
+            very_verbose=False,
         )
     # print(f"{at1.duration_human}")
 
