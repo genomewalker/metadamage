@@ -1199,17 +1199,7 @@ else:
     N_shortnames = df.shortname.nunique()
     symbol_sequence = [str(i) for i in range(N_shortnames)]
 
-    fig2 = mydash.figures.plot_fit_results(fit_results, df)
-    # mydash.figures.plot_histograms(fit_results, df)
-    # mydash.figures.plot_scatter_matrix(fit_results, df)
-    # mydash.figures.plot_forward_reverse(fit_results, df)
-
-    mydash.elements.get_dropdown_file_selection(
-        id="dropdown_file_selection",
-        fit_results=fit_results,
-        shortnames_to_show="each",
-    )
-
-    fit_results.all_tax_ranks
-    fit_results.all_tax_names
-    fit_results.all_tax_ids
+    fig1 = mydash.figures.plot_fit_results(fit_results, df)
+    # fig2 = mydash.figures.plot_histograms(fit_results, df)
+    # fig3 = mydash.figures.plot_scatter_matrix(fit_results, df)
+    # fig4 = mydash.figures.plot_forward_reverse(fit_results, df)

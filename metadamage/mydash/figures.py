@@ -15,6 +15,15 @@ from metadamage import counts, mydash
 #%%
 
 
+def set_opacity_for_trace(trace):
+    N = len(trace.x)
+    # opacity = 1 / N
+    # opacity = 1 / np.sqrt(N)
+    opacity = 1 / np.log(N)
+    # print(trace.name, opacity)
+    trace.update(marker_opacity=opacity)
+
+
 def plot_fit_results(fit_results, df_fit_results=None):
 
     if df_fit_results is None:
@@ -28,7 +37,7 @@ def plot_fit_results(fit_results, df_fit_results=None):
         color="shortname",
         hover_name="shortname",
         # size_max=marker_size_max,
-        opacity=0.2,
+        # opacity=1,
         color_discrete_map=fit_results.d_cmap,
         custom_data=fit_results.custom_data_columns,
         range_x=fit_results.ranges["n_sigma"],
@@ -49,17 +58,10 @@ def plot_fit_results(fit_results, df_fit_results=None):
     fig.update_layout(
         xaxis_title=r"$\Large n_\sigma$",
         yaxis_title=r"$\Large D_\mathrm{max}$",
-        # title_text="Fit Results",
         legend_title="Files",
-        # legend=dict(
-        #     title="",
-        #     orientation="h",
-        #     yanchor="bottom",
-        #     y=1.02,
-        #     xanchor="right",
-        #     x=1,
-        # ),
     )
+
+    fig.for_each_trace(set_opacity_for_trace)
 
     return fig
 
@@ -128,14 +130,12 @@ def plot_histograms(fit_results, df_fit_results=None):
 
         showlegend = False
         fig.update_xaxes(title_text=fit_results.labels[column], row=row, col=col)
-        # fig.update_yaxes(range=(0, highest_y_max * 1.1), row=row, col=column)
         fig.update_yaxes(rangemode="nonnegative")
         if col == 1:
             fig.update_yaxes(title_text="Counts", row=row, col=col)
 
     fig.update_layout(
         font_size=12,
-        # title_text="1D Histograms",
         legend_title="Files",
     )
 
@@ -143,6 +143,13 @@ def plot_histograms(fit_results, df_fit_results=None):
 
 
 #%%
+
+
+def set_opacity_for_trace_scatter_matrix(trace):
+    N = len(trace.dimensions[0].values)
+    # opacity = 1 / np.log(N)
+    opacity = 1 / np.sqrt(N)
+    trace.update(marker_opacity=opacity)
 
 
 def plot_scatter_matrix(fit_results, df_fit_results=None):
@@ -158,11 +165,9 @@ def plot_scatter_matrix(fit_results, df_fit_results=None):
         size_max=10,
         color_discrete_map=fit_results.d_cmap,
         labels=fit_results.labels,
-        opacity=0.1,
         custom_data=fit_results.custom_data_columns,
         symbol="shortname",
         symbol_map=fit_results.d_symbols,
-        # render_mode="webgl",
     )
 
     fig.update_traces(
@@ -170,6 +175,8 @@ def plot_scatter_matrix(fit_results, df_fit_results=None):
         showupperhalf=False,
         hovertemplate=fit_results.hovertemplate,
     )
+
+    fig.for_each_trace(set_opacity_for_trace_scatter_matrix)
 
     # manually set ranges for scatter matrix
     iterator = enumerate(fit_results.columns_scatter)
@@ -179,7 +186,6 @@ def plot_scatter_matrix(fit_results, df_fit_results=None):
 
     fig.update_layout(
         font_size=12,
-        # title_text="Scatter Matrix",
         legend_title="Files",
     )
 
@@ -203,11 +209,15 @@ def plot_forward_reverse(fit_results, df_fit_results=None):
         dimension, row, column, showlegend, forward, reverse = it
 
         for filename, group in df_fit_results.groupby("shortname", sort=False):
+
+            if len(group) == 0:
+                continue
+
             kwargs = dict(
                 name=filename,
                 mode="markers",
                 legendgroup=filename,
-                marker=dict(color=fit_results.d_cmap[filename], opacity=0.2),
+                marker=dict(color=fit_results.d_cmap[filename]),  # opacity=0.2
                 hovertemplate=fit_results.hovertemplate,
                 customdata=np.array(group[fit_results.custom_data_columns].values),
             )
@@ -229,6 +239,8 @@ def plot_forward_reverse(fit_results, df_fit_results=None):
     # Update xaxis properties
     fig.update_xaxes(title_text="Forward")
     fig.update_yaxes(title_text="Reverse")
+
+    fig.for_each_trace(set_opacity_for_trace)
 
     fig.update_layout(
         font_size=12,

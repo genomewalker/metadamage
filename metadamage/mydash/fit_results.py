@@ -131,8 +131,37 @@ class FitResults:
         for column in self.columns:
             try:
                 ranges[column] = self._get_range_of_column(column, spacing=spacing)
-            except TypeError:
+            except TypeError:  # skip categorical columns
                 pass
+
+        for column, range_ in ranges.items():
+            if not ("_forward" in column or "_reverse" in column):
+                column_forward = f"{column}_forward"
+                column_reverse = f"{column}_reverse"
+                if column_forward in ranges.keys() and column_reverse in ranges.keys():
+                    range_forward = ranges[column_forward]
+                    range_reverse = ranges[column_reverse]
+
+                    if column == "n_sigma":
+                        paddding = 2
+                    elif column == "D_max":
+                        paddding = 0.1
+                    elif column == "noise":
+                        paddding = 1
+
+                    if range_forward[0] < range_[0] - paddding:
+                        range_forward[0] = range_[0] - paddding
+                    if range_forward[1] > range_[1] + paddding:
+                        range_forward[1] = range_[1] + paddding
+
+                    if range_reverse[0] < range_[0] - paddding:
+                        range_reverse[0] = range_[0] - paddding
+                    if range_reverse[1] > range_[1] + paddding:
+                        range_reverse[1] = range_[1] + paddding
+
+                    ranges[column_forward] = range_forward
+                    ranges[column_reverse] = range_reverse
+
         self.ranges = ranges
 
     def set_marker_size(self, marker_transformation="sqrt", marker_size_max=30):
