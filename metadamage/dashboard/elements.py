@@ -8,10 +8,10 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash_table import DataTable
-# import dashboard
-from metadamage import dashboard
 
 # First Party
+# import dashboard
+from metadamage import dashboard
 from metadamage.utils import human_format
 
 

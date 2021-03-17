@@ -11,10 +11,10 @@ from rich.console import Console
 import typer
 
 # First Party
-from metadamage import utils
+from metadamage import dashboard, utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
-from metadamage import dashboard
+
 
 # from dashboard import app
 

@@ -16,8 +16,8 @@ from joblib import Memory
 import plotly.express as px
 
 # First Party
-from metadamage import io
-from metadamage import dashboard
+from metadamage import dashboard, io
+
 
 cachedir = "memoization"
 memory = Memory(cachedir, verbose=0)

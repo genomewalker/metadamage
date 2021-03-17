@@ -24,7 +24,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import io, taxonomy, utils, dashboard
+from metadamage import dashboard, io, taxonomy, utils
 
 
 #%%

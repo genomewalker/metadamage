@@ -9,8 +9,8 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import counts
-from metadamage import dashboard
+from metadamage import counts, dashboard
+
 
 #%%
 
