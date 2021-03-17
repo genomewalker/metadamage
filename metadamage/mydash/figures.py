@@ -29,7 +29,7 @@ def set_opacity_for_trace(
     opacity *= scale
     opacity = max(opacity_min, min(opacity, opacity_max))
 
-    print(trace.name, opacity)
+    # print(trace.name, opacity)
     trace.update(marker_opacity=opacity)
 
 
