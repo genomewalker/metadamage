@@ -6,7 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 # First Party
-from metadamage.cli import app
+from metadamage.cli import cli_app
 from metadamage.utils import extract_name
 
 
@@ -37,7 +37,7 @@ def test_cli_fit_bad_file():
     # given
     runner = CliRunner()
     # when
-    result = runner.invoke(app, ["fit", "file_which_does_not_exist.txt"])
+    result = runner.invoke(cli_app, ["fit", "file_which_does_not_exist.txt"])
     # then
     assert result.exit_code == 1
     assert isinstance(result.exception, Exception)
@@ -48,7 +48,7 @@ def test_cli_fit_bad_files():
     runner = CliRunner()
     # when
     result = runner.invoke(
-        app,
+        cli_app,
         [
             "fit",
             "file_which_does_not_exist.txt",
@@ -63,7 +63,7 @@ def test_cli_fit_version():
     # given
     runner = CliRunner()
     # when
-    result = runner.invoke(app, ["fit", "--version"])
+    result = runner.invoke(cli_app, ["--version"])
     # then
     assert result.exit_code == 0
     assert "version" in result.stdout

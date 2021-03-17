@@ -49,17 +49,23 @@ $ metadamage fit --max-fits 10 --max-cores 2 ./data/input/*.txt
 
 ## <a name="dash"></a> Dashboard:
 
-To make use of the new, interactive dashboard introduced in version `0.2`, run the following command (after having [fitted](#cli) the files):
+To make use of the new, interactive dashboard introduced in version `0.4`, run the following command (after having [fitted](#cli) the files):
 
 ```console
-$ python dash_app.py
+$ metadamage dashboard
 ```
 
-And then open a browser and go to `127.0.0.1:8050`.
+And then open a browser and go to `127.0.0.1:8050` if it did not open automatically. For more information, use:
+```console
+$ metadamage dashboard --help
+```
 
-## <a name="options"></a> Metadamage CLI Options:
+## <a name="options"></a> Metadamage CLI fit Options:
 
-The `metadamage` CLI has the following options.
+The `metadamage fit` CLI has the following options.
+
+- Output directory
+  - `--out_dir`: The directory in which the fit results are stored. Default location is `./data/out`. Do not change unless you known what you are doing.
 
 - Maximum values
   - `--max-fits`: Maximum number of fits to do. Default is None, i.e. fit everything.
