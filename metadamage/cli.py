@@ -160,17 +160,17 @@ def cli_dashboard(
 ):
     """Dashboard: Visualizing Ancient Damage.
 
-    FILENAME is the name of the file(s) to fit (with the ancient-model)
+    DIR is the output directory for the fits. By default using ./data/out/
 
     run as e.g.:
 
     \b
         $ metadamage dashboard
 
-    or by for two files:
+    or for another directory than default:
 
     \b
-        $ metadamage dashboard
+        $ metadamage dashboard --dir ./other/dir
 
     """
 
