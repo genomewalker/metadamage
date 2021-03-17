@@ -34,6 +34,8 @@ def plot_fit_results(fit_results, df_fit_results=None):
         range_x=fit_results.ranges["n_sigma"],
         range_y=[0, 1],
         render_mode="webgl",
+        symbol="shortname",
+        symbol_map=fit_results.d_symbols,
     )
 
     fig.update_traces(

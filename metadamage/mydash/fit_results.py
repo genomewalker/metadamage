@@ -228,16 +228,25 @@ class FitResults:
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
-        cmap = px.colors.qualitative.D3 * 10
+        cmap = px.colors.qualitative.D3
+        N_cmap = len(cmap)
 
+        groupby = self.df_fit_results.groupby("shortname", sort=False)
+
+        symbol_counter = 0
         d_cmap = {}
-        for i, (name, _) in enumerate(
-            self.df_fit_results.groupby("shortname", sort=False)
-        ):
-            d_cmap[name] = cmap[i]
+        d_symbols = {}
+        for i, (name, _) in enumerate(groupby):
+
+            if (i % N_cmap) == 0 and i != 0:
+                symbol_counter += 1
+
+            d_cmap[name] = cmap[i % N_cmap]
+            d_symbols[name] = symbol_counter
 
         self.cmap = cmap
         self.d_cmap = d_cmap
+        self.d_symbols = d_symbols
 
     def _set_hover_info(self):
 

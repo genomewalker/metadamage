@@ -15,6 +15,12 @@ from metadamage import utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
 
+# from metadamage.mydash.main import main as dash_main
+# from mydash.dash_main import main as dash_main
+
+
+# from dash_app import app as dashapp
+
 
 def version_callback(value: bool):
     if value:
@@ -58,11 +64,11 @@ class OrderedCommands(click.Group):
         return self.commands.keys()
 
 
-app = ColorfulApp(cls=OrderedCommands)
-# app = ColorfulApp(chain=True)
+cli_app = ColorfulApp(cls=OrderedCommands)
+# cli_app = ColorfulApp(chain=True)
 
 
-@app.callback()
+@cli_app.callback()
 def callback(
     version: Optional[bool] = typer.Option(
         None, "--version", callback=version_callback
@@ -87,7 +93,7 @@ def callback(
 # https://typer.tiangolo.com/tutorial/parameter-types/path/
 
 
-@app.command("fit")
+@cli_app.command("fit")
 def cli_fit(
     # Path: input filename(s) and output directory
     filenames: List[Path] = typer.Argument(...),
@@ -152,8 +158,10 @@ def cli_fit(
     main(filenames, cfg)
 
 
-@app.command("dashboard")
-def cli_dashboard(string: str):
+@cli_app.command("dashboard")
+def cli_dashboard(
+    dir: Path = typer.Option(Path("./data/out/")),
+):
     """Dashboard: Visualizing Ancient Damage.
 
     FILENAME is the name of the file(s) to fit (with the ancient-model)
@@ -170,8 +178,10 @@ def cli_dashboard(string: str):
 
     """
 
-    typer.echo(f"Dashboard, string={string}.")
+    typer.echo(f"Dashboard, string={dir}.")
+    # dash_main(dir).run_server(debug=True)
+    # dash_main()
 
 
 def cli_main():
-    app(prog_name="metadamage")
+    cli_app(prog_name="metadamage")

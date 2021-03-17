@@ -40,7 +40,7 @@ with about_time() as at1:
     fit_results = mydash.fit_results.FitResults(
         folder, verbose=verbose, very_verbose=False
     )
-# print(f"\t Total: {at1.duration_human}\n")
+# print(f"{at1.duration_human}")
 
 
 #%%BOOTSTRAP
@@ -206,7 +206,7 @@ filter_tax_id = dbc.Row(
                         multi=True,
                         placeholder="Select taxas...",
                     ),
-                ]
+                ],
             ),
             width=12,
         ),
@@ -386,8 +386,11 @@ filters_collapse_ranges = html.Div(
                         value=[],
                         multi=True,
                         placeholder="Select a variable to filter on...",
+                        optionHeight=30,
+                        # style={"overflow-y": "scroll", "height": "100px"},
                     ),
                     width=12,
+                    # style={"overflow-y": "scroll", "height": "500px"},
                 ),
                 dbc.Col(
                     id="dynamic_slider-container",
@@ -644,7 +647,6 @@ app.layout = dbc.Container(
 
 
 #%%
-#
 
 
 def key_is_in_list_case_insensitive(lst, key):
@@ -657,10 +659,8 @@ def key_is_in_list_case_insensitive(lst, key):
 )
 def update_dropdown_when_Select_All(dropdown_file_selection):
     if key_is_in_list_case_insensitive(dropdown_file_selection, "Select all"):
-        print("dropdown_file_selection Select all")
         dropdown_file_selection = fit_results.shortnames
     elif key_is_in_list_case_insensitive(dropdown_file_selection, "Deselect"):
-        print("dropdown_file_selection Deselect Most")
         dropdown_file_selection = mydash.elements.get_shortnames_each(
             fit_results.shortnames
         )
@@ -1214,3 +1214,51 @@ else:
     #     1,
     #     include_subspecies=False,
     # )
+
+    #%%
+
+    df = df_fit_results_all.query("y_sum_total > 1_000_000")
+    N_shortnames = df.shortname.nunique()
+    symbol_sequence = [str(i) for i in range(N_shortnames)]
+
+    #%%
+
+    fig = px.scatter(
+        df,
+        x="n_sigma",
+        y="D_max",
+        size="size",
+        color="shortname",
+        hover_name="shortname",
+        opacity=0.2,
+        color_discrete_map=fit_results.d_cmap,
+        custom_data=fit_results.custom_data_columns,
+        range_x=fit_results.ranges["n_sigma"],
+        range_y=[0, 1],
+        render_mode="webgl",
+        symbol="shortname",
+        symbol_map=fit_results.d_symbols,
+    )
+
+    fig
+
+    #%%
+
+    fig.update_traces(
+        hovertemplate=fit_results.hovertemplate,
+        marker_line_width=0,
+        marker_sizeref=2.0
+        * fit_results.max_of_size
+        / (fit_results.marker_size_max ** 2),
+    )
+
+    fig.update_layout(
+        xaxis_title=r"$\Large n_\sigma$",
+        yaxis_title=r"$\Large D_\mathrm{max}$",
+        legend_title="Files",
+    )
+
+    # fig
+
+    #
+    # %%
