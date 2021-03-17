@@ -14,26 +14,13 @@ from joblib import Memory
 import plotly.express as px
 
 # First Party
-from metadamage import io, mydash, utils
-
-
-cachedir = "memoization"
-memory = Memory(cachedir, verbose=0)
-
-# @memory.cache
-
-#%%
-
-
-#%%
-
+from metadamage import io
+import dashboard
 
 cachedir = "memoization"
 memory = Memory(cachedir, verbose=0)
 
 # @memory.cache
-
-#%%
 
 
 @memory.cache
@@ -81,9 +68,6 @@ class FitResults:
                 print(f"\t {key}: {val.duration_human}")
 
     #%%
-
-    # def _load_df_counts_all(self):
-    #     return io.Parquet(self.folder / "counts").load()
 
     def load_df_counts_shortname(self, shortname, columns=None):
         return io.Parquet(self.folder / "counts").load(shortname, columns=columns)
@@ -227,9 +211,9 @@ class FitResults:
 
             else:
                 low, high = filter
-                if column in mydash.utils.log_transform_columns:
-                    low = mydash.utils.log_transform_slider(low)
-                    high = mydash.utils.log_transform_slider(high)
+                if column in dashboard.utils.log_transform_columns:
+                    low = dashboard.utils.log_transform_slider(low)
+                    high = dashboard.utils.log_transform_slider(high)
                 query += f"({low} <= {column} <= {high}) & "
 
         query = query[:-2]

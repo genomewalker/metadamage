@@ -9,6 +9,7 @@ from scipy.special import logsumexp
 # Standard Library
 import logging
 from multiprocessing import current_process, Manager, Pool, Process, Queue
+import time
 import warnings
 
 # Third Party
@@ -422,9 +423,6 @@ def match_tax_id_order_in_df_fit_results(df_fit_results, df):
     tax_ids_all = pd.unique(df.tax_id)
     ordered = [tax_id for tax_id in tax_ids_all if tax_id in df_fit_results.index]
     return df_fit_results.loc[ordered]
-
-
-import time
 
 
 def fit_single_group_without_timeout(

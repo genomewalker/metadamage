@@ -128,6 +128,3 @@ if utils.is_ipython():
         # io.Parquet(
         #     "./data/out/fit_results/KapK-12-1-24-Ext-1-Lib-1-Index2.parquet"
         # ).load_metadata()
-
-    with open(dict_name, "r") as f:
-        d_in = toml.load(dict_name)

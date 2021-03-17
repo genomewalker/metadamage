@@ -22,16 +22,14 @@ from click_help_colors import HelpColorsCommand, HelpColorsGroup
 import dill
 from joblib import Parallel
 from psutil import cpu_count
-
+from rich import box
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
-from rich import box
+import toml
 
 # First Party
 from metadamage.progressbar import console, progress
 
-
-import toml
 
 #%%
 

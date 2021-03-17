@@ -5,7 +5,7 @@ import dash_html_components as html
 from dash_table import DataTable
 
 # First Party
-from metadamage import mydash
+import dashboard
 
 
 class Bootstrap:
@@ -81,7 +81,7 @@ class Bootstrap:
                     justify="center",
                 ),
                 dcc.Graph(
-                    figure=mydash.figures.create_empty_figure(),
+                    figure=dashboard.figures.create_empty_figure(),
                     id="graph_mismatch",
                     **graph_kwargs,
                 ),
@@ -94,7 +94,9 @@ class Bootstrap:
         self.card_datatable = dbc.Card(
             [
                 html.H3("Datatable", className="card-title"),
-                DataTable(**mydash.datatable.get_data_table_keywords(id="data_table")),
+                DataTable(
+                    **dashboard.datatable.get_data_table_keywords(id="data_table")
+                ),
             ],
             body=True,
         )
@@ -230,7 +232,7 @@ class Bootstrap:
                     html.H3("Filter input samples"),
                     width=12,
                 ),
-                mydash.elements.get_dropdown_file_selection(
+                dashboard.elements.get_dropdown_file_selection(
                     id="dropdown_file_selection",
                     fit_results=fit_results,
                     shortnames_to_show="each",  # one for each first letter in shortname
@@ -336,7 +338,7 @@ class Bootstrap:
                 html.Div(
                     dcc.Slider(  # possible fix for ReferenceError
                         id={"type": "slider_overview_marker_size", "index": 0},
-                        **mydash.elements.get_slider_keywords(),
+                        **dashboard.elements.get_slider_keywords(),
                     ),
                     style={"min-width": "300px"},
                 )

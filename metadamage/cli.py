@@ -15,6 +15,7 @@ from metadamage import utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
 
+
 out_dir_default = Path("./data/out/")
 
 
@@ -157,6 +158,7 @@ def cli_fit(
 @cli_app.command("dashboard")
 def cli_dashboard(
     dir: Path = typer.Option(out_dir_default),
+    debug: bool = typer.Option(False, "--debug"),
 ):
     """Dashboard: Visualizing Ancient Damage.
 
@@ -174,10 +176,12 @@ def cli_dashboard(
 
     """
 
-    from metadamage.mydash.dash_app import get_app
+    # Third Party
+    from dashboard.app import get_app
 
-    dashboard_app = get_app(out_dir_default, verbose=False)
-    dashboard_app.run_server(debug=False)
+    verbose = True if debug else False
+    dashboard_app = get_app(out_dir_default, verbose=verbose)
+    dashboard_app.run_server(debug=debug)
 
 
 def cli_main():
