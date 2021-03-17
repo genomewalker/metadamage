@@ -1195,10 +1195,14 @@ else:
 
     df_fit_results = fit_results.filter({"tax_ids": tax_ids})
 
-    fig2 = mydash.figures.plot_fit_results(fit_results)
-    # mydash.figures.plot_histograms(fit_results)
-    # mydash.figures.plot_scatter_matrix(fit_results)
-    # mydash.figures.plot_forward_reverse(fit_results)
+    df = df_fit_results_all.query("y_sum_total > 1_000_000")
+    N_shortnames = df.shortname.nunique()
+    symbol_sequence = [str(i) for i in range(N_shortnames)]
+
+    fig2 = mydash.figures.plot_fit_results(fit_results, df)
+    # mydash.figures.plot_histograms(fit_results, df)
+    # mydash.figures.plot_scatter_matrix(fit_results, df)
+    # mydash.figures.plot_forward_reverse(fit_results, df)
 
     mydash.elements.get_dropdown_file_selection(
         id="dropdown_file_selection",
@@ -1209,56 +1213,3 @@ else:
     fit_results.all_tax_ranks
     fit_results.all_tax_names
     fit_results.all_tax_ids
-
-    # tax_ids = taxonomy.extract_descendant_tax_ids(
-    #     1,
-    #     include_subspecies=False,
-    # )
-
-    #%%
-
-    df = df_fit_results_all.query("y_sum_total > 1_000_000")
-    N_shortnames = df.shortname.nunique()
-    symbol_sequence = [str(i) for i in range(N_shortnames)]
-
-    #%%
-
-    fig = px.scatter(
-        df,
-        x="n_sigma",
-        y="D_max",
-        size="size",
-        color="shortname",
-        hover_name="shortname",
-        opacity=0.2,
-        color_discrete_map=fit_results.d_cmap,
-        custom_data=fit_results.custom_data_columns,
-        range_x=fit_results.ranges["n_sigma"],
-        range_y=[0, 1],
-        render_mode="webgl",
-        symbol="shortname",
-        symbol_map=fit_results.d_symbols,
-    )
-
-    fig
-
-    #%%
-
-    fig.update_traces(
-        hovertemplate=fit_results.hovertemplate,
-        marker_line_width=0,
-        marker_sizeref=2.0
-        * fit_results.max_of_size
-        / (fit_results.marker_size_max ** 2),
-    )
-
-    fig.update_layout(
-        xaxis_title=r"$\Large n_\sigma$",
-        yaxis_title=r"$\Large D_\mathrm{max}$",
-        legend_title="Files",
-    )
-
-    # fig
-
-    #
-    # %%

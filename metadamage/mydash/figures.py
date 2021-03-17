@@ -71,7 +71,7 @@ def plotly_histogram(
     fit_results,
     data,
     filename,
-    dimension,
+    column,
     bins=50,
     density=True,
     range=None,
@@ -90,7 +90,7 @@ def plotly_histogram(
         marker_color=fit_results.d_cmap[filename],
         hovertemplate=(
             "<b>" + f"{filename}" + "</b><br><br>"
-            f"{dimension}" + ": %{x:5.2f}<br>"
+            f"{column}" + ": %{x:5.2f}<br>"
             "Counts: %{y}<br>"
             "<extra></extra>"
         ),
@@ -108,29 +108,30 @@ def plot_histograms(fit_results, df_fit_results=None):
 
     showlegend = True
 
-    for dimension, row, column in fit_results.iterate_over_dimensions():
+    it = fit_results.iterate_over_scatter_columns(N_cols=4)
+    for column, row, col in it:
         highest_y_max = 0
         for filename, group in df_fit_results.groupby("shortname", sort=False):
             trace, y_max = plotly_histogram(
                 fit_results=fit_results,
-                data=group[dimension],
+                data=group[column],
                 filename=filename,
-                dimension=dimension,
+                column=column,
                 bins=50,
                 density=False,
-                range=fit_results.ranges[dimension],
+                range=fit_results.ranges[column],
                 showlegend=showlegend,
             )
-            fig.add_trace(trace, col=column, row=row)
+            fig.add_trace(trace, col=col, row=row)
             if y_max > highest_y_max:
                 highest_y_max = y_max
 
         showlegend = False
-        fig.update_xaxes(title_text=fit_results.labels[dimension], row=row, col=column)
+        fig.update_xaxes(title_text=fit_results.labels[column], row=row, col=col)
         # fig.update_yaxes(range=(0, highest_y_max * 1.1), row=row, col=column)
         fig.update_yaxes(rangemode="nonnegative")
-        if column == 1:
-            fig.update_yaxes(title_text="Counts", row=row, col=column)
+        if col == 1:
+            fig.update_yaxes(title_text="Counts", row=row, col=col)
 
     fig.update_layout(
         font_size=12,
@@ -151,7 +152,7 @@ def plot_scatter_matrix(fit_results, df_fit_results=None):
 
     fig = px.scatter_matrix(
         df_fit_results,
-        dimensions=fit_results.dimensions,
+        dimensions=fit_results.columns_scatter,
         color="shortname",
         hover_name="shortname",
         size_max=10,
@@ -159,6 +160,8 @@ def plot_scatter_matrix(fit_results, df_fit_results=None):
         labels=fit_results.labels,
         opacity=0.1,
         custom_data=fit_results.custom_data_columns,
+        symbol="shortname",
+        symbol_map=fit_results.d_symbols,
         # render_mode="webgl",
     )
 
@@ -169,7 +172,7 @@ def plot_scatter_matrix(fit_results, df_fit_results=None):
     )
 
     # manually set ranges for scatter matrix
-    iterator = enumerate(fit_results.dimensions)
+    iterator = enumerate(fit_results.columns_scatter)
     ranges = {i + 1: fit_results.ranges[col] for i, col in iterator}
     for axis in ["xaxis", "yaxis"]:
         fig.update_layout({axis + str(k): {"range": v} for k, v in ranges.items()})
@@ -193,10 +196,10 @@ def plot_forward_reverse(fit_results, df_fit_results=None):
 
     N_rows = 3
     N_cols = 2
-    subtitles = list(fit_results.dimensions_forward_reverse.values())
+    subtitles = list(fit_results.columns_scatter_forward_reverse.values())
     fig = make_subplots(rows=N_rows, cols=N_cols, subplot_titles=subtitles)
 
-    for it in fit_results.iterate_over_dimensions_forward_reverse(N_cols):
+    for it in fit_results.iterate_over_scatter_columns_forward_reverse(N_cols):
         dimension, row, column, showlegend, forward, reverse = it
 
         for filename, group in df_fit_results.groupby("shortname", sort=False):

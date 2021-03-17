@@ -71,13 +71,13 @@ class FitResults:
             self._set_hover_info()
 
         with about_time() as times["columns"]:
-            self._set_columns()
+            self._set_columns_scatter()
 
         with about_time() as times["labels"]:
             self._set_labels()
 
-        with about_time() as times["columns_forward_reverse"]:
-            self._set_columns_forward_reverse()
+        with about_time() as times["columns_scatter_forward_reverse"]:
+            self._set_columns_scatter_forward_reverse()
 
         if very_verbose:
             for key, val in times.items():
@@ -286,19 +286,10 @@ class FitResults:
             "<extra></extra>"
         )
 
-        # if "y_sum_total" in self.columns:
-        #     self.has_y_sum_total = True
-        # else:
-        #     self.custom_data_columns.remove("y_sum_total")
-        #     self.hovertemplate = self.hovertemplate.replace(
-        #         "    y sum total: %{customdata[12]:6.3s} <br>", ""
-        #     )
-        #     self.has_y_sum_total = False
-
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
-    def _set_columns(self):
-        self.columns = [
+    def _set_columns_scatter(self):
+        self.columns_scatter = [
             "n_sigma",
             "D_max",
             "N_alignments_log10",
@@ -322,22 +313,23 @@ class FitResults:
             r"$\large \mathrm{noise}$",
         ]
 
-        iterator = zip(self.columns, labels_list)
+        iterator = zip(self.columns_scatter, labels_list)
         self.labels = {column: label for column, label in iterator}
 
-    def iterate_over_columns(self):
-        row = 1
-        column = 1
-        for column in self.columns:
-            yield column, row, column
-            if column >= 4:
-                row += 1
-                column = 1
-            else:
-                column += 1
+    def _get_col_row_from_iteration(self, i, N_cols):
+        col = i % N_cols
+        row = (i - col) // N_cols
+        col += 1
+        row += 1
+        return col, row
 
-    def _set_columns_forward_reverse(self):
-        self.columns_forward_reverse = {
+    def iterate_over_scatter_columns(self, N_cols):
+        for i, column in enumerate(self.columns_scatter):
+            col, row = self._get_col_row_from_iteration(i, N_cols)
+            yield column, row, col
+
+    def _set_columns_scatter_forward_reverse(self):
+        self.columns_scatter_forward_reverse = {
             "n_sigma": r"$\large n_\sigma$",
             "D_max": r"$\large D_\mathrm{max}$",
             "N_z1": r"$\large N_{z=1}$",
@@ -345,21 +337,14 @@ class FitResults:
             "y_sum": r"$\large y_\mathrm{sum}$",
             "normalized_noise": r"$\large \mathrm{noise}$",
         }
-        # if not self.has_y_sum_total:
-        #     self.columns_forward_reverse.pop("y_sum")
 
-    def iterate_over_columns_forward_reverse(self, N_cols):
+    def iterate_over_scatter_columns_forward_reverse(self, N_cols):
         showlegend = True
-        for i, column in enumerate(self.columns_forward_reverse.keys()):
-            column = i % N_cols
-            row = (i - column) // N_cols
-            column += 1
-            row += 1
-
+        for i, column in enumerate(self.columns_scatter_forward_reverse.keys()):
+            col, row = self._get_col_row_from_iteration(i, N_cols)
             forward = f"{column}_forward"
             reverse = f"{column}_reverse"
-
-            yield column, row, column, showlegend, forward, reverse
+            yield column, row, col, showlegend, forward, reverse
             showlegend = False
 
     def parse_click_data(self, click_data, column):
