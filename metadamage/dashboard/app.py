@@ -24,7 +24,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 
 # First Party
-from metadamage import io, taxonomy, utils
+from metadamage import io, taxonomy, utils, dashboard
 
 
 #%%
@@ -52,7 +52,7 @@ graph_kwargs = dict(
 def get_app(out_dir_default, verbose=True):
 
     # Third Party
-    import dashboard
+    # from metadamage import dashboard
 
     dashboard.utils.set_custom_theme()
 

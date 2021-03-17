@@ -7,7 +7,6 @@ from typing import Iterable, List, Literal, Optional, Union
 import click
 from click import Context
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
-import dashboard
 from rich.console import Console
 import typer
 
@@ -15,7 +14,7 @@ import typer
 from metadamage import utils
 from metadamage.__version__ import __version__
 from metadamage.main import main
-
+from metadamage import dashboard
 
 # from dashboard import app
 
