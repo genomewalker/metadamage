@@ -60,6 +60,17 @@ And then open a browser and go to `127.0.0.1:8050` if it did not open automatica
 $ metadamage dashboard --help
 ```
 
+If you are running metadamage on a server and want to use the dashboard locally, you can setup a SSH tunnel. First, on the server, run `metadamage dashboard` with the relevant options. Afterwards, on your local machine, run:
+
+```console
+$ ssh -L 8050:127.0.0.1:8050 -N user@remote
+```
+
+<!-- ssh -L 8050:127.0.0.1:8050 -N hep -->
+
+Now you can open a browser and go to [`http://0.0.0.0:8050`](http://0.0.0.0:8050).
+
+
 ## <a name="options"></a> Metadamage CLI fit Options:
 
 The `metadamage fit` CLI has the following options.
