@@ -55,23 +55,60 @@ To make use of the new, interactive dashboard introduced in version `0.4`, run t
 $ metadamage dashboard
 ```
 
-And then open a browser and go to `127.0.0.1:8050` if it did not open automatically. For more information, use:
+And then open a browser and go to `127.0.0.1:8050` (if it did not open automatically). For more information, use:
 ```console
 $ metadamage dashboard --help
 ```
 
-If you are running metadamage on a server and want to use the dashboard locally, you can setup a SSH tunnel. First, on the server, run `metadamage dashboard` with the relevant options. Afterwards, on your local machine, run:
+## <a name="dash-server"></a> Dashboard on a server:
+
+If you are running metadamage on a server and want to use the dashboard locally, you can setup a SSH tunnel. First, on the server, run `metadamage dashboard` with the relevant options (and keep it open, e.g. with TMUX). Afterwards, on your local machine, run:
 
 ```console
 $ ssh -L 8050:127.0.0.1:8050 -N user@remote
 ```
+Now you can open a browser and go to [`http://0.0.0.0:8050`](http://0.0.0.0:8050).
+
+In case you're connecting through a jump host, you can use the the `-J` option:
+```console
+$ ssh -L 8050:127.0.0.1:8050 -N -J user@jumphost user@remote
+```
+
+For an easier method, you can setup your ssh config (usually at `~/.ssh/config`) in the following way:
+
+```ssh-config
+Host jumphost
+    User your-jumphost-username-here
+    HostName your-jumphost-address-here
+
+Host remote
+
+Host dashboard
+    Port 22
+    LocalForward 8050 localhost:8050
+    RemoteCommand echo "Connecting to dashboard ... CTRL+C to terminate"; sleep infinity
+
+Host remote dashboard
+    ProxyJump jumphost
+    User your-remote-username-here
+    HostName your-remote-address-here
+```
+
+Now if you simply run the following on your own computer (in a new terminal session):
+
+```console
+$ ssh dashboard
+```
+you can open open a browser and go to [`http://0.0.0.0:8050`](http://0.0.0.0:8050).
+
+<!-- ssh -L 8050:127.0.0.1:8050 -N -J willerslev mnv794@wonton-snm -->
+<!-- ssh -L 8050:127.0.0.1:8050 -N -J mnv794@ssh-snm-willerslev.science.ku.dk mnv794@wonton-snm -->
 
 <!-- ssh -L 8050:127.0.0.1:8050 -N hep -->
 
-Now you can open a browser and go to [`http://0.0.0.0:8050`](http://0.0.0.0:8050).
 
 
-## <a name="options"></a> Metadamage CLI fit Options:
+## <a name="options"></a> Metadamage CLI fit options:
 
 The `metadamage fit` CLI has the following options.
 
